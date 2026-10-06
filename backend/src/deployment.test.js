@@ -1,11 +1,13 @@
+import { accessCookie } from './accessTestHelper.js';
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { Readable } from 'node:stream';
 import { createApiServer } from './server.js';
 
-function invoke(server, url, origin = 'https://preview.vercel.app', provider) {
+async function invoke(server, url, origin = 'https://preview.vercel.app', provider) {
+  const cookie = await accessCookie(server, { host: 'preview.vercel.app', origin: 'https://preview.vercel.app' });
   const req = Readable.from([]);
-  Object.assign(req, { method: 'GET', url, headers: { host: 'preview.vercel.app', origin, ...(provider ? { 'x-feynman-provider': provider } : {}) } });
+  Object.assign(req, { method: 'GET', url, headers: { cookie, host: 'preview.vercel.app', origin, ...(provider ? { 'x-feynman-provider': provider } : {}) } });
   return new Promise(resolve => {
     const res = { setHeader() {}, writeHead(status) { this.status = status; }, end(body) { resolve({ status: this.status, data: JSON.parse(body) }); } };
     server.emit('request', req, res);

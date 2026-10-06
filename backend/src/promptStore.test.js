@@ -1,3 +1,4 @@
+import { accessCookie } from './accessTestHelper.js';
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { mkdtempSync, readFileSync, writeFileSync, rmSync } from 'node:fs';
@@ -69,8 +70,9 @@ test('fresh chat, scenario, and rubric requests use saved prompts', async t => {
 });
 
 async function invoke(server, { method = 'GET', url = '/api/developer/prompts', body, host = 'localhost:5173', origin = 'http://localhost:5173' } = {}) {
+  const cookie = await accessCookie(server);
   const req = Readable.from(body === undefined ? [] : [typeof body === 'string' ? body : JSON.stringify(body)]);
-  Object.assign(req, { method, url, headers: { host, ...(origin ? { origin } : {}) } });
+  Object.assign(req, { method, url, headers: { cookie, host, ...(origin ? { origin } : {}) } });
   return new Promise(resolve => {
     const res = { status: 200, setHeader() {}, writeHead(status) { this.status = status; }, end(data) { resolve({ status: this.status, data: JSON.parse(data) }); } };
     server.listeners('request')[0](req, res);

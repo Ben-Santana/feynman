@@ -1,3 +1,4 @@
+import { accessCookie } from './accessTestHelper.js';
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { Readable } from 'node:stream';
@@ -91,8 +92,9 @@ test('invalid structured data and unexpected errors produce safe failures; actio
 });
 
 async function invoke(server, { url = '/api/health', method = 'GET', body, provider = 'test-api', model = '', trace = false } = {}) {
+  const cookie = await accessCookie(server);
   const req = Readable.from(body === undefined ? [] : [JSON.stringify(body)]);
-  Object.assign(req, { method, url, headers: { host: 'localhost:5173', origin: 'http://localhost:5173', 'content-type': 'application/json', ...(provider ? { 'x-feynman-provider': provider } : {}), 'x-feynman-model': model, ...(trace ? { 'x-feynman-trace': '1' } : {}) } });
+  Object.assign(req, { method, url, headers: { cookie, host: 'localhost:5173', origin: 'http://localhost:5173', 'content-type': 'application/json', ...(provider ? { 'x-feynman-provider': provider } : {}), 'x-feynman-model': model, ...(trace ? { 'x-feynman-trace': '1' } : {}) } });
   return new Promise(resolve => {
     const res = { status: 200, setHeader() {}, writeHead(status) { this.status = status; }, end(value) { resolve({ status: this.status, data: JSON.parse(value) }); } };
     server.listeners('request')[0](req, res);

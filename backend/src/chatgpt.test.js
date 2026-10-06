@@ -1,3 +1,4 @@
+import { accessCookie } from './accessTestHelper.js';
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { mkdtempSync, rmSync, readFileSync, statSync } from 'node:fs';
@@ -407,8 +408,9 @@ test('account catalog preserves visible model ordering and is cached separately'
 });
 
 async function invoke(server, { method = 'GET', url = '/api/health', body, headers = {} } = {}) {
+  const cookie = await accessCookie(server);
   const req = Readable.from(body === undefined ? [] : [JSON.stringify(body)]);
-  Object.assign(req, { method, url, headers: { host: 'localhost:5173', origin: 'http://localhost:5173', 'content-type': 'application/json', ...headers } });
+  Object.assign(req, { method, url, headers: { cookie, host: 'localhost:5173', origin: 'http://localhost:5173', 'content-type': 'application/json', ...headers } });
   return new Promise(resolve => {
     const res = { status: 200, setHeader() {}, writeHead(status) { this.status = status; }, end(value) { resolve({ status: this.status, data: JSON.parse(value) }); } };
     server.listeners('request')[0](req, res);

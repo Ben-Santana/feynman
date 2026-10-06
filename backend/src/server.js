@@ -1,4 +1,5 @@
 import { createServer } from 'node:http';
+import { createAccessGate } from './access.js';
 import { pathToFileURL } from 'node:url';
 import { resolveLearningType } from '../../frontend/src/learningTypes.js';
 import { chat, conceptsFromStudyTest, generateRubric, generateLevelRubric, suggestConceptsFromFiles, validate } from './chat.js';
@@ -8,6 +9,7 @@ import { AIError, createProviderQuery } from './providers/LanguageModelProvider.
 import { createProviderRegistry } from './providers/registry.js';
 
 export function createApiServer({ query, hosted = false, env = process.env, promptsPath = promptFile, chatgpt = hosted ? null : createChatGPT(), providers = createProviderRegistry({ chatgpt, env }) } = {}) {
+  const access = createAccessGate(env, hosted);
   const allowedOrigins = hosted
     ? [env.APP_ORIGIN, ...[env.VERCEL_URL, env.VERCEL_PROJECT_PRODUCTION_URL, env.VERCEL_BRANCH_URL].filter(Boolean).map(host => `https://${host}`)].filter(Boolean).map(origin => new URL(origin).origin)
     : ['http://localhost:5173', 'http://127.0.0.1:5173', 'http://localhost:3001', 'http://127.0.0.1:3001'];
@@ -36,6 +38,8 @@ export function createApiServer({ query, hosted = false, env = process.env, prom
     }
     if (req.headers.origin && !allowedOrigins.includes(req.headers.origin)) return send(403, { error: 'Origin not allowed' });
     try {
+      if (await access.handle(req, res, send)) return;
+      if (!access.valid(req)) return send(401, { error: 'Access code required.' });
       if (developer && req.method === 'GET') return send(200, listPrompts(promptsPath));
       const provider = req.headers['x-feynman-provider'] || 'anthropic';
       const accounts = chatgpt?.accounts() || [];
