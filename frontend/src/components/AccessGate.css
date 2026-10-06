@@ -1,0 +1,15 @@
+.access-gate { min-height: 100dvh; display: grid; place-items: center; background: var(--background); }
+.access-code { position: relative; border-radius: 18px; }
+.access-boxes { display: flex; gap: 12px; }
+.access-digit { display: grid; place-items: center; width: clamp(52px, 16vw, 72px); height: 84px; border: 2px solid var(--border); border-radius: 16px; background: var(--white); color: var(--foreground); font: 500 36px/1 'Fredoka', sans-serif; transition: background .3s, border-color .3s, color .3s, transform .3s; }
+.access-digit--active { border-color: var(--foreground); }
+.access-input { position: absolute; inset: 0; width: 100%; height: 100%; opacity: 0; cursor: text; font-size: 24px; }
+.access-code:focus-within .access-digit--active { box-shadow: 0 0 0 3px color-mix(in srgb, var(--foreground) 8%, transparent); }
+.access-code--success .access-digit { background: #d5f5df; border-color: #35a563; color: #187b41; transform: translateY(-3px); }
+.access-code--success .access-digit:nth-child(2) { transition-delay: 60ms; }
+.access-code--success .access-digit:nth-child(3) { transition-delay: 120ms; }
+.access-code--success .access-digit:nth-child(4) { transition-delay: 180ms; }
+.access-code--error { animation: access-shake .45s ease-in-out; }
+.access-code--error .access-digit { background: #ffe1df; border-color: #e8483f; color: #bd3028; }
+@keyframes access-shake { 0%, 100% { transform: translateX(0); } 20%, 60% { transform: translateX(-9px); } 40%, 80% { transform: translateX(9px); } }
+@media (prefers-reduced-motion: reduce) { .access-digit { transition: none; } .access-code--error { animation: none; } }
