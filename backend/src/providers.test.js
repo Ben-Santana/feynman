@@ -150,6 +150,22 @@ test('browser preferences preserve existing and third-party provider IDs and nev
 
 const callClaude = (...args) => createProviderQuery(new AnthropicProvider())(...args);
 
+test('new Claude models use automatic tool choice and still reject missing structured results', async () => {
+  for (const model of ['claude-sonnet-5-5', 'claude-opus-5-5', 'claude-fable-5-1', 'claude-mythos-5-1', 'claude-sonnet-4-6']) {
+    const automatic = model !== 'claude-sonnet-4-6';
+    const provider = new AnthropicProvider({ model, fetcher: async (_url, options) => {
+      const body = JSON.parse(options.body);
+      assert.deepEqual(body.tool_choice, automatic ? { type: 'auto' } : { type: 'tool', name: 'test' });
+      if (automatic) assert.match(body.system, /calling test exactly once/);
+      return { ok: true, json: async () => ({ content: [{ type: 'tool_use', name: 'test', input: { message: 'Hi' } }] }) };
+    } });
+    const request = { instructions: 'system', messages: [], response: { name: 'test', schema: { type: 'object' } } };
+    assert.deepEqual(await provider.generateStructured(request), { message: 'Hi' });
+    provider.fetcher = async () => ({ ok: true, json: async () => ({ content: [{ type: 'text', text: 'Hi' }] }) });
+    await assert.rejects(provider.generateStructured(request), /incomplete response/);
+  }
+});
+
 test('Claude transport maps auth failures and rejects truncated responses', async () => {
   const original = globalThis.fetch;
   try {
