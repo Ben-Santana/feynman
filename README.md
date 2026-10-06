@@ -17,7 +17,17 @@ The frontend reloads automatically during development. The backend runs without 
 
 The key stays on the Node server. `ANTHROPIC_MODEL` defaults to `claude-sonnet-4-6`; use a model supporting forced tool calls. The backend binds to loopback. This is a local testing app, not an authenticated public service. Do not expose it publicly without authentication, rate limits, and a deployment-specific origin policy.
 
-## AI providers
+## Vercel services deployment
+
+The root `vercel.json` defines one project with `backend` (Node HTTP server) and `frontend` (Vite static app). Keep the Vercel project root at the repository root. `/api/*` reaches the backend with the original `/api/` prefix; every other path reaches the frontend. The browser already calls relative `/api/...` URLs. There are no server-to-server calls between these services, so there are no service bindings; runtime binding URLs cannot be consumed by a static Vite build or browser.
+
+Set `ANTHROPIC_API_KEY` and, if needed, `ANTHROPIC_WORKSPACE_ID` in Vercel project environment variables; optionally set `ANTHROPIC_MODEL`. Set `APP_ORIGIN` to the exact HTTPS origin when using a custom domain. Vercel deployment, branch, and production URLs are allowed automatically when their system environment variables are enabled. Origin checks do not authenticate callers; use deployment protection for this personal app before sharing a deployment that uses your API key.
+
+The hosted backend offers Anthropic only. Choose it explicitly in **AI settings**; saved ChatGPT selections are not silently switched to billed API requests. ChatGPT's local credential store, loopback callback, and developer prompt editing remain local-only. Prompts are bundled read-only for hosted inference. Local credentials and `.env` files are excluded from Vercel uploads. Hosting ChatGPT connections would require a separate durable, per-user credential store and a supported hosted OAuth flow.
+
+Use `vercel dev` from the repository root to test both services through one origin. For offline project setup, `vercel dev -L` runs without cloud authentication; set `APP_ORIGIN` to its local URL (for example `http://localhost:3000`) for hosted-origin checks. `npm run dev` retains the existing local app and ChatGPT flow.
+
+## AI providers (local app)
 
 ChatGPT is the frontend's default provider. Eligible Plus/Pro users can authorize Feynman to use their existing ChatGPT plan; requests count toward that user's plan limits or authorized credits, with no app-owner API billing. OpenAI currently supports this flow for open-source and locally hosted personal apps; offering it in a paid or remotely hosted service requires approval. It is not unlimited free inference for every OpenAI account. See the [official integration overview](https://developers.openai.com/siwc/token-sharing-open-source).
 

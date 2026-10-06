@@ -33,7 +33,7 @@ export class ProviderRegistry {
 }
 
 export function createProviderRegistry({ chatgpt, env = process.env, fetcher = (...args) => fetch(...args) } = {}) {
-  return new ProviderRegistry()
-    .register(ChatGPTProvider, selection => new ChatGPTProvider({ ...selection, runtime: chatgpt, fetcher }))
-    .register(AnthropicProvider, selection => new AnthropicProvider({ ...selection, env, fetcher }));
+  const registry = new ProviderRegistry();
+  if (chatgpt) registry.register(ChatGPTProvider, selection => new ChatGPTProvider({ ...selection, runtime: chatgpt, fetcher }));
+  return registry.register(AnthropicProvider, selection => new AnthropicProvider({ ...selection, env, fetcher }));
 }

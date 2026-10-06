@@ -7,7 +7,10 @@ import { createChatGPT } from './chatgpt.js';
 import { AIError, createProviderQuery } from './providers/LanguageModelProvider.js';
 import { createProviderRegistry } from './providers/registry.js';
 
-export function createApiServer({ query, promptsPath = promptFile, chatgpt = createChatGPT(), providers = createProviderRegistry({ chatgpt }) } = {}) {
+export function createApiServer({ query, hosted = false, env = process.env, promptsPath = promptFile, chatgpt = hosted ? null : createChatGPT(), providers = createProviderRegistry({ chatgpt, env }) } = {}) {
+  const allowedOrigins = hosted
+    ? [env.APP_ORIGIN, ...[env.VERCEL_URL, env.VERCEL_PROJECT_PRODUCTION_URL, env.VERCEL_BRANCH_URL].filter(Boolean).map(host => `https://${host}`)].filter(Boolean).map(origin => new URL(origin).origin)
+    : ['http://localhost:5173', 'http://127.0.0.1:5173', 'http://localhost:3001', 'http://127.0.0.1:3001'];
   const server = createServer(async (req, res) => {
     res.setHeader('Content-Type', 'application/json');
     res.setHeader('Cache-Control', 'no-store');
@@ -16,8 +19,9 @@ export function createApiServer({ query, promptsPath = promptFile, chatgpt = cre
     const developer = req.url === '/api/developer/prompts';
     const callbackRequest = req.url === '/auth/callback' || req.url.startsWith('/auth/callback?');
     if (callbackRequest) console.info('Feynman ChatGPT callback: HTTP request received.');
-    // Both source edits and saved OAuth credentials are local capabilities.
-    if (!/^(localhost|127\.0\.0\.1)(:\d+)?$/.test(req.headers.host || '')) return send(403, { error: 'The Feynman API is only available on localhost.' });
+    // Hosted instances cannot persist local OAuth credentials or source edits.
+    if (hosted && (developer || callbackRequest || ['/api/ai/sign-in', '/api/ai/sign-out', '/api/ai/remove-account'].includes(req.url))) return send(403, { error: 'ChatGPT connections and prompt editing require the local Feynman app. Choose Anthropic in AI settings on this deployment.' });
+    if (!hosted && !/^(localhost|127\.0\.0\.1)(:\d+)?$/.test(req.headers.host || '')) return send(403, { error: 'The Feynman API is only available on localhost.' });
     if (req.method === 'GET' && callbackRequest) {
       res.setHeader('Content-Type', 'text/plain; charset=utf-8');
       res.setHeader('Referrer-Policy', 'no-referrer');
@@ -30,11 +34,11 @@ export function createApiServer({ query, promptsPath = promptFile, chatgpt = cre
       } catch (error) { console.info(`Feynman ChatGPT callback: failed with status ${error.status || 502}.`); res.writeHead(error.status || 502); res.end(error instanceof AIError ? error.message : 'Could not complete ChatGPT sign-in. Please try again.'); }
       return;
     }
-    if (req.headers.origin && !['http://localhost:5173', 'http://127.0.0.1:5173', 'http://localhost:3001', 'http://127.0.0.1:3001'].includes(req.headers.origin)) return send(403, { error: 'Origin not allowed' });
+    if (req.headers.origin && !allowedOrigins.includes(req.headers.origin)) return send(403, { error: 'Origin not allowed' });
     try {
       if (developer && req.method === 'GET') return send(200, listPrompts(promptsPath));
       const provider = req.headers['x-feynman-provider'] || 'anthropic';
-      const accounts = chatgpt.accounts();
+      const accounts = chatgpt?.accounts() || [];
       const accountId = req.headers['x-feynman-account'] || accounts.find(item => item.connected)?.id;
       const selectedModel = req.headers['x-feynman-model'] || '';
       const selection = { accountId, model: selectedModel };
@@ -42,7 +46,7 @@ export function createApiServer({ query, promptsPath = promptFile, chatgpt = cre
       if (req.method === 'GET' && req.url === '/api/ai/providers') return send(200, { providers: providers.describe(selection) });
       const adapter = providers.resolve(provider, selection);
       const { configured, model } = adapter.getStatus();
-      if (req.method === 'GET' && req.url === '/api/health') return send(200, { configured, provider, model, accounts, pendingRegistration: chatgpt.hasPendingRegistration?.() || false, anthropicConfigured: providers.describe(selection).some(item => item.id === 'anthropic' && item.configured) });
+      if (req.method === 'GET' && req.url === '/api/health') return send(200, { configured, provider, model, accounts, pendingRegistration: chatgpt?.hasPendingRegistration?.() || false, anthropicConfigured: providers.describe(selection).some(item => item.id === 'anthropic' && item.configured) });
       if (req.method === 'GET' && req.url === '/api/ai/models') return send(200, { models: await adapter.listModels() });
       const aiControl = ['/api/ai/sign-in', '/api/ai/sign-out', '/api/ai/remove-account'].includes(req.url);
       if (aiControl && (!req.headers.origin || !/^application\/json(?:;|$)/i.test(req.headers['content-type'] || ''))) return send(403, { error: 'Open AI settings in the local Feynman app to manage accounts.' });
@@ -96,7 +100,7 @@ export function createApiServer({ query, promptsPath = promptFile, chatgpt = cre
     console.info(`Feynman API connection: ${tls ? 'HTTPS attempted on the HTTP port' : error.code || 'invalid HTTP request'}.`);
     socket.destroy();
   });
-  server.on('close', () => chatgpt.close());
+  server.on('close', () => chatgpt?.close());
   return server;
 }
 if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) {
