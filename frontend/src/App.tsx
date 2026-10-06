@@ -4,7 +4,8 @@ import { DeveloperPage } from './components/DeveloperPage'
 import { RubricLoading } from './components/RubricLoading'
 import { AISettings } from './components/AISettings'
 import { AISettingsButton } from './components/AISettingsButton'
-import { aiHeaders } from './aiPreferences'
+import { aiHeaders, fruitFlySelected, localAIResponse } from './aiPreferences'
+import { fruitFlyBuzz, fruitFlyRubric } from './fruitFly'
 import { Bloub } from './components/Bloub'
 import { CornerDrops } from './components/CornerDrops'
 import { PaperReview, MathText, type Review } from './components/PaperReview'
@@ -17,6 +18,7 @@ import { Whiteboard, type WhiteboardHandle } from './components/Whiteboard'
 import { loadLearning, loadSessions, saveSessions, type SavedSession } from './learningStore'
 import { advanceConcept, assessmentTranscript, nextPrompt, restoreLearning, sessionComplete, startConcepts, targetCount, type ChatResult, type Concept, type ConceptRubric, type Level, type Message, type Session } from './learningFlow'
 import { draftTarget, editCriterion, fillMissingRubric, genericRubric, highestFilledLevel, mergeSuggestions, restoreDraft, withBasicCriterion } from './rubricSetup'
+import { generateRubricBatches } from './rubricGeneration'
 
 import { LearningTypeSelector } from './components/LearningTypeSelector'
 import { LearningTypeChangeDialog } from './components/LearningTypeChangeDialog'
@@ -46,6 +48,9 @@ function LevelSlider({ id, name, value, onChange }: { id: string; name: string; 
 }
 
 async function post<T>(path: string, body: unknown, signal: AbortSignal): Promise<T> {
+  signal.throwIfAborted()
+  const local = localAIResponse(path, body)
+  if (local !== undefined) return local as T
   const response = await fetch(path, { method: 'POST', signal, headers: { 'Content-Type': 'application/json', ...aiHeaders() }, body: JSON.stringify(body) })
   const data = await response.json()
   if (!response.ok) throw new Error(data.error || 'The request failed. Please retry.')
@@ -259,7 +264,7 @@ function App() {
       }
     }
     setValidationError(null)
-    setConcepts(items => startConcepts(items))
+    setConcepts(items => startConcepts(items).map(concept => fruitFlySelected() ? { ...concept, messages: [{ role: 'assistant', content: fruitFlyBuzz() }], expression: 'excited' } : concept))
     setActive(concepts[0].id)
     setStarted(true)
     setFiles([])
@@ -294,6 +299,12 @@ function App() {
     if (!validateNames('concepts')) return
     setValidationError(null)
     setError('')
+    if (fruitFlySelected()) {
+      setConcepts(items => items.map(concept => ({ ...concept, rubric: fruitFlyRubric(draftTarget(concept, selectedTargets[concept.id])) as ConceptRubric })))
+      setAiByName(false)
+      setSetupStep('rubric')
+      return
+    }
     if (!aiByName) {
       setConcepts(items => items.map(concept => fillMissingRubric(concept, draftTarget(concept, selectedTargets[concept.id]), genericRubric(concept.name.trim(), draftTarget(concept, selectedTargets[concept.id]), learningType))))
       setSetupStep('rubric')
@@ -301,21 +312,26 @@ function App() {
     }
     setSetupStep('loading')
     try {
-      const result = await post<{ concepts: { name: string; rubric: ConceptRubric }[] }>('/api/rubric', { concepts: concepts.map(concept => ({ name: concept.name.trim(), target: draftTarget(concept, selectedTargets[concept.id]) })), files: await encodedFiles(), learningType, additionalInstructions: rubricInstructions.trim() }, AbortSignal.timeout(225000))
-      setConcepts(items => items.map((concept, index) => ({ ...concept, rubric: result.concepts[index].rubric })))
+      const sourceFiles = await encodedFiles()
+      const result = await generateRubricBatches(
+        concepts.map(concept => ({ name: concept.name.trim(), target: draftTarget(concept, selectedTargets[concept.id]) })),
+        (batch, previousRubric) => post<{ concepts: { name: string; rubric: ConceptRubric }[] }>('/api/rubric', { concepts: batch, previousRubric, files: sourceFiles, learningType, additionalInstructions: rubricInstructions.trim() }, AbortSignal.timeout(225000)),
+      )
+      setConcepts(items => items.map((concept, index) => ({ ...concept, rubric: result[index].rubric })))
       setAiByName(false)
       setSetupStep('rubric')
     } catch (reason) { showValidation('concepts', '', reason instanceof Error ? reason.message : 'Could not generate the rubric.'); setSetupStep('concepts') }
   }
 
   async function levelOpening(concept: Concept, level: Level, signal: AbortSignal): Promise<ChatResult> {
+    if (fruitFlySelected()) return post<ChatResult>('/api/chat', {}, signal)
     if (!learningType) throw new Error('Choose a learning type before starting.')
     if (level === 'analyze' || needsScenarioOpening(level, learningType)) return post<ChatResult>('/api/chat', { level, learningType, topic: concept.name, aspects: checklistItems(concept.rubric[level]), criterion: concept.rubric[level], messages: [] }, signal)
     return { message: nextPrompt(level, concept.name, learningType), expression: 'attentive', assessment: null }
   }
   async function raiseTarget(concept: Concept, target: Level) {
     if (busy || targetCount(target) <= targetCount(concept.target)) return
-    const nextConcept = withBasicCriterion(concept, target, learningType ?? 'quantitative')
+    const nextConcept = fruitFlySelected() && !checklistItems(concept.rubric[target]).length ? { ...concept, rubric: { ...concept.rubric, [target]: fruitFlyBuzz() } } : withBasicCriterion(concept, target, learningType ?? 'quantitative')
     if (concept.passed < targetCount(concept.target)) { updateConcept(concept.id, { target, rubric: nextConcept.rubric }); return }
     setBusy(true); setError('')
     try {

@@ -1,6 +1,6 @@
 import { BackButton } from './BackButton'
 import { useEffect, useRef, useState } from 'react'
-import { aiHeaders } from '../aiPreferences'
+import { aiHeaders, fruitFlySelected, localAIResponse } from '../aiPreferences'
 import { learningTypeIds, learningTypes, type LearningType } from '../learningTypes.js'
 import { levelIds, type ChatResult, type Level, type Message } from '../learningFlow'
 import { checklistItems, checklistText } from '../rubricChecklist.js'
@@ -17,6 +17,9 @@ const errorText = (error: unknown) => error instanceof Error ? error.name === 'T
 type PromptCall = { role: string; request: unknown; response?: unknown; error?: string; durationMs: number }
 type CallTurn = { calls: PromptCall[]; request: unknown; response?: unknown; error?: string }
 async function request<T>(path: string, body?: unknown, signal = AbortSignal.timeout(15000), onTrace?: (data: T & { calls?: PromptCall[]; error?: string }) => void): Promise<T> {
+  signal.throwIfAborted()
+  const local = path === '/api/health' && fruitFlySelected() ? { configured: true, model: 'fruit fly brain' } : localAIResponse(path, body)
+  if (local !== undefined) { onTrace?.(local as T & { calls?: PromptCall[]; error?: string }); return local as T }
   const response = await fetch(path, { signal, headers: { ...aiHeaders(), ...(onTrace ? { 'X-Feynman-Trace': '1' } : {}), ...(body === undefined ? {} : { 'Content-Type': 'application/json' }) }, ...(body === undefined ? {} : { method: 'POST', body: JSON.stringify(body) }) })
   let data
   try { data = await response.json() } catch { throw new Error('Could not reach the API. Start the app with npm run dev.') }

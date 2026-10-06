@@ -85,3 +85,12 @@
   .ai-model-select option:checked { background: color-mix(in srgb, var(--primary) 8%, var(--background)); color: var(--primary); }
   .ai-model-select option::checkmark { margin-left: auto; order: 1; }
 }
+
+.ai-provider-options-unlocked { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+.ai-provider-options .fruit-fly-name { display: flex; align-items: center; gap: 8px; }
+.fruit-fly-icon { width: 24px; height: 24px; flex-shrink: 0; }
+.fruit-fly-reveal { animation: fruit-fly-arrival .65s cubic-bezier(.18,.8,.3,1) both; }
+@keyframes fruit-fly-arrival { 0% { opacity: 0; transform: translateY(14px) scale(.9); } 65% { opacity: 1; transform: translateY(-3px) scale(1.02); } 100% { opacity: 1; transform: none; } }
+@media (max-width: 640px) { .ai-provider-options-unlocked label { padding: 20px 14px; gap: 10px; } .ai-provider-options-unlocked strong { font-size: 16px; } }
+@media (max-width: 480px) { .ai-provider-options-unlocked { grid-template-columns: 1fr; } }
+@media (prefers-reduced-motion: reduce) { .fruit-fly-reveal { animation: none; } }

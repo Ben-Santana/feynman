@@ -153,12 +153,23 @@ export async function generateRubric(input, query, prompts = loadPrompts()) {
   const learningType = resolveLearningType(input?.learningType);
   if (!Array.isArray(input?.concepts) || !input.concepts.length || input.concepts.length > 20 || input.concepts.some(concept => typeof concept?.name !== 'string' || !concept.name.trim() || concept.name.length > 300 || !levels.includes(concept.target))) throw new Error('Choose 1–20 named concepts and learning levels.');
   if (input.additionalInstructions !== undefined && (typeof input.additionalInstructions !== 'string' || input.additionalInstructions.length > 5000)) throw new Error('Enter additional rubric instructions of up to 5,000 characters.');
+  const previousRubric = input.previousRubric ?? [];
+  if (!Array.isArray(previousRubric) || previousRubric.length > 20 || previousRubric.some(item => typeof item?.name !== 'string' || !item.name.trim() || item.name.length > 300 || !item.rubric || levels.some(level => typeof item.rubric[level] !== 'string' || item.rubric[level].length > 1000))) throw new Error('Enter a valid previously generated rubric.');
+  // Keep direct API callers within the same five-concept model output limit.
+  if (input.concepts.length > 5) {
+    const generated = [];
+    for (let offset = 0; offset < input.concepts.length; offset += 5) {
+      generated.push(...await generateRubric({ ...input, concepts: input.concepts.slice(offset, offset + 5), previousRubric: [...previousRubric, ...generated] }, query, prompts));
+    }
+    return generated;
+  }
   const additionalInstructions = input.additionalInstructions?.trim();
   const files = input.files || [];
   const content = files.length ? contentsFromFiles(files) : [];
   const schema = { concepts: { type: 'array', minItems: input.concepts.length, maxItems: input.concepts.length, items: { type: 'object', properties: { name: { type: 'string' }, rubric: { type: 'object', properties: Object.fromEntries(levels.map(level => [level, { type: 'array', maxItems: 20, items: { type: 'string', minLength: 1, maxLength: 1000 } }])), required: levels, additionalProperties: false } }, required: ['name', 'rubric'], additionalProperties: false } } };
   const system = prompts.text('rubric.generate', { curriculumContext: prompts.text('rubric.curriculumContext'), writingGuidance: prompts.text('rubric.writingGuidance'), learningTypeGuidance: prompts.text('profile.' + learningType + '.rubricGuidance'), grounding: files.length ? prompts.text('rubric.groundInFiles') : prompts.text('rubric.groundInKnowledge') });
-  const result = await query(system, [{ role: 'user', content: [{ type: 'text', text: JSON.stringify({ concepts: input.concepts, ...(additionalInstructions ? { additionalInstructions } : {}) }) }, ...content] }], tool('generate_rubric', schema));
+  const batchSystem = previousRubric.length ? `${system}\nThe previousRubric contains completed concepts from earlier batches. Use it as context for consistent scope and criteria. Return only the requested concepts, in their given order; do not repeat or revise the previous rubric.` : system;
+  const result = await query(batchSystem, [{ role: 'user', content: [{ type: 'text', text: JSON.stringify({ concepts: input.concepts, ...(previousRubric.length ? { previousRubric } : {}), ...(additionalInstructions ? { additionalInstructions } : {}) }) }, ...content] }], tool('generate_rubric', schema));
   normalizeGeneratedRubrics(result?.concepts);
   if (!Array.isArray(result?.concepts) || result.concepts.length !== input.concepts.length || result.concepts.some((item, index) => item?.name !== input.concepts[index].name || !item.rubric || levels.some((level, i) => typeof item.rubric[level] !== 'string' || item.rubric[level].length > 1000 || (i <= levels.indexOf(input.concepts[index].target) && !item.rubric[level].trim())))) throw new Error('Could not generate a complete rubric. Please retry.');
   return result.concepts.map((item, index) => ({ name: item.name, rubric: Object.fromEntries(levels.map((level, i) => [level, i <= levels.indexOf(input.concepts[index].target) ? item.rubric[level].trim() : ''])) }));

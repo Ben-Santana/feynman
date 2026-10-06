@@ -1,3 +1,5 @@
+import { FRUIT_FLY_MODEL, fruitFlyResponse } from './fruitFly.ts'
+
 // The backend registry is authoritative; preserve unknown IDs so settings can report them.
 export type AIProvider = string
 export type ProviderInfo = {
@@ -20,5 +22,10 @@ export function saveAIPreferences(value: AIPreferences) {
 }
 export function aiHeaders(): Record<string, string> {
   const prefs = aiPreferences()
-  return { 'X-Feynman-Provider': prefs.provider, ...(prefs.accountId ? { 'X-Feynman-Account': prefs.accountId } : {}), ...(prefs.model ? { 'X-Feynman-Model': prefs.model } : {}) }
+  return { 'X-Feynman-Provider': prefs.provider, ...(prefs.accountId ? { 'X-Feynman-Account': prefs.accountId } : {}), ...(prefs.model && !fruitFlySelected() ? { 'X-Feynman-Model': prefs.model } : {}) }
+}
+
+export const fruitFlySelected = () => aiPreferences().model === FRUIT_FLY_MODEL
+export function localAIResponse(path: string, body?: unknown): unknown {
+  return fruitFlySelected() ? fruitFlyResponse(path, body) : undefined
 }
