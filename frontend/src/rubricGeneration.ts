@@ -6,6 +6,7 @@ type GeneratedConcept = { name: string; rubric: ConceptRubric }
 export async function generateRubricBatches(
   concepts: RequestedConcept[],
   request: (batch: RequestedConcept[], previousRubric: GeneratedConcept[]) => Promise<{ concepts: GeneratedConcept[] }>,
+  onProgress?: (completed: number) => void,
 ): Promise<GeneratedConcept[]> {
   const generated: GeneratedConcept[] = []
   for (let offset = 0; offset < concepts.length; offset += 5) {
@@ -15,6 +16,7 @@ export async function generateRubricBatches(
       throw new Error('Could not generate a complete rubric. Please retry.')
     }
     generated.push(...result.concepts)
+    onProgress?.(generated.length)
   }
   return generated
 }

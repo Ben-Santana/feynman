@@ -11,6 +11,7 @@ test('17 concepts use four sequential API calls with the cumulative rubric', asy
   const requested = concepts(17);
   const completed = [];
   const sizes = [];
+  const progress = [];
   let active = false;
   const result = await generateRubricBatches(requested, async (batch, previousRubric) => {
     assert.equal(active, false);
@@ -22,8 +23,9 @@ test('17 concepts use four sequential API calls with the cumulative rubric', asy
     completed.push(...response);
     active = false;
     return { concepts: response };
-  });
+  }, count => progress.push(count));
   assert.deepEqual(sizes, [5, 5, 5, 2]);
+  assert.deepEqual(progress, [5, 10, 15, 17]);
   assert.deepEqual(result, generated(requested));
 });
 

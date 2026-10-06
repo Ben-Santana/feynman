@@ -1,6 +1,6 @@
 import './RubricLoading.css'
 
-export function RubricLoading() {
+export function RubricLoading({ completed, total }: { completed: number; total: number }) {
   return <div className="setup-loading" role="status" aria-label="Creating your rubric">
     <div className="rubric-loading" aria-hidden="true">
       <svg viewBox="0 0 200 200" fill="none">
@@ -19,6 +19,9 @@ export function RubricLoading() {
         <g className="rubric-loading-spark"><path d="M159 48v12m-6-6h12" /></g>
         <circle className="rubric-loading-dot" cx="39" cy="123" r="3" />
       </svg>
+    </div>
+    <div className="rubric-loading-progress" role="progressbar" aria-label="Concept rubrics generated" aria-valuemin={0} aria-valuemax={total} aria-valuenow={completed} aria-valuetext={`${completed} of ${total} concepts generated`}>
+      <div className="rubric-loading-progress-fill" style={{ width: `${total > 0 ? Math.min(100, completed / total * 100) : 0}%` }} />
     </div>
   </div>
 }
