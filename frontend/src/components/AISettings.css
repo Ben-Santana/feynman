@@ -1,0 +1,87 @@
+.ai-settings-page { min-height: 100svh; font-family: var(--font-display); }
+.ai-settings-shell { width: min(100% - 40px, 720px); margin: 64px auto; padding-bottom: 40px; }
+.ai-settings-heading { margin-bottom: 32px; }
+.ai-settings-heading > p { color: var(--muted-foreground); }
+.ai-visually-hidden { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; border: 0; }
+.ai-settings-shell h1 { margin: 0 0 8px; font-size: 34px; font-weight: 500; }
+.ai-settings-shell p { margin: 12px 0; line-height: 1.6; }
+.ai-provider-options { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 14px; margin: 0 0 24px; padding: 0; border: 0; min-width: 0; }
+.ai-provider-options legend { margin-bottom: 12px; font-weight: 500; }
+.ai-provider-options label { display: flex; gap: 14px; align-items: center; padding: 26px 22px; min-width: 0; transition: border-color .15s, background .15s; border: 1px solid var(--border); border-radius: 14px; cursor: pointer; }
+.ai-provider-options label[data-selected="true"] { border-color: var(--primary); background: color-mix(in srgb, var(--primary) 5%, var(--background)); }
+.ai-provider-options input { margin: 0; accent-color: var(--primary); width: 16px; height: 16px; flex-shrink: 0; }
+.ai-provider-options label:hover { background: var(--muted); }
+.ai-provider-options label:has(input:disabled) { cursor: wait; opacity: .65; }
+.ai-provider-options strong { font-size: 18px; font-weight: 500; }
+.ai-provider-options strong, .ai-provider-options small { display: block; }
+.ai-provider-options small { margin-top: 4px; color: var(--muted-foreground); }
+.ai-connection { padding: 24px; margin: 0 0 28px; border: 1px solid var(--border); border-radius: 16px; }
+.ai-connection-heading { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+.ai-connection-heading h2 { margin: 0; }
+.ai-connection-status { font-size: 12px; color: var(--muted-foreground); }
+.ai-connection h2, .ai-welcome h2 { font-size: 18px; font-weight: 500; }
+.ai-settings-field { display: grid; gap: 8px; margin: 20px 0; }
+.ai-settings-field select { width: 100%; padding: 12px; background: var(--background); color: var(--foreground); border: 1px solid var(--border); border-radius: 10px; }
+.ai-settings-actions { display: flex; flex-wrap: wrap; gap: 12px; align-items: center; margin-top: 24px; }
+.ai-chatgpt-button { padding: 12px 18px; border-radius: 10px; border: 1px solid transparent; background: var(--foreground); color: var(--background); font-family: ui-sans-serif, sans-serif; font-weight: 500; cursor: pointer; }
+.ai-secondary-button { background: var(--background); color: var(--foreground); padding: 10px 12px; border: 1px solid var(--border); border-radius: 10px; cursor: pointer; }
+.ai-settings-actions a { font-size: 13px; margin-left: auto; }
+.ai-settings-page a { color: var(--primary); text-decoration: underline; text-underline-offset: 3px; }
+.ai-settings-note { font-size: 14px; color: var(--muted-foreground); }
+.ai-connected { color: var(--primary); }
+.ai-settings-link { position: absolute; top: 24px; right: 24px; z-index: 10; display: grid; place-items: center; width: 44px; height: 44px; padding: 10px; border-radius: 12px; background: var(--background); color: var(--foreground); border: 1px solid var(--border); cursor: pointer; }
+.ai-settings-link svg { width: 22px; height: 22px; }
+.ai-settings-link:hover { background: var(--muted); }
+.ai-settings-page :is(button, select, input, a):focus-visible, .ai-settings-link:focus-visible { outline: 2px solid var(--primary); outline-offset: 4px; }
+.ai-settings-page button:disabled { opacity: .5; cursor: wait; }
+.ai-welcome { width: min(100% - 40px, 440px); margin: auto; padding: 28px; background: var(--background); color: var(--foreground); border-radius: 18px; }
+.ai-welcome[open] { display: grid; gap: 16px; }
+.ai-welcome::backdrop { background: #0006; }
+@media (max-width: 540px) { .ai-settings-link { top: 16px; right: 16px; } .ai-settings-shell { margin-top: 28px; } .ai-connection { padding: 18px; } }
+
+@media (max-width: 400px) { .ai-provider-options { gap: 10px; } .ai-provider-options label { padding: 18px 12px; gap: 10px; } .ai-provider-options strong { font-size: 16px; } .ai-provider-options small { font-size: 12px; } }
+
+.ai-account-options { min-width: 0; margin: 24px 0; padding: 0; border: 0; }
+.ai-account-options legend { margin-bottom: 12px; font-size: 14px; }
+.ai-account-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 10px; }
+.ai-account-card { position: relative; min-width: 0; border: 1px solid var(--border); border-radius: 14px; transition: background .15s, border-color .15s; }
+.ai-account-card[data-selected="true"] { border-color: var(--primary); background: color-mix(in srgb, var(--primary) 5%, var(--background)); }
+.ai-account-choice { display: flex; flex-direction: column; align-items: center; padding: 18px 12px 12px; cursor: pointer; text-align: center; height: 100%; box-sizing: border-box; }
+.ai-account-avatar { display: grid; place-items: center; width: 36px; height: 36px; margin-bottom: 8px; border-radius: 50%; background: var(--muted); color: var(--muted-foreground); font-size: 24px; font-family: ui-sans-serif, sans-serif; }
+.ai-account-avatar svg { width: 24px; height: 24px; }
+.ai-account-add strong { font-size: 14px; font-weight: 500; }
+.ai-account-choice small { width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.ai-account-choice small, .ai-account-add small { margin-top: 5px; font-size: 12px; color: var(--muted-foreground); }
+.ai-account-state { margin-top: 8px; font-size: 11px; color: var(--muted-foreground); }
+.ai-account-card[data-selected="true"] .ai-account-state { color: var(--primary); }
+.ai-account-remove { position: absolute; top: 6px; right: 6px; display: grid; place-items: center; width: 30px; height: 30px; padding: 0; border: 0; border-radius: 8px; background: transparent; color: var(--muted-foreground); cursor: pointer; }
+.ai-account-remove svg { width: 20px; height: 20px; }
+.ai-account-remove:hover { background: var(--muted); color: var(--foreground); }
+.ai-account-add { display: flex; flex-direction: column; align-items: center; justify-content: center; min-height: 120px; padding: 16px 12px; border: 1px dashed var(--border); border-radius: 14px; background: transparent; color: var(--foreground); font-family: inherit; cursor: pointer; }
+.ai-account-add { transition: border-color .2s ease, color .2s ease; }
+.ai-account-add small { transition: color .2s ease; }
+.ai-account-add:is(:hover, :focus-visible):not(:disabled) { border-color: var(--primary); color: var(--primary); }
+.ai-account-add:is(:hover, :focus-visible):not(:disabled) small { color: var(--primary); }
+.ai-account-card:hover { background: var(--muted); }
+@media (prefers-reduced-motion: reduce) { .ai-account-add, .ai-account-add small { transition: none; } }
+.ai-account-card:has(input:focus-visible) { outline: 2px solid var(--primary); outline-offset: 4px; }
+.ai-account-choice:has(input:disabled) { cursor: wait; opacity: .65; }
+@media (max-width: 440px) { .ai-account-grid { grid-template-columns: 1fr; } }
+
+.ai-settings-field { font-size: 14px; }
+.ai-model-select { position: relative; display: block; }
+.ai-model-select select { appearance: none; min-height: 48px; padding: 12px 44px 12px 16px; border-radius: 12px; font: inherit; font-size: 15px; cursor: pointer; transition: border-color .18s ease, background .18s ease, box-shadow .18s ease; }
+.ai-model-select select:hover:not(:disabled) { border-color: color-mix(in srgb, var(--foreground) 25%, var(--border)); background: var(--muted); }
+.ai-model-select select:focus-visible { outline: 2px solid var(--primary); outline-offset: 3px; border-color: var(--primary); }
+.ai-model-select select:disabled { opacity: .5; cursor: wait; }
+.ai-model-chevron { position: absolute; right: 15px; top: 50%; width: 20px; height: 20px; transform: translateY(-50%); pointer-events: none; color: var(--muted-foreground); }
+.ai-model-select:has(select:disabled) .ai-model-chevron { opacity: .5; }
+@supports (appearance: base-select) {
+  .ai-model-select select, .ai-model-select select::picker(select) { appearance: base-select; }
+  .ai-model-select select::picker-icon { display: none; }
+  .ai-model-select select::picker(select) { margin-top: 8px; padding: 6px; border: 1px solid var(--border); border-radius: 14px; background: var(--background); color: var(--foreground); box-shadow: 0 8px 24px color-mix(in srgb, var(--foreground) 12%, transparent); font: inherit; }
+  .ai-model-select option { padding: 10px 12px; border-radius: 8px; font-size: 14px; cursor: pointer; }
+  .ai-model-select option:hover, .ai-model-select option:focus { background: var(--muted); }
+  .ai-model-select option:checked { background: color-mix(in srgb, var(--primary) 8%, var(--background)); color: var(--primary); }
+  .ai-model-select option::checkmark { margin-left: auto; order: 1; }
+}

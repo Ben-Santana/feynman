@@ -1,0 +1,67 @@
+.setup-slide.setup-class-type { max-width: 1080px; padding: 36px 48px 28px; }
+.class-picker-grid { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1.05fr); align-items: center; gap: 64px; min-height: 460px; }
+.class-preview { min-width: 0; }
+.class-model-stage { position: relative; height: 310px; user-select: none; }
+.class-models { position: absolute; inset: 0; pointer-events: none; overflow: hidden; }
+.class-models canvas { display: block; width: 100%; height: 100%; }
+.class-model-loading { display: grid; place-items: center; position: absolute; inset: 0; }
+.class-model-loading span { width: 28px; height: 28px; border: 2px solid var(--border); border-top-color: var(--primary); border-radius: 50%; animation: setup-spin .8s linear infinite; }
+.class-model-fallback { display: grid; place-items: center; height: 100%; color: var(--primary); font-size: 110px; }
+.class-properties { width: min(100%, 310px); margin: 8px auto 0; }
+.class-properties > h3 { margin: 0 0 18px; font-size: 14px; font-weight: 500; letter-spacing: -.01em; }
+.class-emphasis-list { display: grid; gap: 16px; }
+.class-emphasis { display: grid; grid-template-columns: 84px minmax(0, 1fr); align-items: center; gap: 16px; }
+.class-emphasis-label { color: var(--muted-foreground); font-size: 13px; }
+.class-emphasis-track.level-slider-track { position: relative; top: auto; height: 8px; background: var(--border); box-shadow: none; }
+.class-emphasis-fill { box-shadow: none; transition-duration: .5s; transition-delay: var(--indicator-delay); }
+.class-emphasis-track .level-slider-stop { width: 2px; height: 2px; }
+.class-emphasis-track .level-slider-stop:nth-of-type(2) { left: 12.5%; }
+.class-emphasis-track .level-slider-stop:nth-of-type(3) { left: 37.5%; }
+.class-emphasis-track .level-slider-stop:nth-of-type(4) { left: 62.5%; }
+.class-emphasis-track .level-slider-stop:nth-of-type(5) { left: 87.5%; }
+.class-options { min-width: 0; margin: 0; padding: 0; border: 0; }
+.class-options-heading { margin-bottom: 20px; padding: 0; color: var(--muted-foreground); font-size: 13px; font-weight: 500; }
+.class-option-list { --collapsed-height: 70px; display: grid; gap: 12px; transition: grid-template-rows .32s cubic-bezier(.22, 1, .36, 1); }
+.class-option { position: relative; display: flex; align-items: flex-start; gap: 20px; padding: 22px 24px; border: 1px solid var(--border); border-radius: 16px; background: color-mix(in srgb, var(--background) 65%, var(--white)); cursor: pointer; user-select: none; transition: border-color .24s, background .24s, box-shadow .24s; }
+.class-option-expanded { border-color: color-mix(in srgb, var(--foreground) 24%, var(--border)); background: var(--muted); box-shadow: 0 6px 20px color-mix(in srgb, var(--foreground) 4%, transparent); }
+.class-option.class-option-selected { border-color: color-mix(in srgb, var(--primary) 75%, var(--border)); background: color-mix(in srgb, var(--primary) 5%, var(--background)); }
+.class-option:has(input:focus-visible) { outline: 2px solid var(--ring); outline-offset: 4px; }
+.setup-class-type .class-option input { position: absolute; width: 1px; height: 1px; margin: 0; padding: 0; opacity: 0; }
+.class-option-copy { display: grid; flex: 1; min-width: 0; overflow: hidden; max-height: 100%; }
+.class-option-title { color: var(--foreground); font-size: 18px; font-weight: 500; line-height: 24px; letter-spacing: -.01em; }
+.class-option-details { display: grid; opacity: 0; transform: translateY(4px); transition: opacity .18s ease, transform .22s cubic-bezier(.22, 1, .36, 1); }
+.class-option-expanded .class-option-details { opacity: 1; transform: translateY(0); }
+.class-option-description { color: var(--muted-foreground); font-size: 13px; line-height: 1.6; text-wrap: pretty; }
+.class-option-description > span { display: block; padding-top: 8px; }
+.class-option-indicator { display: grid; flex: none; place-items: center; width: 18px; height: 18px; margin-top: 3px; border: 1.5px solid color-mix(in srgb, var(--foreground) 15%, var(--border)); border-radius: 50%; transition: border-color .2s, background .2s; }
+.class-option-indicator > span { width: 8px; height: 8px; border-radius: 50%; background: var(--primary); transform: scale(0); transition: transform .2s; }
+.class-option-selected .class-option-indicator { border-color: var(--primary); }
+.class-option-selected .class-option-indicator > span { transform: scale(1); }
+.setup-actions.class-picker-actions { justify-content: flex-end; margin-top: 36px; padding-top: 22px; border-top: 1px solid var(--border); }
+.class-picker-continue:focus-visible { outline: 2px solid var(--ring); outline-offset: 4px; }
+.class-picker-continue { display: flex; align-items: center; justify-content: center; gap: 24px; min-width: 160px; transition: transform .2s, background .2s, box-shadow .2s; }
+.class-picker-continue > span { font-size: 20px; transition: transform .25s; }
+.class-picker-continue:hover { transform: translateY(-1px); box-shadow: 0 4px 12px color-mix(in srgb, var(--primary) 18%, transparent); }
+.class-picker-continue:hover > span { transform: translateX(3px); }
+.class-picker-continue:active { transform: translateY(0); }
+@media (max-width: 1050px) {
+  .setup-slide.setup-class-type { padding: 28px; }
+  .class-picker-grid { gap: 36px; }
+}
+@media (max-width: 700px) {
+  .setup-slide.setup-class-type { padding: 24px; }
+  .class-picker-grid { grid-template-columns: minmax(0, 1fr); gap: 32px; min-height: 0; }
+  .class-model-stage { height: 240px; }
+  .class-properties { margin-top: 0; }
+  .class-options-heading { margin-bottom: 20px; }
+  .setup-actions.class-picker-actions { justify-content: flex-end; margin-top: 28px; gap: 12px; }
+  .class-picker-continue { min-width: 0; gap: 16px; font-size: 14px; }
+}
+@media (max-width: 540px) {
+  .chat-nav:not(.chat-nav-started) { grid-template-columns: auto minmax(0, 1fr); gap: 16px; }
+  .chat-nav:not(.chat-nav-started) .rubric-page-title { text-align: right; font-size: 20px; }
+  .class-option { padding: 20px; gap: 16px; }
+  .class-option-list { --collapsed-height: 66px; }
+}
+@media (max-width: 380px) { .setup-slide.setup-class-type { padding-inline: 16px; } }
+@media (prefers-reduced-motion: reduce) { .setup-class-type *, .setup-class-type *::before { animation: none !important; transition: none !important; } }

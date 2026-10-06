@@ -1,0 +1,84 @@
+.paper-stamp-dialog[open] {
+  height: min(960px, calc(100dvh - 100px));
+  overflow: visible;
+  background: transparent;
+  box-shadow: none;
+  color: #292823;
+}
+.paper-stamp-dialog .paper-workspace { min-height: 0; flex: 1; perspective: 1400px; }
+.paper-stamp-dialog.paper-dialog-deck[open] { width: min(1000px, calc(100vw - 32px)); }
+.paper-stamp-dialog .paper-stack { min-height: 0; transform-origin: center 38%; transform-style: preserve-3d; border-radius: 3px; isolation: auto; background: transparent; box-shadow: none; }
+.paper-workspace-deck { display: grid; grid-template-columns: 48px minmax(0, 1fr) 48px; grid-template-rows: minmax(0, 1fr); gap: 16px; align-items: center; }
+.paper-stamp-dialog .paper-side-nav { width: 48px; transform: none; }
+.paper-stamp-dialog .paper-side-nav:disabled { visibility: visible; opacity: .3; cursor: default; }
+.paper-sheet {
+  position: absolute; inset: 0; min-height: 0; height: 100%; border: 1px solid var(--border);
+  border-radius: 3px; background: var(--white); box-shadow: 0 18px 60px #0004;
+  transform-origin: center; transition: transform 420ms cubic-bezier(.2,.8,.2,1);
+}
+.paper-sheet[inert] .paper-scroll { overflow: hidden; }
+.paper-stamp-dialog .paper-scroll { border-radius: 3px; }
+.paper-stamp-dialog .paper-document { color: #292823; background: var(--white); }
+.paper-stamp-dialog .paper-step { color: #292823; background: transparent; transition: background .18s; }
+.paper-stamp-dialog .paper-step-selected { background: color-mix(in srgb, var(--black) 8%, transparent); }
+.paper-stamp-target { --stamp-ink: var(--black); position: relative; flex: 0 0 136px; height: 100px; }
+.paper-grade-fail { --stamp-ink: var(--red-strong); }
+.paper-stamp-target .paper-grade-field {
+  width: 100%; height: 100%; min-height: 100px; justify-content: flex-start; padding: 12px 8px;
+  border: 1px dashed var(--border); border-radius: 5px; background: transparent;
+  transition: border-color .2s, background .2s;
+}
+.paper-stamp-target button.paper-grade-field:hover:not(:disabled) { border-color: var(--stamp-ink); background: color-mix(in srgb, var(--stamp-ink) 4%, transparent); }
+.paper-stamp-target .paper-grade-label { color: #908a7c; font-size: 9px; letter-spacing: .12em; }
+.paper-grade-ghost { margin-top: 8px; color: var(--stamp-ink); opacity: .28; font: 800 34px/1 ui-monospace, monospace; letter-spacing: .06em; text-transform: uppercase; white-space: nowrap; transform: rotate(-7deg); transition: opacity .2s; }
+.paper-stamp-target:hover .paper-grade-ghost { opacity: .5; }
+.paper-stamp-dialog.paper-is-stamping .paper-grade-ghost, .paper-stamp-target.paper-is-inked .paper-grade-ghost { opacity: 0; }
+.paper-is-inked .paper-grade-field { border-color: transparent; }
+.paper-stamp-ink {
+  position: absolute; inset: 31px 0 8px; display: flex; flex-direction: column; align-items: center; justify-content: center;
+  border: 3px solid currentColor; border-radius: 3px; outline: 1px solid currentColor; outline-offset: -7px;
+  color: var(--stamp-ink); opacity: 0; transform: rotate(-7deg); pointer-events: none;
+  mask-image: repeating-linear-gradient(173deg, #000 0px, #000 3px, #0009 3.3px, #000 3.8px);
+}
+.paper-stamp-ink > span { font: 900 31px/1 ui-monospace, monospace; letter-spacing: .08em; text-transform: uppercase; }
+.paper-stamp-ink small { margin-top: 5px; font: 600 6px/1 ui-monospace, monospace; letter-spacing: .13em; text-transform: uppercase; }
+.paper-is-inked .paper-stamp-ink { opacity: .84; }
+.paper-stamp-impact { position: absolute; inset: 5px -24px -8px; border: 1px solid var(--stamp-ink); border-radius: 50%; opacity: 0; pointer-events: none; }
+.paper-stamp-stage {
+  position: absolute; z-index: 5; left: 50%; width: 174px; height: 112px;
+  pointer-events: none; transform: translateX(-50%); transform-style: preserve-3d;
+}
+.paper-stamp-tool {
+  --stamp-ink: var(--black);
+  position: absolute; inset: 0; width: 174px; height: 112px;
+  visibility: hidden; transform: translate3d(0,-14px,140px) rotateZ(-7deg); transform-style: preserve-3d;
+}
+.paper-stamp-tool.paper-grade-fail { --stamp-ink: var(--red-strong); }
+.paper-stamp-shadow { position: absolute; inset: 0; border-radius: 28px; background: #292929; opacity: 0; transform: translateZ(.1px); }
+.paper-stamp-wall { position: absolute; inset: 0; border-radius: 28px; background: linear-gradient(110deg, #f1f1f1, #dedede 75%, #d0d0d0); }
+.paper-stamp-face {
+  position: absolute; inset: 0;
+  border: 1px solid #eeeeee; border-radius: 28px;
+  background: linear-gradient(150deg, #ffffff, #fbfbfb 55%, #f0f0f0);
+  box-shadow: inset 0 2px 2px #fff, inset 0 -2px 3px #bbbbbb14;
+  transform: translateZ(40px);
+}
+.paper-stamp-rubber { position: absolute; inset: -1px; border: 2px solid #353535; border-bottom: 3px solid var(--stamp-ink); border-radius: 29px; background: #353535; transform: translateZ(0); }
+.paper-is-stamping .paper-scroll, .paper-is-turning .paper-scroll { overflow-y: hidden; }
+.paper-close:disabled { opacity: .3; cursor: default; }
+@media (max-width: 700px) {
+  .paper-stamp-dialog[open] { top: 72px; bottom: 8px; height: calc(100dvh - 80px); }
+  .paper-stamp-dialog.paper-dialog-deck[open] { width: calc(100vw - 12px); }
+  .paper-workspace-deck { grid-template-columns: 32px minmax(0, 1fr) 32px; gap: 4px; }
+  .paper-stamp-dialog .paper-side-nav { width: 32px; }
+  .paper-stamp-target { flex-basis: 105px; }
+  .paper-stamp-ink > span { font-size: 25px; }
+  .paper-grade-ghost { font-size: 28px; }
+  .paper-stamp-stage { scale: .85; transform-origin: center center; }
+  .paper-stamp-dialog .paper-document { padding-inline: 22px; }
+  .paper-stamp-dialog .paper-heading { gap: 12px; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .paper-stamp-dialog::backdrop { animation: none; }
+  .paper-stamp-target *, .paper-sheet, .paper-stamp-dialog .paper-step { transition: none; }
+}

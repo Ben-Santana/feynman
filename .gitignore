@@ -1,0 +1,41 @@
+# Dependencies
+node_modules
+
+# Build
+dist
+dist-ssr
+*.local
+*.tsbuildinfo
+
+# Test coverage and tool caches
+coverage/
+.nyc_output/
+.cache/
+
+# Logs
+logs
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+lerna-debug.log*
+
+# Environment
+.env
+.env.*
+!.env.example
+
+# Local ChatGPT OAuth credentials
+backend/.chatgpt/
+
+# Editor / OS
+.DS_Store
+.idea
+.vscode/*
+!.vscode/extensions.json
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+*.sw?

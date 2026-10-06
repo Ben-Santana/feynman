@@ -1,0 +1,21 @@
+.rubric-loading { width: 200px; height: 200px; color: var(--primary); }
+.rubric-loading svg { display: block; width: 100%; height: 100%; overflow: visible; }
+.rubric-loading-shadow { fill: var(--foreground); opacity: .06; transform-origin: 100px 171px; animation: rubric-shadow 4s ease-in-out infinite; }
+.rubric-loading-stack { transform-origin: 100px 100px; animation: rubric-float 4s ease-in-out infinite; }
+.rubric-loading-back { fill: var(--background); stroke: var(--border); stroke-width: 1.5; }
+.rubric-loading-middle { fill: var(--muted); stroke: var(--border); stroke-width: 1.5; }
+.rubric-loading-page { fill: var(--background); stroke: var(--neutral-400); stroke-width: 1.5; }
+.rubric-loading-heading { stroke: currentColor; stroke-width: 4; stroke-linecap: round; opacity: .8; }
+.rubric-loading-box { stroke: var(--border); stroke-width: 1.5; }
+.rubric-loading-line { stroke: var(--neutral-400); stroke-width: 3; stroke-linecap: round; stroke-dasharray: 34; animation: rubric-write 4s ease-in-out infinite; }
+.rubric-loading-check { stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; stroke-dasharray: 15; animation: rubric-check 4s ease-in-out infinite; }
+.rubric-loading-step-1 { animation-delay: .4s; }
+.rubric-loading-step-2 { animation-delay: .8s; }
+.rubric-loading-spark { stroke: currentColor; stroke-width: 2; stroke-linecap: round; transform-origin: 159px 54px; animation: rubric-spark 4s ease-in-out infinite; }
+.rubric-loading-dot { fill: currentColor; opacity: .45; animation: rubric-float 4s ease-in-out -2s infinite; }
+@keyframes rubric-float { 0%, 100% { transform: translateY(3px) rotate(-2deg); } 50% { transform: translateY(-5px) rotate(2deg); } }
+@keyframes rubric-shadow { 0%, 100% { transform: scaleX(1); opacity: .07; } 50% { transform: scaleX(.85); opacity: .04; } }
+@keyframes rubric-write { 0%, 10% { stroke-dashoffset: 34; opacity: 0; } 30%, 75% { stroke-dashoffset: 0; opacity: .6; } 90%, 100% { stroke-dashoffset: 34; opacity: 0; } }
+@keyframes rubric-check { 0%, 25% { stroke-dashoffset: 15; opacity: 0; } 40%, 75% { stroke-dashoffset: 0; opacity: 1; } 90%, 100% { stroke-dashoffset: 15; opacity: 0; } }
+@keyframes rubric-spark { 0%, 35%, 100% { transform: scale(.6) rotate(-15deg); opacity: 0; } 50%, 65% { transform: scale(1) rotate(0); opacity: .8; } 85% { transform: scale(.6) rotate(15deg); opacity: 0; } }
+@media (prefers-reduced-motion: reduce) { .rubric-loading svg * { animation: none; } .rubric-loading-line { opacity: .6; } }

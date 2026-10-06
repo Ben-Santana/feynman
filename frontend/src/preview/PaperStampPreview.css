@@ -1,0 +1,45 @@
+.stamp-preview { min-height: 100dvh; padding: 34px 6vw 24px; background: var(--background); color: var(--foreground); font-family: 'Fredoka', system-ui, sans-serif; }
+.stamp-preview-nav { display: flex; align-items: center; justify-content: space-between; max-width: 1300px; margin: auto; }
+.stamp-preview-nav a { color: var(--foreground); text-decoration: none; font-size: 25px; letter-spacing: -.05em; }
+.stamp-preview-nav a span { display: inline-block; margin-left: 6px; color: var(--primary); font-size: 30px; }
+.stamp-preview-nav > span { display: flex; align-items: center; gap: 12px; font: 10px/1 ui-monospace, monospace; letter-spacing: .12em; color: var(--muted-foreground); }
+.stamp-preview-nav i { width: 20px; height: 1px; background: var(--border); }
+.stamp-preview-main { display: grid; grid-template-columns: 1fr 1fr; align-items: center; gap: 7vw; max-width: 1100px; min-height: calc(100dvh - 155px); margin: auto; padding: 65px 0; }
+.stamp-preview-eyebrow { color: var(--accent-foreground); font: 9px/1.5 ui-monospace, monospace; letter-spacing: .18em; }
+.stamp-preview-copy h1 { margin: 22px 0; font: 400 clamp(68px, 7vw, 106px)/.94 Georgia, serif; letter-spacing: -.06em; }
+.stamp-preview-copy h1 em { display: inline-block; color: var(--primary); font-weight: 400; }
+.stamp-preview-copy > p { margin-top: 28px; color: var(--muted-foreground); font-size: 16px; line-height: 1.75; }
+.stamp-preview-caption { display: flex; align-items: center; gap: 18px; margin-top: 36px; }
+.stamp-preview-caption > span { color: var(--primary); font: 50px/1 'Caveat', cursive; transform: rotate(-12deg); }
+.stamp-preview-caption p { color: var(--muted-foreground); font-size: 12px; line-height: 1.6; }
+.stamp-preview-caption small { color: var(--muted-foreground); font-size: 11px; }
+.stamp-preview-stack { position: relative; max-width: 440px; transform: rotate(3deg); isolation: isolate; }
+.stamp-preview-stack::before, .stamp-preview-stack::after { content: ''; position: absolute; inset: 0; z-index: -1; background: var(--muted); border: 1px solid var(--border); transform: rotate(-5deg); box-shadow: 0 10px 24px #4646330c; }
+.stamp-preview-stack::after { transform: rotate(2deg); background: var(--surface); }
+.stamp-preview-sheet { position: relative; padding: 28px 30px 20px; min-height: 455px; background: var(--white); box-shadow: 0 24px 60px #4646331a; border: 1px solid var(--border); }
+.stamp-preview-sheet-top, .stamp-preview-sheet-bottom { display: flex; align-items: center; justify-content: space-between; gap: 10px; font: 8px/1.5 ui-monospace, monospace; letter-spacing: .06em; color: var(--muted-foreground); }
+.stamp-preview-sheet-rule { height: 1px; margin-top: 17px; background: var(--border); }
+.stamp-preview-sheet-title { margin-top: 26px; font: 600 18px/1.5 Georgia, serif; }
+.stamp-preview-handwriting { margin-top: 20px; font: 20px/1.8 'Patrick Hand', cursive; color: var(--muted-foreground); }
+.stamp-preview-handwriting > span { display: inline-block; padding: 12px 0; font-size: 32px; color: var(--foreground); }
+.stamp-preview-open { display: flex; align-items: center; justify-content: center; gap: 23px; margin: 28px 0; }
+.stamp-preview-open > span { font-size: 12px; color: var(--muted-foreground); }
+.stamp-preview-open .paper-peek { width: 60px; height: 84px; }
+.stamp-preview-open .paper-peek-sheet { width: 55px; height: 77px; padding: 9px; gap: 5px; }
+.stamp-preview-sheet-bottom { border-top: 1px solid var(--border); padding-top: 17px; }
+.stamp-preview-sheet-bottom button { color: var(--primary); cursor: pointer; padding: 4px; }
+.stamp-preview-footer { display: flex; align-items: center; justify-content: space-between; gap: 20px; max-width: 1300px; margin: auto; border-top: 1px solid var(--border); padding-top: 20px; color: var(--muted-foreground); font-size: 10px; }
+.stamp-preview-footer > span:first-child { display: flex; align-items: center; gap: 8px; }
+.stamp-preview-footer i { width: 5px; height: 5px; background: var(--primary); border-radius: 50%; }
+.stamp-preview-footer > span:last-child { font: 8px/1 ui-monospace, monospace; letter-spacing: .12em; }
+@media (max-width: 700px) {
+  .stamp-preview { padding: 24px; }
+  .stamp-preview-nav > span { font-size: 8px; }
+  .stamp-preview-main { grid-template-columns: 1fr; gap: 40px; padding: 45px 0; }
+  .stamp-preview-copy h1 { font-size: 68px; }
+  .stamp-preview-copy > p { font-size: 14px; }
+  .stamp-preview-caption { display: none; }
+  .stamp-preview-stack { width: 100%; margin: 0 auto; }
+  .stamp-preview-sheet { padding-inline: 24px; }
+  .stamp-preview-footer > span:last-child { display: none; }
+}
