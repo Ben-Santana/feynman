@@ -13,7 +13,7 @@ Requires Node.js 22.9+ (tested with Node 24).
 3. `npm run dev`
 4. Open http://localhost:5173, then **AI settings**. Choose **ChatGPT plan** and **Continue with ChatGPT**, or choose **Anthropic / Claude** to use the configured API key.
 
-The frontend reloads automatically during development. The backend runs without watch mode so saving sign-in credentials cannot interrupt the OAuth callback; restart `npm run dev` after backend code or environment changes.
+The frontend reloads automatically during development. The backend restarts when its source or the shared learning types change, so prompt catalog changes take effect immediately. Saving prompts or sign-in credentials does not restart it. Restart `npm run dev` after environment changes.
 
 The key stays on the Node server. `ANTHROPIC_MODEL` defaults to `claude-sonnet-4-6`; use a model supporting forced tool calls. The backend binds to loopback. This is a local testing app, not an authenticated public service. Do not expose it publicly without authentication, rate limits, and a deployment-specific origin policy.
 

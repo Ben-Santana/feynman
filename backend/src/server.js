@@ -1,3 +1,4 @@
+import { InvalidOutputError } from './structuredOutput.js';
 import { createServer } from 'node:http';
 import { createAccessGate } from './access.js';
 import { pathToFileURL } from 'node:url';
@@ -63,6 +64,7 @@ export function createApiServer({ query, hosted = false, env = process.env, prom
       }
       let input;
       try { input = JSON.parse(body); } catch { return send(400, { error: 'Invalid JSON request.' }); }
+      if (!input || typeof input !== 'object' || Array.isArray(input)) return send(400, { error: 'Enter a valid request object.' });
       if (developer) return send(200, savePrompt(input, promptsPath));
       if (aiControl) {
         if (!input || Array.isArray(input) || typeof input !== 'object' || (input.accountId !== undefined && (typeof input.accountId !== 'string' || input.accountId.length > 200))) return send(400, { error: 'Choose a valid ChatGPT connection.' });
@@ -70,7 +72,13 @@ export function createApiServer({ query, hosted = false, env = process.env, prom
         const port = server.address()?.port || Number(process.env.PORT || 3001);
         return send(200, req.url === '/api/ai/sign-in' ? await chatgpt.beginSignIn(input.accountId, `http://127.0.0.1:${port}/auth/callback`, { newRegistration: input.newRegistration === true }) : req.url === '/api/ai/remove-account' ? await chatgpt.removeAccount(input.accountId) : await chatgpt.signOut(input.accountId));
       }
-      const selectedQuery = query || createProviderQuery(adapter);
+      const disconnected = new AbortController();
+      req.once('aborted', () => disconnected.abort());
+      res.once?.('close', () => { if (!res.writableEnded) disconnected.abort(); });
+      const providerQuery = query || createProviderQuery(adapter);
+      const selectedQuery = (instructions, messages, response, options = {}) => providerQuery(instructions, messages, response, {
+        ...options, signal: options.signal ? AbortSignal.any([options.signal, disconnected.signal]) : disconnected.signal,
+      });
       const configurationError = adapter.metadata.configurationHelp;
       if (req.url !== '/api/chat') {
         try { resolveLearningType(input?.learningType); } catch (error) { return send(400, { error: error.message }); }
@@ -80,7 +88,7 @@ export function createApiServer({ query, hosted = false, env = process.env, prom
           if (req.url === '/api/concept-suggestions') return send(200, { names: await suggestConceptsFromFiles(input.files, selectedQuery, input.learningType, loadPrompts(promptsPath)) });
           if (req.url === '/api/rubric') return send(200, { concepts: await generateRubric(input, selectedQuery, loadPrompts(promptsPath)) });
           return send(200, { concepts: await conceptsFromStudyTest(input, selectedQuery, loadPrompts(promptsPath)) });
-        } catch (error) { return send(error instanceof AIError ? error.status : /^(Upload|Choose|Enter|Could not read|Could not generate)/.test(error.message) ? 400 : /^Rubric generation took too long/.test(error.message) ? 504 : 502, { error: error.message }); }
+        } catch (error) { return send(error instanceof InvalidOutputError ? 502 : error instanceof AIError ? error.status : /^(Upload|Choose|Enter|Could not read|Could not generate)/.test(error.message) ? 400 : /^Rubric generation took too long/.test(error.message) ? 504 : 502, { error: error.message }); }
       }
       try { input = validate(input); } catch (error) { return send(400, { error: error.message }); }
       if (!configured) return send(503, { error: configurationError });

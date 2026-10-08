@@ -412,10 +412,11 @@ function App() {
         </div>
         <div className="sessions-list">
           {activeSessions.length ? activeSessions.map(renderSessionCard) : <div className="sessions-empty">
-            <span aria-hidden="true">✦</span>
-            <h2>{pastSessions.length ? 'Ready for your next session?' : 'Your learning starts here'}</h2>
-            <p>{pastSessions.length ? 'Start something new. Your completed sessions are saved below.' : 'Create a session to keep your concepts and conversations together.'}</p>
-            <button type="button" className="sessions-new" onClick={createSession}>{pastSessions.length ? '＋ New session' : '＋ Create your first session'}</button>
+            <svg className="sessions-empty-icon" role="img" aria-label="Empty" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+              <path d="m4 4-2 10v5a1 1 0 0 0 1 1h18a1 1 0 0 0 1-1v-5L20 4Z" />
+              <path d="M2 14h6l2 3h4l2-3h6" />
+            </svg>
+            <p>Click New session to start.</p>
           </div>}
         </div>
         {pastSessions.length > 0 && <details className="sessions-past" onToggle={() => setSessionMenu(null)}>

@@ -1,3 +1,4 @@
+import { InvalidOutputError } from '../structuredOutput.js';
 import { AIError, LanguageModelProvider } from './LanguageModelProvider.js';
 
 export function anthropicMessages(messages) {
@@ -59,8 +60,8 @@ export class AnthropicProvider extends LanguageModelProvider {
       throw new AIError(response.status === 401 ? 'Claude rejected the API key. Check backend/.env.' : response.status === 429 ? 'Claude is rate limited. Please retry shortly.' : `Claude request failed (${response.status}). Check your model in AI settings and workspace in backend/.env.`, [401, 403, 429].includes(response.status) ? response.status : 502);
     }
     const data = await response.json();
-    const calls = data.content?.filter(block => block.type === 'tool_use' && block.name === output.name);
-    if (data.stop_reason === 'max_tokens' || calls?.length !== 1) throw new AIError('Claude returned an incomplete response. Please retry.');
+    const calls = Array.isArray(data?.content) ? data.content.filter(block => block?.type === 'tool_use' && block.name === output.name) : [];
+    if (data.stop_reason === 'max_tokens' || calls?.length !== 1) throw new InvalidOutputError('Claude returned an incomplete response. Please retry.');
     return calls[0].input;
   }
 }

@@ -1,3 +1,4 @@
+import { InvalidOutputError, retryStructuredOutput, repairQuery, orderByNames } from './structuredOutput.js';
 import { loadPrompts } from './promptStore.js';
 import { checklistItems, checklistText } from '../../frontend/src/rubricChecklist.js';
 import { extractArchiveText } from './uploadExtract.js';
@@ -53,7 +54,7 @@ export function validate(body) {
   if (typeof body.topic !== 'string' || !body.topic.trim() || body.topic.length > 300) throw new Error('Enter a topic of up to 300 characters.');
   if (!Array.isArray(body.aspects) || !body.aspects.length || body.aspects.length > 20 || body.aspects.some(x => typeof x !== 'string' || !x.trim() || x.length > 1000)) throw new Error('Provide 1–20 required aspects, up to 1,000 characters each.');
   if (body.criterion !== undefined && (typeof body.criterion !== 'string' || !body.criterion.trim() || body.criterion.length > 1000)) throw new Error('Provide a rubric criterion of up to 1,000 characters.');
-  if (!Array.isArray(body.messages) || body.messages.length > 100 || body.messages.some((m, i) => m.role !== (i % 2 === 0 ? 'assistant' : 'user') || typeof m.content !== 'string' || !m.content.trim() || m.content.length > 12000)) throw new Error('Invalid conversation or conversation limit reached.');
+  if (!Array.isArray(body.messages) || body.messages.length > 100 || body.messages.some((m, i) => !m || m.role !== (i % 2 === 0 ? 'assistant' : 'user') || typeof m.content !== 'string' || !m.content.trim() || m.content.length > 12000)) throw new Error('Invalid conversation or conversation limit reached.');
   if (body.messages.length && body.messages.at(-1).role !== 'user') throw new Error('The conversation must end with a student message.');
   if (body.priorMessages !== undefined) {
     if (body.messages.length || !Array.isArray(body.priorMessages)) throw new Error('Previous-stage context is only allowed when opening a level.');
@@ -67,7 +68,7 @@ export function validate(body) {
       if (bytes.length > 2_000_000 || bytes.subarray(0, 8).toString('hex') !== '89504e470d0a1a0a') throw new Error('Invalid whiteboard image.');
     }
     if (m.paper !== undefined) {
-      if (learningType !== 'quantitative' || body.level !== 'analyze' || m.role !== 'assistant' || !m.paper || typeof m.paper.id !== 'string' || !m.paper.id || typeof m.paper.markdown !== 'string' || !m.paper.markdown.trim() || m.paper.markdown.length > 30000 || (m.paper.papers !== undefined && (!Array.isArray(m.paper.papers) || m.paper.papers.length !== 3 || m.paper.papers.some(p => typeof p.id !== 'string' || !p.id || typeof p.markdown !== 'string' || !p.markdown.trim() || !Array.isArray(p.steps) || p.steps.length < 2 || p.steps.length > 10)))) throw new Error('Invalid classroom paper.');
+      if (learningType !== 'quantitative' || body.level !== 'analyze' || m.role !== 'assistant' || !m.paper || typeof m.paper.id !== 'string' || !m.paper.id || typeof m.paper.markdown !== 'string' || !m.paper.markdown.trim() || m.paper.markdown.length > 30000 || (m.paper.papers !== undefined && (!Array.isArray(m.paper.papers) || m.paper.papers.length !== 3 || m.paper.papers.some(p => !p || typeof p.id !== 'string' || !p.id || typeof p.markdown !== 'string' || !p.markdown.trim() || !Array.isArray(p.steps) || p.steps.length < 2 || p.steps.length > 10)))) throw new Error('Invalid classroom paper.');
       latestPaper = m.paper.id;
     }
     if (m.review !== undefined) {
@@ -75,7 +76,7 @@ export function validate(body) {
       if (learningType !== 'quantitative' || m.role !== 'user' || !review || !latestPaper || review.paperId !== latestPaper || typeof review.explanation !== 'string' || review.explanation.length > 10000) throw new Error('Invalid paper review.');
       const papers = body.messages.findLast(item => item.paper)?.paper?.papers;
       if (papers?.length) {
-        if (!Array.isArray(review.grades) || review.grades.length !== papers.length || review.grades.some((grade, index) => grade.paperId !== papers[index].id || !['pass', 'fail'].includes(grade.grade) || !Array.isArray(grade.selectedSteps) || grade.selectedSteps.some(n => !Number.isInteger(n) || n < 1 || n > papers[index].steps?.length) || (grade.grade === 'fail' && !grade.selectedSteps.length) || (grade.grade === 'pass' && grade.selectedSteps.length))) throw new Error('Sort every paper; a Fail grade requires a marked step.');
+        if (!Array.isArray(review.grades) || review.grades.length !== papers.length || review.grades.some((grade, index) => !grade || grade.paperId !== papers[index].id || !['pass', 'fail'].includes(grade.grade) || !Array.isArray(grade.selectedSteps) || grade.selectedSteps.some(n => !Number.isInteger(n) || n < 1 || n > papers[index].steps?.length) || (grade.grade === 'fail' && !grade.selectedSteps.length) || (grade.grade === 'pass' && grade.selectedSteps.length))) throw new Error('Sort every paper; a Fail grade requires a marked step.');
       } else if (!['pass', 'fail'].includes(review.grade) || (review.grade === 'fail' && (!Array.isArray(review.selectedSteps) || !review.selectedSteps.length || review.selectedSteps.some(n => !Number.isInteger(n) || n < 1 || n > 10)))) throw new Error('A Fail grade requires at least one marked step on the current paper.');
     }
   }
@@ -101,7 +102,7 @@ function fileContent(file) {
 }
 function contentsFromFiles(files) {
   if (!Array.isArray(files) || !files.length || files.reduce((sum, file) => sum + (typeof file?.data === 'string' ? Buffer.from(file.data, 'base64').length : 0), 0) > 5_000_000) throw new Error('Upload files totaling less than 5 MB.');
-  return files.flatMap(file => [{ type: 'text', text: `Source file: ${String(file.name || 'Untitled').slice(0, 200)}` }, ...fileContent(file)]);
+  return files.flatMap(file => [{ type: 'text', text: `Source file: ${String(file?.name || 'Untitled').slice(0, 200)}` }, ...fileContent(file)]);
 }
 const levels = ['remember', 'understand', 'apply', 'analyze'];
 function normalizeGeneratedRubrics(concepts) {
@@ -110,13 +111,13 @@ function normalizeGeneratedRubrics(concepts) {
     for (const level of levels) {
       const items = concept?.rubric?.[level];
       if (!Array.isArray(items)) continue;
-      if (items.length > 20 || items.some(item => typeof item !== 'string' || !item.trim() || /[\r\n]/.test(item))) throw new Error('Could not generate a complete rubric. Please retry.');
+      if (items.length > 20 || items.some(item => typeof item !== 'string' || !item.trim() || /[\r\n]/.test(item))) throw new InvalidOutputError('Could not generate a complete rubric. Please retry.');
       concept.rubric[level] = checklistText(items.map(item => item.trim()));
     }
   }
 }
 
-export async function conceptsFromStudyTest(file, query, prompts = loadPrompts()) {
+async function conceptsFromStudyTestOnce(file, query, prompts = loadPrompts()) {
   const learningType = resolveLearningType(file?.learningType);
   const content = fileContent(file);
   const schema = { concepts: { type: 'array', minItems: 1, maxItems: 20, items: { type: 'object', properties: { name: { type: 'string' }, rubric: { type: 'object', properties: Object.fromEntries(levels.map(level => [level, { type: 'array', maxItems: 20, items: { type: 'string', minLength: 1, maxLength: 1000 } }])), required: levels, additionalProperties: false } }, required: ['name', 'rubric'], additionalProperties: false } } };
@@ -124,19 +125,19 @@ export async function conceptsFromStudyTest(file, query, prompts = loadPrompts()
   const result = await query(system, [{ role: 'user', content: [{ type: 'text', text: prompts.text('rubric.extractRequest') }, ...content] }], tool('extract_concepts', schema));
   const concepts = result?.concepts;
   normalizeGeneratedRubrics(concepts);
-  if (!Array.isArray(concepts) || !concepts.length || concepts.length > 20 || concepts.some(x => typeof x?.name !== 'string' || !x.name.trim() || x.name.length > 300 || !x.rubric || levels.some(level => typeof x.rubric[level] !== 'string' || !x.rubric[level].trim() || x.rubric[level].length > 1000))) throw new Error('Could not generate a complete rubric from this file. Please retry or enter it manually.');
+  if (!Array.isArray(concepts) || !concepts.length || concepts.length > 20 || concepts.some(x => typeof x?.name !== 'string' || !x.name.trim() || x.name.length > 300 || !x.rubric || levels.some(level => typeof x.rubric[level] !== 'string' || !x.rubric[level].trim() || x.rubric[level].length > 1000))) throw new InvalidOutputError('Could not generate a complete rubric from this file. Please retry or enter it manually.');
   return concepts.map(x => ({ name: x.name.trim(), rubric: Object.fromEntries(levels.map(level => [level, x.rubric[level].trim()])) }));
 }
 
-export async function suggestConceptsFromFiles(files, query, selectedType, prompts = loadPrompts()) {
+async function suggestConceptsFromFilesOnce(files, query, selectedType, prompts = loadPrompts()) {
   const learningType = resolveLearningType(selectedType);
   const content = contentsFromFiles(files);
   const result = await query(prompts.text('rubric.suggestConcepts', { curriculumContext: prompts.text('rubric.curriculumContext'), learningTypeGuidance: prompts.text('profile.' + learningType + '.rubricGuidance') }), [{ role: 'user', content: [{ type: 'text', text: prompts.text('rubric.suggestRequest') }, ...content] }], tool('suggest_concepts', { names: { type: 'array', minItems: 1, maxItems: 20, items: { type: 'string' } } }));
-  if (!Array.isArray(result?.names) || !result.names.length || result.names.length > 20 || result.names.some(name => typeof name !== 'string' || !name.trim() || name.length > 300)) throw new Error('Could not generate concept names. Please retry.');
+  if (!Array.isArray(result?.names) || !result.names.length || result.names.length > 20 || result.names.some(name => typeof name !== 'string' || !name.trim() || name.length > 300)) throw new InvalidOutputError('Could not generate concept names. Please retry.');
   return [...new Set(result.names.map(name => name.trim()))];
 }
 
-export async function generateLevelRubric(input, query, prompts = loadPrompts()) {
+async function generateLevelRubricOnce(input, query, prompts = loadPrompts()) {
   const learningType = resolveLearningType(input?.learningType);
   if (!input || !levels.includes(input.level)) throw new Error('Choose a valid learning level.');
   if (typeof input.topic !== 'string' || !input.topic.trim() || input.topic.length > 300) throw new Error('Enter a concept of up to 300 characters.');
@@ -149,11 +150,11 @@ export async function generateLevelRubric(input, query, prompts = loadPrompts())
   const result = await query(system, [{ role: 'user', content: JSON.stringify({ concept: input.topic.trim(), level: input.level }) }], tool('generate_rubric', {
     items: { type: 'array', minItems: 1, maxItems: 8, items: { type: 'string', minLength: 1, maxLength: 1000 } },
   }));
-  if (!Array.isArray(result?.items) || !result.items.length || result.items.length > 8 || result.items.some(item => typeof item !== 'string' || !item.trim() || /[\r\n]/.test(item)) || checklistText(result.items.map(item => item.trim())).length > 1000) throw new Error('Could not generate rubric items. Please retry.');
+  if (!Array.isArray(result?.items) || !result.items.length || result.items.length > 8 || result.items.some(item => typeof item !== 'string' || !item.trim() || /[\r\n]/.test(item)) || checklistText(result.items.map(item => item.trim())).length > 1000) throw new InvalidOutputError('Could not generate rubric items. Please retry.');
   return { items: result.items.map(item => item.trim()) };
 }
 
-export async function generateRubric(input, query, prompts = loadPrompts()) {
+async function generateRubricOnce(input, query, prompts = loadPrompts()) {
   const learningType = resolveLearningType(input?.learningType);
   if (!Array.isArray(input?.concepts) || !input.concepts.length || input.concepts.length > 20 || input.concepts.some(concept => typeof concept?.name !== 'string' || !concept.name.trim() || concept.name.length > 300 || !levels.includes(concept.target))) throw new Error('Choose 1–20 named concepts and learning levels.');
   if (input.additionalInstructions !== undefined && (typeof input.additionalInstructions !== 'string' || input.additionalInstructions.length > 5000)) throw new Error('Enter additional rubric instructions of up to 5,000 characters.');
@@ -163,25 +164,28 @@ export async function generateRubric(input, query, prompts = loadPrompts()) {
   if (input.concepts.length > 5) {
     const generated = [];
     for (let offset = 0; offset < input.concepts.length; offset += 5) {
-      generated.push(...await generateRubric({ ...input, concepts: input.concepts.slice(offset, offset + 5), previousRubric: [...previousRubric, ...generated] }, query, prompts));
+      generated.push(...await generateRubric({ ...input, concepts: input.concepts.slice(offset, offset + 5), previousRubric: [...previousRubric, ...generated].slice(-20) }, query, prompts));
     }
     return generated;
   }
   const additionalInstructions = input.additionalInstructions?.trim();
-  const files = input.files || [];
+  const files = input.files ?? [];
+  if (!Array.isArray(files)) throw new Error('Upload a valid list of files.');
   const content = files.length ? contentsFromFiles(files) : [];
   const schema = { concepts: { type: 'array', minItems: input.concepts.length, maxItems: input.concepts.length, items: { type: 'object', properties: { name: { type: 'string' }, rubric: { type: 'object', properties: Object.fromEntries(levels.map(level => [level, { type: 'array', maxItems: 20, items: { type: 'string', minLength: 1, maxLength: 1000 } }])), required: levels, additionalProperties: false } }, required: ['name', 'rubric'], additionalProperties: false } } };
   const system = prompts.text('rubric.generate', { curriculumContext: prompts.text('rubric.curriculumContext'), writingGuidance: prompts.text('rubric.writingGuidance'), learningTypeGuidance: prompts.text('profile.' + learningType + '.rubricGuidance'), grounding: files.length ? prompts.text('rubric.groundInFiles') : prompts.text('rubric.groundInKnowledge') });
   const batchSystem = previousRubric.length ? `${system}\nThe previousRubric contains completed concepts from earlier batches. Use it as context for consistent scope and criteria. Return only the requested concepts, in their given order; do not repeat or revise the previous rubric.` : system;
   const result = await query(batchSystem, [{ role: 'user', content: [{ type: 'text', text: JSON.stringify({ concepts: input.concepts, ...(previousRubric.length ? { previousRubric } : {}), ...(additionalInstructions ? { additionalInstructions } : {}) }) }, ...content] }], tool('generate_rubric', schema));
+  if (result && typeof result === 'object') result.concepts = orderByNames(result.concepts, input.concepts.map(concept => concept.name), 'name');
   normalizeGeneratedRubrics(result?.concepts);
-  if (!Array.isArray(result?.concepts) || result.concepts.length !== input.concepts.length || result.concepts.some((item, index) => item?.name !== input.concepts[index].name || !item.rubric || levels.some((level, i) => typeof item.rubric[level] !== 'string' || item.rubric[level].length > 1000 || (i <= levels.indexOf(input.concepts[index].target) && !item.rubric[level].trim())))) throw new Error('Could not generate a complete rubric. Please retry.');
+  if (!Array.isArray(result?.concepts) || result.concepts.length !== input.concepts.length || result.concepts.some((item, index) => item?.name !== input.concepts[index].name || !item.rubric || levels.some((level, i) => typeof item.rubric[level] !== 'string' || item.rubric[level].length > 1000 || (i <= levels.indexOf(input.concepts[index].target) && !item.rubric[level].trim())))) throw new InvalidOutputError('Could not generate a complete rubric. Please retry.');
   return result.concepts.map((item, index) => ({ name: item.name, rubric: Object.fromEntries(levels.map((level, i) => [level, i <= levels.indexOf(input.concepts[index].target) ? item.rubric[level].trim() : ''])) }));
 }
 
 function assessment(result, aspects, messages, level, reviewIndex = -1) {
+  if (result && typeof result === 'object') result.criteria = orderByNames(result.criteria, aspects, 'aspect');
   const validShape = c => c && statuses.includes(c.status) && resultKinds.includes(c.result) && Array.isArray(c.evidence) && c.evidence.every(e => Number.isInteger(e?.messageIndex) && typeof e.quote === 'string');
-  if (typeof result?.reason !== 'string' || !Array.isArray(result.criteria) || result.criteria.length !== aspects.length || result.criteria.some((c, i) => c.aspect !== aspects[i] || !validShape(c)) || !validShape(result.task)) throw new Error('Invalid assessment response. Please retry.');
+  if (typeof result?.reason !== 'string' || !Array.isArray(result.criteria) || result.criteria.length !== aspects.length || result.criteria.some((c, i) => c?.aspect !== aspects[i] || !validShape(c)) || !validShape(result.task)) throw new InvalidOutputError('Invalid assessment response. Please retry.');
   const normalize = c => {
     const evidence = c.evidence.flatMap(e => {
       if (!e.quote.trim()) return [];
@@ -242,17 +246,26 @@ export async function chat(input, query, prompts = loadPrompts()) {
     const evaluatorContent = [{ type: 'text', text: JSON.stringify(messages.map((m, messageIndex) => ({ messageIndex, role: m.role, content: messageText(m) }))) }];
     messages.forEach((m, messageIndex) => { if (m.boardImage) evaluatorContent.push({ type: 'text', text: `Whiteboard image for messageIndex ${messageIndex}:` }, boardBlock(m.boardImage)); });
     const evaluatorMessages = [{ role: 'user', content: evaluatorContent.length === 1 ? evaluatorContent[0].text : evaluatorContent }];
-    checked = assessment(await query(evaluatorSystem, evaluatorMessages, tool('evaluate_learning', assessmentProperties)), aspects, messages, level, -1);
+    const evaluate = system => retryStructuredOutput(async (attempt, signal) => assessment(
+      await repairQuery(query, attempt, signal)(system, evaluatorMessages, tool('evaluate_learning', {
+        ...assessmentProperties,
+        criteria: { ...assessmentProperties.criteria, minItems: aspects.length, maxItems: aspects.length,
+          items: { ...assessmentProperties.criteria.items, properties: { ...assessmentProperties.criteria.items.properties, aspect: { type: 'string', enum: [...new Set(aspects)] } } } },
+      })), aspects, messages, level, -1));
+    checked = await evaluate(evaluatorSystem);
     if (checked.complete || checked.criteria.some(c => c.status === 'flawed' && c.result === 'correct') || (checked.task.status === 'flawed' && checked.task.result === 'correct')) {
-      const second = assessment(await query(prompts.text('chat.secondAssessment', { evaluatorSystem: evaluatorSystem }), evaluatorMessages, tool('evaluate_learning', assessmentProperties)), aspects, messages, level, -1);
+      const second = await evaluate(prompts.text('chat.secondAssessment', { evaluatorSystem: evaluatorSystem }));
       checked = reconcile(checked, second);
     }
     if (paperAnalysis) {
       const judgments = [...checked.criteria, checked.task];
       const points = { supported: 100, needs_clarification: 50, flawed: 0, missing: 0 };
       const grade = Math.round(judgments.reduce((sum, item) => sum + points[item.status], 0) / judgments.length);
-      const summaryResponse = await query(prompts.text('chat.finalReport', { context: context }), [{ role: 'user', content: JSON.stringify({ assessment: checked, transcript: messages.map(messageText) }) }], tool('summarize_learning', { summary: { type: 'string' } }));
-      if (typeof summaryResponse?.summary !== 'string' || !summaryResponse.summary.trim()) throw new Error('Could not summarize the learning. Please retry.');
+      const summaryResponse = await retryStructuredOutput(async (attempt, signal) => {
+        const result = await repairQuery(query, attempt, signal)(prompts.text('chat.finalReport', { context: context }), [{ role: 'user', content: JSON.stringify({ assessment: checked, transcript: messages.map(messageText) }) }], tool('summarize_learning', { summary: { type: 'string' } }));
+        if (typeof result?.summary !== 'string' || !result.summary.trim()) throw new InvalidOutputError('Could not summarize the learning. Please retry.');
+        return result;
+      });
       return { message: 'Your learning report is ready.', assessment: checked, expression: 'excited', finalSummary: withoutEmDashes(summaryResponse.summary.trim()), analysisGrade: grade };
     }
     if (checked.complete) return { message: 'Thank you for teaching me!', assessment: checked, expression: 'excited' };
@@ -262,9 +275,16 @@ export async function chat(input, query, prompts = loadPrompts()) {
   let result;
   let paper = null;
   const previousQuestion = (messages.length ? messages : input.priorMessages || []).findLast(m => m.role === 'assistant')?.content;
+  const responseDeadline = AbortSignal.timeout(60_000);
   for (let attempt = 0; attempt < (needsPaper ? 3 : 2); attempt++) {
     const retryInstruction = needsPaper ? prompts.text('chat.retryPaper') : prompts.text('chat.retryQuestion', { previousQuestion: JSON.stringify(previousQuestion) });
-    result = await query(attempt ? `${responseSystem}\n${retryInstruction}` : responseSystem, transcript, responseTool);
+    try {
+      result = await repairQuery(query, attempt, responseDeadline)(attempt ? `${responseSystem}\n${retryInstruction}` : responseSystem, transcript, responseTool);
+      if (typeof result?.message !== 'string' || !result.message.trim() || result.message.length > 12000) throw new InvalidOutputError('The model returned an empty or oversized message. Please retry.');
+    } catch (error) {
+      if (responseDeadline.aborted || attempt === (needsPaper ? 2 : 1) || !(error instanceof InvalidOutputError)) throw error;
+      continue;
+    }
     if (!needsPaper && attempt === 0 && typeof result?.message === 'string' && previousQuestion && result.message.trim().toLocaleLowerCase() === previousQuestion.trim().toLocaleLowerCase()) continue;
     if (!needsPaper) break;
     try { paper = makePaper(result?.paper); break; }
@@ -272,7 +292,24 @@ export async function chat(input, query, prompts = loadPrompts()) {
       if (attempt === 2 || !/incomplete worked solution|worked solution is too long/.test(error.message)) throw error;
     }
   }
-  if (typeof result.message !== 'string' || !result.message.trim() || result.message.length > 12000) throw new Error('The model returned an empty message. Please retry.');
+  if (typeof result?.message !== 'string' || !result.message.trim() || result.message.length > 12000) throw new Error('The model returned an empty message. Please retry.');
   if (!paper && previousQuestion && result.message.trim().toLocaleLowerCase() === previousQuestion.trim().toLocaleLowerCase()) throw new Error('The model repeated its previous question. Please retry.');
   return { paper, message: paper ? 'I tried three exercises and wrote out my steps. Could you grade each paper Pass or Fail?' : withoutEmDashes(result.message), expression: responseProperties.expression.enum.includes(result.expression) ? result.expression : 'attentive', assessment: checked };
+}
+
+export async function conceptsFromStudyTest(file, query, prompts = loadPrompts()) {
+  return retryStructuredOutput((attempt, signal) => conceptsFromStudyTestOnce(file, repairQuery(query, attempt, signal), prompts), 180_000);
+}
+
+export async function suggestConceptsFromFiles(files, query, selectedType, prompts = loadPrompts()) {
+  return retryStructuredOutput((attempt, signal) => suggestConceptsFromFilesOnce(files, repairQuery(query, attempt, signal), selectedType, prompts), 180_000);
+}
+
+export async function generateLevelRubric(input, query, prompts = loadPrompts()) {
+  return retryStructuredOutput((attempt, signal) => generateLevelRubricOnce(input, repairQuery(query, attempt, signal), prompts), 180_000);
+}
+
+export async function generateRubric(input, query, prompts = loadPrompts()) {
+  if (Array.isArray(input?.concepts) && input.concepts.length > 5) return generateRubricOnce(input, query, prompts);
+  return retryStructuredOutput((attempt, signal) => generateRubricOnce(input, repairQuery(query, attempt, signal), prompts), 180_000);
 }

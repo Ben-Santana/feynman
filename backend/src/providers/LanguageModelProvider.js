@@ -1,3 +1,4 @@
+import { InvalidOutputError } from '../structuredOutput.js';
 /**
  * @typedef {{type: 'text', text: string} | {type: 'image' | 'document', mimeType: string, data: string}} ContentBlock
  * @typedef {{role: 'user' | 'assistant', content: string | ContentBlock[]}} ModelMessage
@@ -46,11 +47,11 @@ export async function invokeProvider(provider, request) {
     signal.throwIfAborted();
     const result = await provider.generateStructured({ ...request, signal });
     signal.throwIfAborted();
-    if (!result || typeof result !== 'object' || Array.isArray(result)) throw new AIError(`${label} returned invalid structured data. Please retry.`);
+    if (!result || typeof result !== 'object' || Array.isArray(result)) throw new InvalidOutputError(`${label} returned invalid structured data. Please retry.`);
     return result;
   } catch (error) {
     if (signal.aborted || error?.name === 'TimeoutError' || error?.name === 'AbortError') throw new AIError(longRequest ? 'Rubric generation took too long. Please retry with shorter files.' : `${label} took too long. Please retry.`, 504);
-    if (error instanceof AIError) throw error;
+    if (error instanceof AIError || error instanceof InvalidOutputError) throw error;
     // Unexpected transport errors can contain URLs, headers, or credentials.
     throw new AIError(`Could not complete the ${label} request. Please retry.`);
   }

@@ -262,3 +262,18 @@ test('conversation tracing includes actual calls and preserves failed calls only
   assert.equal(failed.data.calls[0].error, 'Model unavailable.');
   assert.ok(failed.data.calls[0].request.instructions);
 });
+
+test('generation failures are upstream errors and malformed request bodies are input errors', async t => {
+  let calls = 0;
+  const providers = new ProviderRegistry().register(TestProvider, () => new TestProvider({ generate: async () => { calls++; return { items: [] }; } }));
+  const server = createApiServer({ chatgpt, providers }); t.after(() => server.close());
+  const response = await invoke(server, { url: '/api/developer/rubric', method: 'POST', body: { topic: 'Circuits', level: 'remember' } });
+  assert.equal(response.status, 502);
+  assert.equal(calls, 2);
+  for (const body of [null, [], 'text', 1]) {
+    const invalid = await invoke(server, { url: '/api/concept-suggestions', method: 'POST', body });
+    assert.equal(invalid.status, 400);
+    assert.equal(invalid.data.error, 'Enter a valid request object.');
+  }
+  assert.equal(calls, 2);
+});

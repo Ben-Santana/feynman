@@ -1,3 +1,4 @@
+import { InvalidOutputError } from '../structuredOutput.js';
 import { AIError, LanguageModelProvider } from './LanguageModelProvider.js';
 
 function responseError(status, code) {
@@ -27,7 +28,7 @@ export async function readResponseStream(response, toolName) {
     if (!raw || raw === '[DONE]') return;
     const event = JSON.parse(raw);
     if (event.type === 'response.failed' || event.type === 'error') throw responseError(null, event.response?.error?.code || event.code);
-    if (event.type === 'response.incomplete') throw new AIError('ChatGPT returned an incomplete response. Please retry.');
+    if (event.type === 'response.incomplete') throw new InvalidOutputError('ChatGPT returned an incomplete response. Please retry.');
     if (event.type === 'response.output_item.done' && event.item?.type === 'function_call') finishedItems.set(event.output_index, event.item);
     if (event.type === 'response.completed') completed = event.response;
   };
@@ -46,10 +47,10 @@ export async function readResponseStream(response, toolName) {
     // after emitting complete tool arguments in response.output_item.done.
     const output = completed.output?.length ? completed.output : [...finishedItems.values()];
     const calls = output.filter(item => item.type === 'function_call' && item.name === toolName && item.namespace === 'feynman');
-    if (calls.length !== 1 || (calls[0].status !== undefined && calls[0].status !== 'completed')) throw new AIError('ChatGPT returned an incomplete structured response. Please retry.');
+    if (calls.length !== 1 || (calls[0].status !== undefined && calls[0].status !== 'completed')) throw new InvalidOutputError('ChatGPT returned an incomplete structured response. Please retry.');
     let result;
-    try { result = JSON.parse(calls[0].arguments); } catch { throw new AIError('ChatGPT returned invalid structured data. Please retry.'); }
-    if (!result || typeof result !== 'object' || Array.isArray(result)) throw new AIError('ChatGPT returned invalid structured data. Please retry.');
+    try { result = JSON.parse(calls[0].arguments); } catch { throw new InvalidOutputError('ChatGPT returned invalid structured data. Please retry.'); }
+    if (!result || typeof result !== 'object' || Array.isArray(result)) throw new InvalidOutputError('ChatGPT returned invalid structured data. Please retry.');
     return result;
   } finally { await reader.cancel().catch(() => {}); reader.releaseLock(); }
 }

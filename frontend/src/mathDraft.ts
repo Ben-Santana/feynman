@@ -18,6 +18,26 @@ export function splitMathDraft(value: string): DraftPart[] {
   return parts
 }
 
+// Let block equations own their surrounding line breaks so a single editor
+// does not show an extra blank line above and below each rendered equation.
+export function splitComposerDraft(value: string): DraftPart[] {
+  const parts = splitMathDraft(value)
+  for (let index = 1; index < parts.length; index += 2) {
+    const equation = parts[index]
+    const before = parts[index - 1]
+    const after = parts[index + 1]
+    if (before.text.endsWith('\n')) {
+      before.text = before.text.slice(0, -1); before.end--
+      equation.text = '\n' + equation.text; equation.start--
+    }
+    if (after.text.startsWith('\n')) {
+      after.text = after.text.slice(1); after.start++
+      equation.text += '\n'; equation.end++
+    }
+  }
+  return parts
+}
+
 export function replaceDraft(value: string, start: number, end: number, replacement: string): string {
   if (start < 0 || end < start || end > value.length) throw new Error('Choose where to insert the equation again.')
   const next = value.slice(0, start) + replacement + value.slice(end)
@@ -28,6 +48,29 @@ export function replaceDraft(value: string, start: number, end: number, replacem
 export function equationText(latex: string, display = false): string {
   const value = latex.trim()
   if (!value) throw new Error('Enter an equation first.')
+  if (/\\placeholder\b/.test(value)) throw new Error('Fill in the empty boxes before adding the equation.')
   if (value.includes('$')) throw new Error('Enter the expression without dollar-sign delimiters.')
   return display ? `$$${value}$$` : `$${value}$`
+}
+
+export function equationLine(draft: string, start: number, end: number, latex: string): string {
+  equationText(latex, true)
+  return draftEquationLine(draft, start, end, latex)
+}
+
+// Empty live rows have a whitespace body so they survive draft persistence.
+export function draftEquationLine(draft: string, start: number, end: number, latex: string): string {
+  const before = draft.slice(0, start)
+  const after = draft.slice(end)
+  return `${before && !before.endsWith('\n') ? '\n' : ''}$$${latex.trim() || ' '}$$${after.startsWith('\n') ? '' : '\n'}`
+}
+
+export function equationDraftIssue(draft: string): string {
+  for (const part of splitMathDraft(draft)) {
+    if (part.latex === undefined) continue
+    if (!part.latex.trim()) return 'Type an equation, or press Backspace on the empty line to remove it.'
+    if (/\\placeholder\b/.test(part.latex)) return 'Fill in the empty equation boxes before sending.'
+    if (part.latex.includes('$')) return 'Enter the expression without dollar-sign delimiters.'
+  }
+  return ''
 }
