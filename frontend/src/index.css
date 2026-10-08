@@ -649,6 +649,7 @@ html, body, #root {
 .board-tooltip-anchor { position: relative; }
 .board-tooltip { position: absolute; z-index: 8; bottom: calc(100% + 8px); left: 50%; width: max-content; padding: 5px 8px; border-radius: 6px; background: #111; color: #fff; font-size: 12px; line-height: 1.2; opacity: 0; pointer-events: none; transform: translate(-50%, 4px); transition: opacity .15s ease, transform .15s ease; }
 .board-tooltip-anchor:is(:hover, :focus-visible) .board-tooltip { opacity: 1; transform: translate(-50%, 0); }
+.board-tooltip.floating-button-tooltip { position: fixed; z-index: 1000; bottom: auto; max-width: calc(100vw - 16px); opacity: 1; transform: translate(-50%, -100%); font-family: "Fredoka", ui-rounded, system-ui, sans-serif; text-align: center; }
 .board-colors:has(.board-color-menu) .board-tooltip, .board-shapes:has(.board-shape-menu) .board-tooltip { opacity: 0; }
 .chat-board-image { display: block; width: min(280px, 100%); margin-top: 10px; border-radius: 9px; background: #fff; }
 @media (max-width: 700px) {

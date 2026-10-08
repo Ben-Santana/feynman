@@ -9,6 +9,10 @@ export function createEquationField(initial: string): MathfieldElement {
   const math = document.createElement('math-field') as MathfieldElement
   math.setAttribute('aria-label', 'Equation')
   math.mathVirtualKeyboardPolicy = 'manual'
+  // MathLive only exposes keybindings after the element mounts.
+  math.addEventListener('mount', () => {
+    math.keybindings = math.keybindings.filter(binding => binding.command !== 'toggleVirtualKeyboard')
+  })
   math.smartFence = true
   math.smartSuperscript = true
   math.defaultMode = 'math'

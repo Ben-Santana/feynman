@@ -1,16 +1,20 @@
-import { useCallback, useLayoutEffect, useRef, useState } from 'react'
+import { useCallback, useId, useLayoutEffect, useRef, useState } from 'react'
 import type { MathfieldElement } from 'mathlive'
 import { draftEquationLine, equationDraftIssue, messageLimit, replaceDraft, splitComposerDraft } from '../mathDraft'
 import { draftDomText, draftSelection, equationRange, focusDraft } from './mathComposerDom'
 import EquationTools from './EquationEditor'
 import { createEquationField } from './inlineEquation'
 import './ChatComposer.css'
+import { TooltipButton } from './TooltipButton'
 
 export function ChatComposer({ value, onChange, onSend, busy, className }: {
   value: string; onChange: (value: string) => void; onSend: () => void; busy: boolean; className: string
 }) {
   const [activeField, setActiveField] = useState<MathfieldElement | null>(null)
+  const [toolbarField, setToolbarField] = useState<MathfieldElement | null>(null)
   const [error, setError] = useState('')
+  const [attemptedSend, setAttemptedSend] = useState(false)
+  const warningId = useId()
   const cursor = useRef({ start: value.length, end: value.length })
   const editor = useRef<HTMLDivElement>(null)
   const composing = useRef(false)
@@ -18,9 +22,16 @@ export function ChatComposer({ value, onChange, onSend, busy, className }: {
   const callbacks = useRef({ onChange, busy })
   useLayoutEffect(() => { callbacks.current = { onChange, busy } }, [onChange, busy])
   const issue = equationDraftIssue(value)
-  const hasEmptyEquation = splitComposerDraft(value).some(part => part.latex !== undefined && !part.latex.trim())
-  const canSend = !busy && Boolean(value.trim()) && value.length <= messageLimit && !issue
-  const showSend = busy || splitComposerDraft(value).some(part => (part.latex ?? part.text).trim())
+  const warning = attemptedSend ? issue || (value.length > messageLimit ? 'Your message is too long. Shorten it before sending.' : '') || error : ''
+  const showSend = busy || Boolean(value.trim())
+  const showToolbar = Boolean(activeField) && !busy && !warning
+  useLayoutEffect(() => { setAttemptedSend(false) }, [value])
+
+  function attemptSend() {
+    if (busy || !value.trim()) return
+    setAttemptedSend(true)
+    if (!issue && value.length <= messageLimit) { setError(''); onSend() }
+  }
 
   const focusText = useCallback((position: number) => {
     requestAnimationFrame(() => {
@@ -53,7 +64,8 @@ export function ChatComposer({ value, onChange, onSend, busy, className }: {
   useLayoutEffect(() => {
     const host = editor.current
     if (!host || draftDomText(host) === value) return
-    setActiveField(null)
+    // Keep the toolbar mounted while an inserted equation takes over focus.
+    if (pendingEquation.current === null) setActiveField(null)
     host.replaceChildren()
     for (const part of splitComposerDraft(value)) {
       if (part.latex === undefined) { host.append(document.createTextNode(part.text)); continue }
@@ -68,8 +80,16 @@ export function ChatComposer({ value, onChange, onSend, busy, className }: {
         line.dataset.equation = `${before}$$${math.value.trim() || ' '}$$${after}`
         commitInput()
       })
-      math.addEventListener('focus', () => setActiveField(math))
-      math.addEventListener('blur', () => setActiveField(current => current === math ? null : current))
+      math.addEventListener('focus', () => { setActiveField(math); setToolbarField(math) })
+      math.addEventListener('blur', () => {
+        // Equation-to-equation focus moves briefly blur the old field. Wait
+        // for the new focus before deciding whether to close the toolbar.
+        requestAnimationFrame(() => {
+          if (math.isConnected && !math.hasFocus()) {
+            setActiveField(current => current === math ? null : current)
+          }
+        })
+      })
       math.addEventListener('keydown', event => {
         if (event.isComposing) return
         if (callbacks.current.busy) return
@@ -121,9 +141,15 @@ export function ChatComposer({ value, onChange, onSend, busy, className }: {
       onChange(replaceDraft(value, start, end, equation)); setError('')
     } catch (reason) { pendingEquation.current = null; setError((reason as Error).message) }
   }
-  return <form className={`${className} math-composer`} onSubmit={event => { event.preventDefault(); if (canSend) onSend() }}>
+  return <form className={`${className} math-composer`} onSubmit={event => { event.preventDefault(); attemptSend() }}>
     <div className="math-composer-body">
-      <div ref={editor} className="mixed-draft" role="textbox" aria-label="Your explanation" aria-multiline="true" aria-disabled={busy} data-placeholder="Explain your reasoning…" contentEditable={!busy} suppressContentEditableWarning
+      {warning && <p id={warningId} className="equation-hint" role="alert">{warning}</p>}
+      {toolbarField && <div className="equation-tools-slot" data-visible={showToolbar} inert={!showToolbar} aria-hidden={!showToolbar}><EquationTools field={toolbarField} /></div>}
+      <div ref={editor} className="mixed-draft" role="textbox" aria-label="Your explanation" aria-multiline="true" aria-disabled={busy} aria-invalid={Boolean(warning)} aria-describedby={warning ? warningId : undefined} data-placeholder="Explain your reasoning…" contentEditable={!busy} suppressContentEditableWarning
+        onPointerDownCapture={event => {
+          const math = (event.target as HTMLElement).closest<MathfieldElement>('math-field')
+          if (math && !busy) { setActiveField(math); setToolbarField(math) }
+        }}
         onInput={event => { if (!(event.target as HTMLElement).closest('math-field')) { rememberCursor(); commitInput() } }}
         onKeyUp={rememberCursor} onMouseUp={rememberCursor} onBlur={rememberCursor}
         onCompositionStart={event => { if (!(event.target as HTMLElement).closest('math-field')) composing.current = true }}
@@ -148,19 +174,18 @@ export function ChatComposer({ value, onChange, onSend, busy, className }: {
           if (event.key === 'Enter') {
             event.preventDefault()
             if (event.shiftKey) insertText('\n')
-            else if (canSend) onSend()
+            else attemptSend()
           }
         }} />
-      <div className="composer-tools">
-        <button type="button" className="insert-equation" disabled={busy} onMouseDown={event => { rememberCursor(); event.preventDefault() }} onClick={addEquation}><span aria-hidden="true">ƒx</span> Equation</button>
-        <div className="equation-tools-slot">
-          {activeField && !busy && <EquationTools field={activeField} />}
-        </div>
-      </div>
-      {(error || (issue && !hasEmptyEquation)) && <p className="equation-hint" role="status">{error || issue}</p>}
     </div>
+    <TooltipButton type="button" className="insert-equation" disabled={busy} aria-label="Add equation" tooltip="Add equation" onMouseDown={event => { rememberCursor(); event.preventDefault() }} onClick={addEquation}>
+      <svg viewBox="0 0 28 28" width="26" height="26" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+        <path d="M4 24c4 0 5-3 6-8l2-9c1-4 4-4 6-2M7 11h9" />
+        <path d="M17 13c3 0 3 8 7 8m0-8c-3 0-4 8-8 8" />
+      </svg>
+    </TooltipButton>
     <div className="composer-send-slot" data-visible={showSend} data-busy={busy} inert={!showSend} aria-hidden={!showSend}>
-      <button type="submit" className="send-button" disabled={!canSend}>{busy ? 'Thinking…' : 'Send'}</button>
+      <button type="submit" className="send-button" disabled={busy}>{busy ? 'Thinking…' : 'Send'}</button>
     </div>
   </form>
 }
