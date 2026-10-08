@@ -1,0 +1,25 @@
+.math-composer-body { flex: 1; min-width: 0; }
+.mixed-draft { display: flex; flex-wrap: wrap; align-items: center; gap: 4px; padding: 8px; background: var(--muted); border: 1px solid var(--border); border-radius: 12px; }
+.math-composer .mixed-draft textarea { flex: 1 1 180px; width: 100%; min-width: 100px; min-height: 40px; max-height: 200px; margin: 0; padding: 8px; border: 0; background: transparent; resize: vertical; font: inherit; field-sizing: content; }
+.draft-equation { display: inline-flex; align-items: center; max-width: 100%; border-radius: 8px; background: var(--background); border: 1px solid var(--border); }
+.draft-equation-display { flex-basis: 100%; }
+.draft-equation-edit { padding: 8px 10px; min-width: 0; overflow-x: auto; cursor: pointer; }
+.draft-equation-edit .chat-plain-text { font-size: 18px; }
+.draft-equation-remove { align-self: stretch; padding: 0 9px; color: var(--muted-foreground); cursor: pointer; }
+.insert-equation { display: inline-flex; gap: 8px; align-items: center; margin-top: 8px; padding: 5px 8px; color: var(--muted-foreground); font-size: 13px; cursor: pointer; }
+.insert-equation span { font: italic 18px Georgia, serif; }
+.equation-editor { margin-top: 10px; padding: 12px; background: var(--background); border: 1px solid var(--border); border-radius: 12px; }
+.equation-tools { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 8px; }
+.equation-tools button { min-width: 36px; min-height: 32px; border-radius: 6px; border: 1px solid var(--border); cursor: pointer; }
+.equation-field math-field { display: block; width: 100%; min-height: 62px; padding: 10px; border: 1px solid var(--border); border-radius: 8px; background: var(--muted); color: var(--foreground); font-size: 24px; --caret-color: var(--primary); --selection-background-color: var(--red-soft); }
+.equation-field math-field::part(menu-toggle) { display: none; }
+.equation-hint { margin: 8px 0; font-size: 12px; line-height: 1.5; color: var(--muted-foreground); }
+.equation-actions { display: flex; flex-wrap: wrap; align-items: center; justify-content: flex-end; gap: 12px; font-size: 13px; }
+.equation-actions label { margin-right: auto; display: flex; align-items: center; gap: 6px; }
+.equation-actions input[type="checkbox"] { width: auto; }
+.equation-actions button { padding: 8px 10px; border-radius: 7px; cursor: pointer; }
+.equation-actions button:last-child { background: var(--primary); color: var(--primary-foreground); }
+.math-composer button:disabled { opacity: .45; cursor: not-allowed; }
+.math-composer :is(button, textarea):focus-visible { outline: 2px solid var(--primary); outline-offset: 2px; }
+.chat-plain-text > .chat-equation { display: inline-block; vertical-align: middle; max-width: 100%; overflow-x: auto; padding: 2px 0; font-size: 1.08em; }
+.chat-plain-text > .chat-equation-display { display: block; padding: 8px 0; }

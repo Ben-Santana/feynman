@@ -1,10 +1,13 @@
+import { ChatComposer } from './ChatComposer'
+import { loadPlayground, savePlayground } from '../learningStore'
+import { ChatText } from './ChatText'
 import { BackButton } from './BackButton'
 import { useEffect, useRef, useState } from 'react'
 import { aiHeaders, fruitFlySelected, localAIResponse } from '../aiPreferences'
 import { learningTypeIds, learningTypes, type LearningType } from '../learningTypes.js'
 import { levelIds, type ChatResult, type Level, type Message } from '../learningFlow'
 import { checklistItems, checklistText } from '../rubricChecklist.js'
-import { MathText, PaperReview, type Review } from './PaperReview'
+import { PaperReview, type Review } from './PaperReview'
 import { RubricChecklistEditor } from './RubricChecklistEditor'
 import './DeveloperPage.css'
 
@@ -16,6 +19,7 @@ const promptCountLabel = (count: number) => `${count} ${count === 1 ? 'prompt' :
 const errorText = (error: unknown) => error instanceof Error ? error.name === 'TimeoutError' || error.name === 'AbortError' ? 'The request timed out. Please retry.' : error.message : 'The request failed. Please retry.'
 type PromptCall = { role: string; request: unknown; response?: unknown; error?: string; durationMs: number }
 type CallTurn = { calls: PromptCall[]; request: unknown; response?: unknown; error?: string }
+type SavedTest = { id: string; updatedAt: number; run: TestConfig; messages: Message[]; draft: string; callTurns: CallTurn[]; result: ChatResult | null }
 async function request<T>(path: string, body?: unknown, signal = AbortSignal.timeout(15000), onTrace?: (data: T & { calls?: PromptCall[]; error?: string }) => void): Promise<T> {
   signal.throwIfAborted()
   const local = path === '/api/health' && fruitFlySelected() ? { configured: true, model: 'fruit fly brain' } : localAIResponse(path, body)
@@ -139,6 +143,18 @@ function PromptEditor({ onDirtyChange }: { onDirtyChange: (dirty: boolean) => vo
 }
 
 function ChatPlayground({ dirtyPrompts }: { dirtyPrompts: boolean }) {
+  const [composerVersion, setComposerVersion] = useState(0)
+  const [savedTests, setSavedTests] = useState<SavedTest[]>([])
+  const [savedId, setSavedId] = useState('')
+  const [savedReady, setSavedReady] = useState(false)
+  const [savingTest, setSavingTest] = useState(false)
+  const [saveNotice, setSaveNotice] = useState('')
+  const saveLock = useRef(false)
+  useEffect(() => {
+    let active = true
+    loadPlayground<SavedTest>().then(tests => { if (active) { setSavedTests(tests); setSavedReady(true) } }).catch(() => { if (active) setSaveNotice('Could not load saved tests. Reload to retry.') })
+    return () => { active = false }
+  }, [])
   const [learningType, setLearningType] = useState<LearningType>('quantitative')
   const [level, setLevel] = useState<Level>('analyze')
   const [topic, setTopic] = useState('')
@@ -165,7 +181,7 @@ function ChatPlayground({ dirtyPrompts }: { dirtyPrompts: boolean }) {
   const review = paper ? messages.find(message => message.review?.paperId === paper.id)?.review : undefined
   const awaitingReview = Boolean(run?.learningType === 'quantitative' && run.level === 'analyze' && paper && !review)
   const aspects = checklistItems(criterion)
-  const working = busy || generatingRubric
+  const working = busy || generatingRubric || savingTest
   useEffect(() => {
     const abort = new AbortController()
     request<{ configured: boolean; model: string }>('/api/health', undefined, abort.signal).then(setHealth).catch(() => {})
@@ -186,6 +202,23 @@ function ChatPlayground({ dirtyPrompts }: { dirtyPrompts: boolean }) {
       setCallTurns(current => current.map(item => item === entry ? { ...entry, error: errorText(reason) } : item))
       throw reason
     }
+  }
+  async function saveTest() {
+    if (!run || working || !savedReady || saveLock.current) return
+    saveLock.current = true; setSavingTest(true); setSaveNotice('')
+    const entry: SavedTest = { id: savedId || crypto.randomUUID(), updatedAt: Date.now(), run, messages, draft, callTurns, result }
+    const next = [entry, ...savedTests.filter(test => test.id !== entry.id)]
+    try {
+      await savePlayground(next)
+      setSavedTests(next); setSavedId(entry.id); setSaveNotice('Saved in this browser, including the call log. Save again after further replies.')
+    } catch { setSaveNotice('Could not save this test. Your open conversation is still available.') }
+    finally { saveLock.current = false; setSavingTest(false) }
+  }
+  function openTest(test: SavedTest) {
+    setComposerVersion(version => version + 1)
+    setSavedId(test.id); setRun(test.run); setLearningType(test.run.learningType); setLevel(test.run.level); setTopic(test.run.topic)
+    setCriteria(current => ({ ...current, [test.run.level]: test.run.criterion }))
+    setMessages(test.messages); setDraft(test.draft); setCallTurns(test.callTurns); setResult(test.result); setError(''); setSaveNotice('Opened saved test. Save again to keep further replies.')
   }
   async function generateItems() {
     if (lock.current || !topic.trim()) return
@@ -210,6 +243,8 @@ function ChatPlayground({ dirtyPrompts }: { dirtyPrompts: boolean }) {
     const config = { learningType, level, topic: topic.trim(), criterion }
     try {
       const response = await turn(config, [])
+      setComposerVersion(version => version + 1)
+      setSavedId(''); setSaveNotice('')
       setRun(config); setMessages([{ role: 'assistant', content: response.message, ...(response.paper ? { paper: response.paper } : {}) }]); setResult(response); setDraft('')
     } catch (reason) { setError(errorText(reason)) }
     finally { lock.current = false; setBusy(false) }
@@ -228,6 +263,13 @@ function ChatPlayground({ dirtyPrompts }: { dirtyPrompts: boolean }) {
   }
   return <div className="developer-playground">
     <aside className="developer-test-config">
+      <label htmlFor="saved-playground-test">Saved tests</label>
+      <select id="saved-playground-test" value={savedId} disabled={working || !savedReady} onChange={event => { const test = savedTests.find(item => item.id === event.target.value); if (test) openTest(test) }}>
+        <option value="">{savedReady ? 'Choose a saved test…' : 'Loading saved tests…'}</option>
+        {savedTests.map(test => <option key={test.id} value={test.id}>{test.run.topic} · {learningTypes[test.run.learningType].label} · {nameLevel(test.run.level)} · {new Date(test.updatedAt).toLocaleString()}</option>)}
+      </select>
+      <button type="button" className="developer-button-secondary" disabled={working || !run || !savedReady} onClick={() => void saveTest()}>{savingTest ? 'Saving…' : savedId ? 'Save changes' : 'Save test'}</button>
+      {saveNotice && <p className="developer-config-note" role="status">{saveNotice}</p>}
       <fieldset disabled={working}><legend>Learning type</legend><div className="developer-levels">{learningTypeIds.map(id => <button type="button" key={id} aria-pressed={id === learningType} onClick={() => { setLearningType(id); setRubricNotice(''); setRubricError('') }}>{learningTypes[id].label}</button>)}</div></fieldset>
       <fieldset disabled={working}><legend>Learning level</legend><div className="developer-levels">{levelIds.map(id => <button type="button" key={id} aria-pressed={id === level} onClick={() => { setLevel(id); setRubricNotice(''); setRubricError('') }}>{nameLevel(id)}</button>)}</div></fieldset>
       <label htmlFor="test-concept">Concept</label><input id="test-concept" disabled={working} value={topic} maxLength={300} placeholder="e.g. Ohm’s law" onChange={event => { setTopic(event.target.value); setRubricNotice(''); setRubricError('') }} />
@@ -244,13 +286,13 @@ function ChatPlayground({ dirtyPrompts }: { dirtyPrompts: boolean }) {
     </aside>
     <div className="developer-test-workspace">
       <div className="developer-conversation">
-        {run && <header className="developer-conversation-heading"><div><h2>{run.topic}</h2><p>{nameLevel(run.level)} · {learningTypes[run.learningType].label}</p></div><button type="button" className="developer-button-secondary" disabled={working} onClick={() => { setRun(null); setCallTurns([]); setMessages([]); setResult(null); setDraft(''); setError('') }}>Clear test</button></header>}
+        {run && <header className="developer-conversation-heading"><div><h2>{run.topic}</h2><p>{nameLevel(run.level)} · {learningTypes[run.learningType].label}</p></div><button type="button" className="developer-button-secondary" disabled={working} onClick={() => { setSavedId(''); setSaveNotice(''); setRun(null); setCallTurns([]); setMessages([]); setResult(null); setDraft(''); setError('') }}>Clear test</button></header>}
         <div ref={log} className="developer-chat-log" role="log" aria-label="Test conversation" aria-live="polite">
-          {[...messages, ...(pending ? [pending] : [])].map((message, index) => <div key={index} className={`chat-message ${message.role} ${message.paper ? 'developer-message-with-paper' : ''}`}><div className="chat-message-copy"><span>{message.role === 'user' ? 'You' : 'Feynman'}</span><div className="chat-message-text"><MathText>{message.content}</MathText></div></div>{message.paper && <PaperReview key={message.paper.id} paper={message.paper} review={messages.find(item => item.review?.paperId === message.paper?.id)?.review} busy={working} error={error} onSubmit={send} />}</div>)}
+          {[...messages, ...(pending ? [pending] : [])].map((message, index) => <div key={index} className={`chat-message ${message.role} ${message.paper ? 'developer-message-with-paper' : ''}`}><div className="chat-message-copy"><span>{message.role === 'user' ? 'You' : 'Feynman'}</span><div className="chat-message-text"><ChatText>{message.content}</ChatText></div></div>{message.paper && <PaperReview key={message.paper.id} paper={message.paper} review={messages.find(item => item.review?.paperId === message.paper?.id)?.review} busy={working} error={error} onSubmit={send} />}</div>)}
           {busy && <p className="developer-muted" role="status">{run ? 'Thinking…' : 'Starting your test…'}</p>}
           {result?.finalSummary && <div className="developer-report"><strong>Learning report{result.analysisGrade !== undefined ? ` · ${result.analysisGrade}%` : ''}</strong><p>{result.finalSummary}</p></div>}
         </div>
-        {run && (finished ? <div className="developer-test-ended" role="status">{result?.assessment?.complete ? `${nameLevel(run.level)} complete.` : 'Assessment finished.'} Start a new test to try again.</div> : awaitingReview ? <div className="developer-test-ended">Grade all three papers to continue.</div> : <form className="developer-composer" onSubmit={event => { event.preventDefault(); void send() }}><label className="sr-only" htmlFor="test-reply">Your explanation</label><textarea id="test-reply" rows={2} value={draft} maxLength={12000} disabled={working} placeholder="Teach your AI classmate…" onChange={event => setDraft(event.target.value)} onKeyDown={event => { if (event.key === 'Enter' && !event.shiftKey && !event.nativeEvent.isComposing) { event.preventDefault(); void send() } }} /><button className="send-button" disabled={working || !draft.trim()}>Send</button></form>)}
+        {run && (finished ? <div className="developer-test-ended" role="status">{result?.assessment?.complete ? `${nameLevel(run.level)} complete.` : 'Assessment finished.'} Start a new test to try again.</div> : awaitingReview ? <div className="developer-test-ended">Grade all three papers to continue.</div> : <ChatComposer key={composerVersion} className="developer-composer" value={draft} onChange={setDraft} onSend={() => { void send() }} busy={working} />)}
         {error && <p className="developer-error" role="alert">{error}</p>}
       </div>
       <section className="developer-terminal" aria-label="Conversation JSON log">

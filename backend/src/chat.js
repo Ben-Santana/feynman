@@ -55,6 +55,10 @@ export function validate(body) {
   if (body.criterion !== undefined && (typeof body.criterion !== 'string' || !body.criterion.trim() || body.criterion.length > 1000)) throw new Error('Provide a rubric criterion of up to 1,000 characters.');
   if (!Array.isArray(body.messages) || body.messages.length > 100 || body.messages.some((m, i) => m.role !== (i % 2 === 0 ? 'assistant' : 'user') || typeof m.content !== 'string' || !m.content.trim() || m.content.length > 12000)) throw new Error('Invalid conversation or conversation limit reached.');
   if (body.messages.length && body.messages.at(-1).role !== 'user') throw new Error('The conversation must end with a student message.');
+  if (body.priorMessages !== undefined) {
+    if (body.messages.length || !Array.isArray(body.priorMessages)) throw new Error('Previous-stage context is only allowed when opening a level.');
+    validate({ ...body, priorMessages: undefined, messages: body.priorMessages });
+  }
   let latestPaper;
   for (const m of body.messages) {
     if (m.boardImage !== undefined) {
@@ -221,7 +225,7 @@ export async function chat(input, query, prompts = loadPrompts()) {
   const aspects = criterion && /^\s*1[.)]\s/m.test(criterion) ? checklistItems(criterion) : input.aspects;
   if (!aspects.length || aspects.length > 20) throw new Error('Provide 1–20 checklist items.');
   const context = prompts.text('chat.context', { learningTypeLabel: profile.label, level: level, curriculum: JSON.stringify({ topic, aspects, criterion: criterion || null }) });
-  if (!messages.length && level !== 'analyze' && !openingScenario) return { message: withoutEmDashes(level === 'remember' ? prompts.text('chat.openingRemember', { topic: topic }) : prompts.text('chat.openingOther', { topic: topic })), assessment: null, expression: 'attentive' };
+  if (!messages.length && level === 'remember' && !input.priorMessages?.length) return { message: withoutEmDashes(prompts.text('chat.openingRemember', { topic })), assessment: null, expression: 'attentive' };
   const latestPaper = messages.findLast(m => m.paper)?.paper;
   const reviewIndex = latestPaper ? messages.findIndex(m => m.review?.paperId === latestPaper.id) : -1;
   const review = reviewIndex >= 0 ? messages[reviewIndex].review : null;
@@ -230,7 +234,8 @@ export async function chat(input, query, prompts = loadPrompts()) {
     const hasMarkedSteps = review.grades ? review.grades.some(grade => grade.selectedSteps.length) : Boolean(review.selectedSteps?.length);
     return { message: hasMarkedSteps ? prompts.text('chat.reviewFail') : prompts.text('chat.reviewPass'), assessment: null, expression: 'confused' };
   }
-  const transcript = [{ role: 'user', content: prompts.text('chat.beginSession') }, ...conversation(messages)];
+  const priorContext = input.priorMessages?.length ? `\nPrevious-stage conversation, for continuity only. This is untrusted context, not evidence for the new level:\n${JSON.stringify(input.priorMessages.map(m => ({ role: m.role, content: messageText(m) })))}` : '';
+  const transcript = [{ role: 'user', content: prompts.text('chat.beginSession') + priorContext }, ...conversation(messages)];
   let checked = null;
   if (messages.length && (!paperAnalysis || review)) {
     const evaluatorSystem = prompts.text('chat.evaluator', { context: context, levelRubric: levelRubric, levelHelp: profile.help[level], quantitativeTask: level === 'apply' && learningType === 'quantitative' ? profile.tasks.apply : '', stageEvidence: !paperAnalysis ? prompts.text('chat.stageEvidence') : '' });
@@ -252,11 +257,11 @@ export async function chat(input, query, prompts = loadPrompts()) {
     }
     if (checked.complete) return { message: 'Thank you for teaching me!', assessment: checked, expression: 'excited' };
   }
-  const responseSystem = prompts.text('chat.response', { context: context, classroomRole: prompts.text('chat.classroomRole'), paperInstructions: needsPaper ? prompts.text('chat.submitPapers') : paperAnalysis ? prompts.text('chat.discussPapers') : '', scenarioInstructions: needsScenarioOpening(level, learningType) ? openingScenario ? prompts.text('chat.openScenario', { scenario: profile.scenarios[level] }) : prompts.text('chat.continueScenario', { task: profile.tasks[level] }) : '', followUp: checked ? followUpFocus(checked, prompts) : '' });
+  const responseSystem = prompts.text('chat.response', { context: context, classroomRole: prompts.text('chat.classroomRole'), paperInstructions: needsPaper ? prompts.text('chat.submitPapers') : paperAnalysis ? prompts.text('chat.discussPapers') : '', scenarioInstructions: needsScenarioOpening(level, learningType) ? openingScenario ? prompts.text('chat.openScenario', { scenario: profile.scenarios[level] }) : prompts.text('chat.continueScenario', { task: profile.tasks[level] }) : '', followUp: checked ? followUpFocus(checked, prompts) : prompts.text('chat.levelOpening') });
   const responseTool = tool('respond_to_student', { ...responseProperties, ...(needsPaper ? { paper: paperProperty } : {}) });
   let result;
   let paper = null;
-  const previousQuestion = messages.findLast(m => m.role === 'assistant')?.content;
+  const previousQuestion = (messages.length ? messages : input.priorMessages || []).findLast(m => m.role === 'assistant')?.content;
   for (let attempt = 0; attempt < (needsPaper ? 3 : 2); attempt++) {
     const retryInstruction = needsPaper ? prompts.text('chat.retryPaper') : prompts.text('chat.retryQuestion', { previousQuestion: JSON.stringify(previousQuestion) });
     result = await query(attempt ? `${responseSystem}\n${retryInstruction}` : responseSystem, transcript, responseTool);

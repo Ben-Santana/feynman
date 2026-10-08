@@ -87,3 +87,11 @@ Playground conversations stay in the page and are not saved as learning sessions
 Editable backend prompts: `backend/prompts.json`. Assessment orchestration: `backend/src/chat.js`. HTTP boundary: `backend/src/server.js`. Frontend: `frontend/src/App.tsx`.
 
 Claude tool-use documentation: https://platform.claude.com/docs/en/agents-and-tools/tool-use/overview
+
+### Conversation continuity and playground saves
+
+Understand and Apply openings are generated from the selected rubric and the preceding conversation. Previous-stage messages are sent only as opening context; subsequent evaluation continues to use new-stage evidence. Questions stay on one unresolved subtopic and provide concrete scenarios when asking about changed conditions. Quantitative Apply now supplies problem givens for the learner to work through.
+
+Chat messages preserve plain text and render math with `$...$`, `$$...$$`, `\(...\)`, or `\[...\]`. Common signal notation (`x[an+b]`), subscripts (`V_rms`), numeric fractions (`1/2`), and phasors (`12∠30°`) are also recognized automatically. Ambiguous prose and malformed formulas remain literal. Worked papers retain Markdown formatting.
+
+In Developer tools → Chat playground, use **Save test** to keep the active test in this browser, including its rubric, conversation, draft, assessment, and model-call log. Reopen it from **Saved tests** to inspect or continue it. Use **Save changes** after further replies; starting or clearing a test does not delete saved copies. Saves use IndexedDB separately from learning sessions.

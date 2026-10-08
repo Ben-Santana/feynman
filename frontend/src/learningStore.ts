@@ -5,6 +5,31 @@ export type SavedSession<T, S> = SavedLearning<T> & { id: string; title: string;
 const databaseName = 'feynman-learning'
 const storeName = 'learning'
 
+// A separate key keeps playground experiments out of normal learning sessions.
+export async function loadPlayground<T>(): Promise<T[]> {
+  const database = await openDatabase()
+  try {
+    return await new Promise((resolve, reject) => {
+      const request = database.transaction(storeName, 'readonly').objectStore(storeName).get('playground')
+      request.onsuccess = () => resolve(Array.isArray(request.result) ? request.result : [])
+      request.onerror = () => reject(request.error)
+    })
+  } finally { database.close() }
+}
+
+export async function savePlayground<T>(tests: T[]): Promise<void> {
+  const database = await openDatabase()
+  try {
+    await new Promise<void>((resolve, reject) => {
+      const transaction = database.transaction(storeName, 'readwrite')
+      transaction.objectStore(storeName).put(tests, 'playground')
+      transaction.oncomplete = () => resolve()
+      transaction.onerror = () => reject(transaction.error)
+      transaction.onabort = () => reject(transaction.error || new Error('Save cancelled'))
+    })
+  } finally { database.close() }
+}
+
 function openDatabase(): Promise<IDBDatabase> {
   return new Promise((resolve, reject) => {
     const request = indexedDB.open(databaseName, 1)

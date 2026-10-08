@@ -4,7 +4,7 @@ import remarkMath from 'remark-math'
 import remarkBreaks from 'remark-breaks'
 import rehypeKatex from 'rehype-katex'
 
-function repairTrailingBraces(value: string, displayMode: boolean): string {
+export function repairTrailingBraces(value: string, displayMode: boolean): string {
   let candidate = value.trimEnd()
   if (!candidate.endsWith('}')) return value
   while (true) {

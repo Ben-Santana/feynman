@@ -1,6 +1,11 @@
 // Editable prompt metadata and required template variables. Descriptions follow runtime call sites in chat.js and frontend entry points.
 export const promptCatalog = [
   {
+    id: 'chat.levelOpening', group: 'Chat', title: 'Contextual level opening', variables: [],
+    subgroup: 'Conversation setup',
+    description: 'Guides generated level openings using the current rubric and optional previous-stage conversation. Previous-stage context is supplied only to the classmate, never the new level evaluator.'
+  },
+  {
     "id": "chat.classroomRole",
     "group": "Chat",
     "title": "Classroom student role",
@@ -118,7 +123,7 @@ export const promptCatalog = [
       "topic"
     ],
     "subgroup": "Session openings",
-    "description": "Returned directly by the API for empty-transcript Understand and Quantitative Apply tests; no model runs. Regular sessions use frontend openings; other Apply types generate scenarios."
+    "description": "Legacy opening template retained for saved prompt compatibility. Current Understand and Apply openings are generated using Contextual level opening."
   },
   {
     "id": "chat.submitPapers",
