@@ -20,7 +20,7 @@ export function MathText({ children }: { children: string }) {
   return <Markdown {...mathProps} components={{ img: () => null, a: ({ children }) => <span>{children}</span> }}>{spacedMath}</Markdown>
 }
 
-export function PaperReview({ paper, review, busy, error, onSubmit }: { paper: Paper; review?: Review; busy: boolean; error?: string; onSubmit: (review: Review) => Promise<boolean> }) {
+export function PaperReview({ paper, review, busy, error, onSubmit, characterName = 'Feynman' }: { characterName?: string; paper: Paper; review?: Review; busy: boolean; error?: string; onSubmit: (review: Review) => Promise<boolean> }) {
   const dialog = useRef<HTMLDialogElement>(null)
   const preview = useRef<HTMLSpanElement>(null)
   const stamp = useRef<HTMLSpanElement>(null)
@@ -245,7 +245,7 @@ export function PaperReview({ paper, review, busy, error, onSubmit }: { paper: P
                 <div className="paper-problem"><strong className="paper-problem-number">{index + 1}.</strong><div className="paper-problem-text"><MathText>{problem}</MathText></div></div>
                 <div className={`paper-stamp-target paper-grade-${sheetGrade} ${saved || top && stamped ? 'paper-is-inked' : ''}`}>
                   {review ? <div className="paper-grade-field" aria-label={`Grade: ${sheetGrade}`}><span className="paper-grade-label">Reviewed</span></div> : <button ref={top ? gradeButton : undefined} type="button" className="paper-grade-field" onClick={() => void finalizeGrade()} disabled={!top || locked} aria-label={`Grade paper ${index + 1} ${sheetGrade}; click to finalize`}><span className="paper-grade-label">{top && sorting ? 'Stamping' : saved ? 'Re-stamp' : 'Click to stamp'}</span><span className="paper-grade-ghost" aria-hidden="true">{sheetGrade}</span></button>}
-                  <span ref={top ? ink : undefined} className="paper-stamp-ink" aria-hidden="true"><span>{sheetGrade}</span><small>Feynman · reviewed</small></span>
+                  <span ref={top ? ink : undefined} className="paper-stamp-ink" aria-hidden="true"><span>{sheetGrade}</span><small>{characterName} · reviewed</small></span>
                   <span ref={top ? impact : undefined} className="paper-stamp-impact" aria-hidden="true" />
                 </div>
               </div>

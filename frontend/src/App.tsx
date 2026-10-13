@@ -1,5 +1,6 @@
 import { ChatComposer } from './components/ChatComposer'
 import { TooltipButton } from './components/TooltipButton'
+import { ConceptTooltip } from './components/ConceptTooltip'
 import { ChatText } from './components/ChatText'
 import { useEffect, useRef, useState } from 'react'
 import { BackButton } from './components/BackButton'
@@ -9,6 +10,8 @@ import { AISettings } from './components/AISettings'
 import { AISettingsButton } from './components/AISettingsButton'
 import { aiHeaders, fruitFlySelected, localAIResponse } from './aiPreferences'
 import { fruitFlyBuzz, fruitFlyRubric } from './fruitFly'
+import { CharacterStudio } from './components/CharacterStudio'
+import { loadAppearance, saveAppearance, type CharacterAppearance } from './characterAppearance'
 import { Bloub } from './components/Bloub'
 import { CornerDrops } from './components/CornerDrops'
 import { PaperReview, type Review } from './components/PaperReview'
@@ -62,6 +65,10 @@ async function post<T>(path: string, body: unknown, signal: AbortSignal): Promis
 
 function App() {
   const [page, setPage] = useState(window.location.pathname.replace(/\/$/, '') || '/')
+  const [appearance, setAppearance] = useState(loadAppearance)
+  const characterReturn = useRef('/sessions')
+  function openCharacter() { characterReturn.current = page === '/' ? '/' : '/sessions'; navigate('/character') }
+  function commitAppearance(draft: CharacterAppearance) { setAppearance(saveAppearance(draft)); navigate(characterReturn.current) }
   const isDeveloperPage = page === '/developer'
   const isChatPage = page === '/chat'
   const isSessionsPage = page === '/sessions'
@@ -96,7 +103,7 @@ function App() {
   const [error, setError] = useState('')
   const [validationError, setValidationError] = useState<{ step: 'title' | 'concepts' | 'rubric'; fieldId: string; message: string; attempt: number } | null>(null)
   const [trackerOverflow, setTrackerOverflow] = useState(false)
-  const [conceptTooltip, setConceptTooltip] = useState<{ name: string; left: number; top: number } | null>(null)
+  const [conceptTooltip, setConceptTooltip] = useState<{ name: string; left: number; top: number; bottom: number } | null>(null)
   const messageList = useRef<HTMLDivElement>(null)
   const tracker = useRef<HTMLDivElement>(null)
   const whiteboard = useRef<WhiteboardHandle>(null)
@@ -108,10 +115,20 @@ function App() {
   const paper = session.messages.findLast(message => message.paper)?.paper
   const review = paper ? session.messages.find(message => message.review?.paperId === paper.id)?.review : undefined
 
+  useEffect(() => {
+    if (!conceptTooltip) return
+    const dismiss = () => setConceptTooltip(null)
+    window.addEventListener('scroll', dismiss, true)
+    window.addEventListener('resize', dismiss)
+    return () => {
+      window.removeEventListener('scroll', dismiss, true)
+      window.removeEventListener('resize', dismiss)
+    }
+  }, [conceptTooltip])
+
   function showConceptTooltip(button: HTMLButtonElement, name: string) {
     const bounds = button.getBoundingClientRect()
-    const halfWidth = Math.min(110, (window.innerWidth - 24) / 2)
-    setConceptTooltip({ name, left: Math.max(halfWidth + 12, Math.min(bounds.left + bounds.width / 2, window.innerWidth - halfWidth - 12)), top: bounds.bottom + 8 })
+    setConceptTooltip({ name, left: bounds.left + bounds.width / 2, top: bounds.bottom + 8, bottom: bounds.top })
   }
 
   useEffect(() => {
@@ -399,8 +416,9 @@ function App() {
       return <div className="session-card-wrap" key={record.id} onContextMenu={event => { event.preventDefault(); const bounds = event.currentTarget.getBoundingClientRect(); setSessionMenu({ id: record.id, left: Math.min(event.clientX - bounds.left, bounds.width - 180), top: event.clientY - bounds.top }) }}><button type="button" className={`session-card ${complete ? 'session-card-complete' : record.started ? '' : 'session-card-draft'}`} onClick={() => openSession(record)}><span className="session-card-icon" aria-hidden="true">{complete ? <span className="session-complete-dot" /> : record.started ? '✦' : '✎'}</span><span className="session-card-copy"><strong>{sessionTitle}</strong><small><span>{record.concepts.length} {record.concepts.length === 1 ? 'concept' : 'concepts'}</span><span aria-hidden="true">·</span><span className={complete ? 'session-status-complete' : undefined}>{complete ? 'Complete' : record.started ? 'In progress' : 'Draft'}</span><span aria-hidden="true">·</span><time dateTime={new Date(record.updatedAt).toISOString()}>{new Date(record.updatedAt).toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' })}</time></small></span><span className="session-card-arrow" aria-hidden="true">→</span></button><button type="button" className="session-menu-trigger" aria-label={`Options for ${sessionTitle}`} aria-haspopup="menu" aria-expanded={sessionMenu?.id === record.id} onClick={event => { const bounds = event.currentTarget.parentElement!.getBoundingClientRect(); setSessionMenu(sessionMenu?.id === record.id ? null : { id: record.id, left: bounds.width - 180, top: event.currentTarget.offsetTop + event.currentTarget.offsetHeight }) }}>⋯</button>{sessionMenu?.id === record.id && <div className="session-context-menu" role="menu" style={{ left: Math.max(8, sessionMenu.left), top: sessionMenu.top }}><button type="button" role="menuitem" onClick={() => deleteSession(record)}>Delete session</button></div>}</div>
   }
 
+  if (page === '/character') return <main className="bg-background text-foreground"><CharacterStudio appearance={appearance} onSave={commitAppearance} onCancel={() => navigate(characterReturn.current)} /></main>
   if (page === '/settings') return <main className="bg-background text-foreground"><AISettings onBack={() => navigate('/sessions')} /></main>
-  if (isDeveloperPage) return <main className="bg-background text-foreground"><AISettingsButton onClick={() => navigate('/settings')} /><DeveloperPage onBack={() => navigate('/')} /></main>
+  if (isDeveloperPage) return <main className="bg-background text-foreground"><AISettingsButton onClick={() => navigate('/settings')} /><DeveloperPage characterName={appearance.name} onBack={() => navigate('/')} /></main>
   if (!hydrated) return <main className="bg-background text-foreground"><p className="loading-learning">Loading learning…</p></main>
   return <main className="bg-background text-foreground">
     {(isSessionsPage || isSummaryPage || (isChatPage && !started)) && <AISettingsButton onClick={() => navigate('/settings')} />}
@@ -409,7 +427,7 @@ function App() {
       <div className="sessions-shell">
         <div className="sessions-heading">
           <h1>Sessions</h1>
-          <button type="button" className="sessions-new" onClick={createSession}>＋ New session</button>
+          <div className="sessions-heading-actions"><button type="button" className="character-customize-link" onClick={openCharacter}>Customize {appearance.name} <span aria-hidden="true">✦</span></button><button type="button" className="sessions-new" onClick={createSession}>＋ New session</button></div>
         </div>
         <div className="sessions-list">
           {activeSessions.length ? activeSessions.map(renderSessionCard) : <div className="sessions-empty">
@@ -431,19 +449,19 @@ function App() {
         </details>}
         {error && <p className="chat-error" role="alert">{error}</p>}
       </div>
-    </section> : isSummaryPage ? started && sessionComplete(concepts) ? <SessionSummary title={title} learningType={learningType ?? 'quantitative'} concepts={concepts} onBack={() => navigate('/sessions')} onNewSession={createSession} /> : <SummaryUnavailable hasSession={Boolean(sessionId)} onBack={() => navigate('/sessions')} onContinue={sessionId ? () => navigate(`/chat?session=${encodeURIComponent(sessionId)}`) : createSession} /> : !isChatPage ? <section className="home-hero"><div className="home-hero-art"><Bloub mode="hero" /></div><CornerDrops /><div className="home-hero-copy"><div className="home-hero-content"><p className="font-display text-sm font-medium tracking-[0.2em] text-primary uppercase">Feynman</p><h1 className="font-display mt-3 text-4xl font-semibold tracking-tight sm:text-5xl">Learn by teaching.</h1><p className="mt-4 text-lg leading-relaxed text-muted-foreground">Teach your AI classmate what you have been learning, one concept at a time.</p><button className="home-chat-link" onClick={() => navigate('/sessions')}>Start learning →</button></div></div></section> : <>
+    </section> : isSummaryPage ? started && sessionComplete(concepts) ? <SessionSummary title={title} learningType={learningType ?? 'quantitative'} concepts={concepts} onBack={() => navigate('/sessions')} onNewSession={createSession} /> : <SummaryUnavailable hasSession={Boolean(sessionId)} onBack={() => navigate('/sessions')} onContinue={sessionId ? () => navigate(`/chat?session=${encodeURIComponent(sessionId)}`) : createSession} /> : !isChatPage ? <section className="home-hero"><div className="home-hero-art"><Bloub mode="hero" appearance={appearance} /></div><CornerDrops /><div className="home-hero-copy"><div className="home-hero-content"><p className="font-display text-sm font-medium tracking-[0.2em] text-primary uppercase">Feynman</p><h1 className="font-display mt-3 text-4xl font-semibold tracking-tight sm:text-5xl">Learn by teaching.</h1><p className="mt-4 text-lg leading-relaxed text-muted-foreground">Teach your AI classmate what you have been learning, one concept at a time.</p><button className="home-chat-link" onClick={() => navigate('/sessions')}>Start learning →</button><button type="button" className="character-customize-link" onClick={openCharacter}>Customize {appearance.name} <span aria-hidden="true">✦</span></button></div></div></section> : <>
       <nav className={`back-navigation chat-nav ${started ? 'chat-nav-started' : ''}`} aria-label="Learning navigation">
         <BackButton onClick={() => { if (!started && setupStep !== 'title' && setupStep !== 'loading') { if (setupStep === 'rubric') setAiByName(false); setSetupStep(setupStep === 'rubric' ? 'concepts' : setupStep === 'concepts' ? 'class-type' : 'title'); setValidationError(null); setError('') } else navigate('/sessions') }} destination={!started && setupStep !== 'title' && setupStep !== 'loading' ? 'previous step' : 'sessions'} />
         {!started && title.trim() && <h1 className="rubric-page-title" title={title.trim()}>{title.trim()}</h1>}
         {started && <>
           <h1 className="chat-page-title" title={currentConcept?.name || 'Your learning'}>{currentConcept?.name || 'Your learning'}</h1>
           <div ref={tracker} className={`concept-tracker ${trackerOverflow ? 'concept-tracker-overflow' : ''}`} role="group" aria-label="Concept progress" tabIndex={trackerOverflow ? 0 : undefined} onScroll={() => setConceptTooltip(null)}>
-            {concepts.map(concept => <button key={concept.id} type="button" className="concept-orb" disabled={busy} onClick={() => switchChat(concept.id)} onMouseEnter={event => showConceptTooltip(event.currentTarget, concept.name)} onMouseLeave={() => setConceptTooltip(null)} onFocus={event => showConceptTooltip(event.currentTarget, concept.name)} onBlur={() => setConceptTooltip(null)} aria-label={`${concept.name}, ${concept.passed} of ${targetCount(concept.target)} target levels complete`} aria-current={active === concept.id ? 'true' : undefined}><svg className="concept-orb-visual" viewBox="0 0 32 32" aria-hidden="true"><circle className="concept-orb-track" cx="16" cy="16" r="13.75" /><circle className="concept-orb-progress" cx="16" cy="16" r="13.75" pathLength="100" strokeDasharray={`${Math.min(concept.passed / targetCount(concept.target), 1) * 100} 100`} />{active === concept.id && <circle className="concept-orb-selection" cx="16" cy="16" r="5" />}</svg></button>)}
+            {concepts.map(concept => <button key={concept.id} type="button" className="concept-orb" disabled={busy} onClick={() => { setConceptTooltip(null); switchChat(concept.id) }} onKeyDown={event => { if (event.key === 'Escape') setConceptTooltip(null) }} onPointerEnter={event => { if (event.pointerType === 'mouse') showConceptTooltip(event.currentTarget, concept.name) }} onPointerLeave={() => setConceptTooltip(null)} onFocus={event => { if (event.currentTarget.matches(':focus-visible')) showConceptTooltip(event.currentTarget, concept.name) }} onBlur={() => setConceptTooltip(null)} aria-label={`${concept.name}, ${concept.passed} of ${targetCount(concept.target)} target levels complete`} aria-current={active === concept.id ? 'true' : undefined}><svg className="concept-orb-visual" viewBox="0 0 32 32" aria-hidden="true"><circle className="concept-orb-track" cx="16" cy="16" r="13.75" /><circle className="concept-orb-progress" cx="16" cy="16" r="13.75" pathLength="100" strokeDasharray={`${Math.min(concept.passed / targetCount(concept.target), 1) * 100} 100`} />{active === concept.id && <circle className="concept-orb-selection" cx="16" cy="16" r="5" />}</svg></button>)}
           </div>
-          {conceptTooltip && <span className="rubric-help-tooltip concept-orb-tooltip" style={{ left: conceptTooltip.left, top: conceptTooltip.top }} role="tooltip">{conceptTooltip.name}</span>}
+          {conceptTooltip && <ConceptTooltip {...conceptTooltip} />}
         </>}
       </nav>
-      <section className={`chat-section ${started ? 'chat-section-started' : 'chat-section-setup'} ${boardOpen ? 'board-open' : 'board-closed'} ${!started && setupStep === 'class-type' ? 'class-type-section' : ''}`} aria-label="Learning chat"><aside className="chat-avatar" aria-label="Your classroom student">{started && <div id="classroom-whiteboard" className="whiteboard-container" onPointerEnter={event => { if (event.pointerType === 'mouse') setBoardHovered(true) }} onPointerLeave={() => setBoardHovered(false)}><TooltipButton type="button" className="whiteboard-toggle" tooltip={boardOpen ? 'Collapse whiteboard' : 'Open whiteboard'} aria-label={boardOpen ? 'Collapse whiteboard' : 'Open whiteboard'} aria-expanded={boardOpen} aria-controls="whiteboard-drawing" onClick={() => setBoardOpen(open => !open)}><svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><rect x="3" y="3" width="18" height="18" rx="4" /></svg></TooltipButton><div id="whiteboard-drawing" className="whiteboard-drawing" aria-hidden={!boardOpen} inert={!boardOpen}><Whiteboard key={active} ref={whiteboard} open={boardOpen} /></div></div>}{started && <div className="avatar-character"><Bloub key={active} showControls={false} followPointer={boardOpen && boardHovered} expression={boardOpen && boardHovered ? 'attentive' : done ? 'excited' : busy ? 'attentive' : session.expression || 'attentive'} /></div>}</aside>
+      <section className={`chat-section ${started ? 'chat-section-started' : 'chat-section-setup'} ${boardOpen ? 'board-open' : 'board-closed'} ${!started && setupStep === 'class-type' ? 'class-type-section' : ''}`} aria-label="Learning chat"><aside className="chat-avatar" aria-label="Your classroom student">{started && <div id="classroom-whiteboard" className="whiteboard-container" onPointerEnter={event => { if (event.pointerType === 'mouse') setBoardHovered(true) }} onPointerLeave={() => setBoardHovered(false)}><TooltipButton type="button" className="whiteboard-toggle" tooltip={boardOpen ? 'Collapse whiteboard' : 'Open whiteboard'} aria-label={boardOpen ? 'Collapse whiteboard' : 'Open whiteboard'} aria-expanded={boardOpen} aria-controls="whiteboard-drawing" onClick={() => setBoardOpen(open => !open)}><svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><rect x="3" y="3" width="18" height="18" rx="4" /></svg></TooltipButton><div id="whiteboard-drawing" className="whiteboard-drawing" aria-hidden={!boardOpen} inert={!boardOpen}><Whiteboard key={active} ref={whiteboard} open={boardOpen} /></div></div>}{started && <div className="avatar-character"><Bloub key={active} appearance={appearance} showControls={false} followPointer={boardOpen && boardHovered} expression={boardOpen && boardHovered ? 'attentive' : done ? 'excited' : busy ? 'attentive' : session.expression || 'attentive'} /></div>}</aside>
         <div className="chat-panel">
           {!started && <div className="setup-progress" role="progressbar" aria-label="Session setup progress" aria-valuemin={0} aria-valuemax={100} aria-valuenow={setupProgress} aria-valuetext={setupProgressLabel}>
             <span className="setup-progress-fill" style={{ transform: `scaleX(${setupProgress / 100})` }} />
@@ -471,7 +489,7 @@ function App() {
           const reviewedMessage = message.role === 'assistant' ? session.messages[index - 1] : undefined
           const reviewedPaper = reviewedMessage?.review ? session.messages.find(item => item.paper?.id === reviewedMessage.review?.paperId)?.paper : undefined
           const divider = message.passedLevel && <div className="level-divider" role="status"><span>{levels.find(level => level.id === message.passedLevel)?.name} level passed!</span></div>
-          return <div key={index}>{divider}<div className={`chat-message ${message.role} ${message.paper ? 'chat-message-with-paper' : ''}`}><div className="chat-message-copy"><span>{message.role === 'user' ? 'You' : 'Feynman'}</span><div className="chat-message-text"><ChatText>{message.content}</ChatText></div>{quantitative && reviewedPaper && reviewedMessage?.review && <ReviewFeedback paper={reviewedPaper} review={reviewedMessage.review} />}{message.boardImage && <img className="chat-board-image" src={message.boardImage} alt="Whiteboard shared with this message" />}</div>{quantitative && message.paper && currentConcept && <><svg className="paper-invite-arrow" viewBox="0 0 120 72" preserveAspectRatio="none" aria-hidden="true"><path d="M3 53 C27 64 42 51 57 36 S88 20 108 32" /><path d="M97 19 Q105 25 109 32 Q100 35 94 43" /></svg><PaperReview key={`${active}-${message.paper.id}`} paper={message.paper} review={session.messages.find(item => item.review?.paperId === message.paper?.id)?.review} busy={busy} error={error} onSubmit={review => send(review)} /></>}</div></div>
+          return <div key={index}>{divider}<div className={`chat-message ${message.role} ${message.paper ? 'chat-message-with-paper' : ''}`}><div className="chat-message-copy"><span>{message.role === 'user' ? 'You' : appearance.name}</span><div className="chat-message-text"><ChatText>{message.content}</ChatText></div>{quantitative && reviewedPaper && reviewedMessage?.review && <ReviewFeedback paper={reviewedPaper} review={reviewedMessage.review} />}{message.boardImage && <img className="chat-board-image" src={message.boardImage} alt="Whiteboard shared with this message" />}</div>{quantitative && message.paper && currentConcept && <><svg className="paper-invite-arrow" viewBox="0 0 120 72" preserveAspectRatio="none" aria-hidden="true"><path d="M3 53 C27 64 42 51 57 36 S88 20 108 32" /><path d="M97 19 Q105 25 109 32 Q100 35 94 43" /></svg><PaperReview characterName={appearance.name} key={`${active}-${message.paper.id}`} paper={message.paper} review={session.messages.find(item => item.review?.paperId === message.paper?.id)?.review} busy={busy} error={error} onSubmit={review => send(review)} /></>}</div></div>
         })}{done && currentConcept && <div className="level-divider level-divider-final" role="status"><span>{levels[currentConcept.passed - 1]?.name} level passed!</span>{currentConcept.passed < levels.length && <button type="button" className="level-divider-continue" disabled={busy} onClick={() => void raiseTarget(currentConcept, levels[currentConcept.passed].id)}>{busy ? 'Starting…' : 'Continue'}</button>}{sessionComplete(concepts) && currentConcept.passed < levels.length && <button type="button" className="level-divider-summary" onClick={() => navigate(`/summary?session=${encodeURIComponent(sessionId)}`)}>View session summary →</button>}</div>}{busy && <p className="chat-thinking">Thinking…</p>}</div>{done ? null : quantitative && currentConcept?.finalSummary && currentConcept.passed < 4 ? <div className="chat-complete" role="status"><strong>Analyze needs more evidence</strong><div className="learning-report"><p>{currentConcept.finalSummary}</p><strong>Analysis grade: {currentConcept.analysisGrade}%</strong></div><button type="button" className="send-button" disabled={busy} onClick={() => void retryAnalyze(currentConcept)}>{busy ? 'Starting…' : 'Try another paper set'}</button></div> : quantitative && currentConcept && levels[currentConcept.passed]?.id === 'analyze' && paper && !review ? <div className="chat-awaiting-grade">Sort all my papers to continue the conversation.</div> : <ChatComposer key={active} className="chat-composer" value={session.draft} onChange={draft => updateSession({ draft })} onSend={() => { void send() }} busy={busy} />}</>}{error && <p className="chat-error" role="alert">{error}</p>}</div></section></>}
     {!started && setupStep === 'class-type' && pendingLearningType && <LearningTypeChangeDialog learningType={pendingLearningType} onConfirm={confirmLearningTypeChange} onCancel={() => setPendingLearningType(null)} />}
   </main>
