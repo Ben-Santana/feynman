@@ -3,6 +3,7 @@ import { loadPrompts } from './promptStore.js';
 import { checklistItems, checklistText } from '../../frontend/src/rubricChecklist.js';
 import { extractArchiveText } from './uploadExtract.js';
 import { randomUUID } from 'node:crypto';
+import { targetedQuestionInstructions, assertTargetedQuestion } from './questionTargeting.js';
 import { learningTypes, resolveLearningType, needsScenarioOpening } from '../../frontend/src/learningTypes.js';
 const initialPrompts = loadPrompts();
 export const rubrics = Object.fromEntries(['remember', 'understand', 'apply', 'analyze'].map(level => [level, initialPrompts.text('chat.rubric.' + level)]));
@@ -279,8 +280,9 @@ export async function chat(input, query, prompts = loadPrompts()) {
   for (let attempt = 0; attempt < (needsPaper ? 3 : 2); attempt++) {
     const retryInstruction = needsPaper ? prompts.text('chat.retryPaper') : prompts.text('chat.retryQuestion', { previousQuestion: JSON.stringify(previousQuestion) });
     try {
-      result = await repairQuery(query, attempt, responseDeadline)(attempt ? `${responseSystem}\n${retryInstruction}` : responseSystem, transcript, responseTool);
+      result = await repairQuery(query, attempt, responseDeadline)(`${responseSystem}\n${targetedQuestionInstructions}${attempt ? `\n${retryInstruction}\nThe previous response failed validation. Replace any generic explanation request with a question explicitly naming the unresolved claim or relationship.` : ''}`, transcript, responseTool);
       if (typeof result?.message !== 'string' || !result.message.trim() || result.message.length > 12000) throw new InvalidOutputError('The model returned an empty or oversized message. Please retry.');
+      if (!needsPaper) assertTargetedQuestion(result.message);
     } catch (error) {
       if (responseDeadline.aborted || attempt === (needsPaper ? 2 : 1) || !(error instanceof InvalidOutputError)) throw error;
       continue;

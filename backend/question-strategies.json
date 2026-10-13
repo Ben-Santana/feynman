@@ -1,0 +1,284 @@
+{
+  "version": "question-strategies-3",
+  "strategies": [
+    {
+      "id": "controlled-comparison",
+      "title": "Controlled comparison",
+      "reviewStatus": "design_reviewed",
+      "validationStatus": "not_empirically_validated",
+      "levels": [
+        "understand",
+        "apply",
+        "analyze"
+      ],
+      "objective": "Distinguish competing explanations by varying one relevant condition while holding others fixed.",
+      "useWhen": "The student attributes an outcome to a factor that can be isolated in a comparison.",
+      "requirements": [
+        "A meaningful single change",
+        "Explicit conditions held fixed",
+        "Different predicted responses under the competing explanations"
+      ],
+      "avoidWhen": [
+        "Changing the condition does not distinguish the hypotheses",
+        "Several relevant conditions change together"
+      ],
+      "constructionRules": [
+        "Use a concrete situation in the student's topic.",
+        "Name the changed condition and hold other relevant conditions fixed.",
+        "Ask for one prediction or comparison, without announcing the correct outcome."
+      ],
+      "interpretationRules": [
+        "Use the response to distinguish the stated hypotheses, not to diagnose unrelated beliefs.",
+        "A prediction without explanation may remain ambiguous; identify the specific relationship requiring clarification."
+      ],
+      "examples": [
+        {
+          "level": "understand",
+          "illustrativeOnly": true,
+          "context": "A student attributes different changes in motion entirely to the magnitude of a push, while the discussion already compares objects with different masses.",
+          "question": "In the comparison you described, how does the object's mass affect what a change in motion tells you about the push?",
+          "diagnosticPurpose": "Probe whether the student distinguishes the influencing quantity from its effect while keeping the discussion on the existing comparison."
+        }
+      ],
+      "exampleUse": "Use examples to understand the questioning structure. They are authored illustrations, not validated inventory items or mandatory templates. Never copy their topic, assumptions, or answer interpretation into an unrelated question."
+    },
+    {
+      "id": "boundary-case",
+      "title": "Boundary case",
+      "reviewStatus": "design_reviewed",
+      "validationStatus": "not_empirically_validated",
+      "levels": [
+        "understand",
+        "apply",
+        "analyze"
+      ],
+      "objective": "Test the scope of a student's rule using a meaningful limiting condition.",
+      "useWhen": "A broad rule appears to conflate distinct quantities or fails at a limit such as zero, equilibrium, or disconnection.",
+      "requirements": [
+        "A physically or logically valid limiting condition",
+        "Student familiarity with the relevant quantities"
+      ],
+      "avoidWhen": [
+        "The limit is undefined or changes the problem into a different topic"
+      ],
+      "constructionRules": [
+        "Specify the limiting condition in the student's topic.",
+        "Ask about one quantity or relationship at that condition.",
+        "Do not state the conclusion that the limit is meant to reveal."
+      ],
+      "interpretationRules": [
+        "Separate a mistaken rule from a misunderstanding of the limiting condition.",
+        "Do not equate a correct limiting-case prediction with general mastery."
+      ],
+      "examples": [
+        {
+          "level": "understand",
+          "illustrativeOnly": true,
+          "context": "A student says an object at an instant of rest must have no acceleration.",
+          "question": "What does being momentarily at rest tell you about velocity, and how is that different from what acceleration describes?",
+          "diagnosticPurpose": "Clarify the meanings of two quantities at a limiting condition without requiring a numerical solution."
+        }
+      ],
+      "exampleUse": "Use examples to understand the questioning structure. They are authored illustrations, not validated inventory items or mandatory templates. Never copy their topic, assumptions, or answer interpretation into an unrelated question."
+    },
+    {
+      "id": "remove-condition",
+      "title": "Remove a condition",
+      "reviewStatus": "design_reviewed",
+      "validationStatus": "not_empirically_validated",
+      "levels": [
+        "understand",
+        "apply",
+        "analyze"
+      ],
+      "objective": "Distinguish a continuing state from the condition that produced or maintained it.",
+      "useWhen": "The student assumes that a state vanishes, persists, or changes merely because an initiating or maintaining condition is removed.",
+      "requirements": [
+        "A well-defined removal",
+        "Explicit remaining conditions and time frame"
+      ],
+      "avoidWhen": [
+        "Removal changes unspecified constraints",
+        "The student lacks prerequisite knowledge to predict the resulting state"
+      ],
+      "constructionRules": [
+        "Identify what is removed and what remains in the student's topic.",
+        "Ask about one resulting state or relationship.",
+        "Avoid importing assumptions from an analogy in another domain."
+      ],
+      "interpretationRules": [
+        "Check assumptions about remaining influences before attributing the answer to a misconception.",
+        "Keep absence of an initiating condition distinct from absence of all relevant influences."
+      ],
+      "examples": [
+        {
+          "level": "understand",
+          "illustrativeOnly": true,
+          "context": "A student says that motion always requires ongoing contact with the agent that started it.",
+          "question": "What role does contact play in your explanation: starting the motion or maintaining it afterward?",
+          "diagnosticPurpose": "Distinguish the initiating condition from the continuing state in the student's stated account."
+        }
+      ],
+      "exampleUse": "Use examples to understand the questioning structure. They are authored illustrations, not validated inventory items or mandatory templates. Never copy their topic, assumptions, or answer interpretation into an unrelated question."
+    },
+    {
+      "id": "quantity-versus-change",
+      "title": "Separate a quantity from its change",
+      "reviewStatus": "design_reviewed",
+      "validationStatus": "not_empirically_validated",
+      "levels": [
+        "understand",
+        "apply",
+        "analyze"
+      ],
+      "objective": "Distinguish the value of a quantity from its rate of change or a related effect.",
+      "useWhen": "The student's statement treats a nonzero value as proof of change, or zero change as absence of the quantity.",
+      "requirements": [
+        "Two clearly named quantities or relationships",
+        "A valid situation in which their values or changes can be distinguished"
+      ],
+      "avoidWhen": [
+        "The quantities are not actually distinct",
+        "The distinction requires concepts beyond the chosen level"
+      ],
+      "constructionRules": [
+        "Use a concrete constant-value, changing-value, or zero-change situation.",
+        "Ask about one relationship between the named quantities.",
+        "Do not supply the equation or conclusion being assessed."
+      ],
+      "interpretationRules": [
+        "Identify which quantity the student is referring to rather than inferring understanding from a keyword.",
+        "Use different response patterns for distinct explanations; mark vague answers unresolved."
+      ],
+      "examples": [
+        {
+          "level": "understand",
+          "illustrativeOnly": true,
+          "context": "A student describes a quickly moving object as necessarily having a large acceleration.",
+          "question": "What does acceleration describe that speed by itself does not?",
+          "diagnosticPurpose": "Probe the meaning of a quantity versus its rate of change without calculations."
+        }
+      ],
+      "exampleUse": "Use examples to understand the questioning structure. They are authored illustrations, not validated inventory items or mandatory templates. Never copy their topic, assumptions, or answer interpretation into an unrelated question."
+    },
+    {
+      "id": "reconcile-claims",
+      "title": "Reconcile specific claims",
+      "reviewStatus": "design_reviewed",
+      "validationStatus": "not_empirically_validated",
+      "levels": [
+        "understand",
+        "apply",
+        "analyze"
+      ],
+      "objective": "Probe whether the student can connect two statements whose relationship is unresolved.",
+      "useWhen": "The student has made two specific claims that appear inconsistent or lack a connecting relationship.",
+      "requirements": [
+        "Both claims supported by the transcript",
+        "An explicit relationship to investigate"
+      ],
+      "avoidWhen": [
+        "The contradiction is invented",
+        "The apparent conflict disappears when context is clarified"
+      ],
+      "constructionRules": [
+        "Ground the probe in the student's actual statements.",
+        "Instantiate their relationship in a small concrete setting when possible.",
+        "Ask about the particular quantity or connection, not whether they can explain their reasoning generally."
+      ],
+      "interpretationRules": [
+        "Allow context-dependent claims to be consistent.",
+        "Identify whether the student revises a claim or supplies a valid relationship; do not require a predetermined phrasing."
+      ],
+      "examples": [
+        {
+          "level": "understand",
+          "illustrativeOnly": true,
+          "context": "A student says speed remains constant but also that kinetic energy increases, with no change in mass.",
+          "question": "You described an increase in kinetic energy while mass and speed stay unchanged. What does kinetic energy depend on in that explanation?",
+          "diagnosticPurpose": "Ask about the specific relationship connecting the student's claims rather than requesting a generic explanation."
+        }
+      ],
+      "exampleUse": "Use examples to understand the questioning structure. They are authored illustrations, not validated inventory items or mandatory templates. Never copy their topic, assumptions, or answer interpretation into an unrelated question."
+    },
+    {
+      "id": "representation-change",
+      "title": "Change representation",
+      "reviewStatus": "design_reviewed",
+      "validationStatus": "not_empirically_validated",
+      "levels": [
+        "understand",
+        "apply",
+        "analyze"
+      ],
+      "objective": "Test whether a conceptual relationship is understood across equivalent representations.",
+      "useWhen": "A verbal claim can be probed through a small table, graph, diagram description, or concrete observation.",
+      "requirements": [
+        "Representations describe the same situation",
+        "Student knows how to read the proposed representation"
+      ],
+      "avoidWhen": [
+        "Representation literacy would confound the target concept",
+        "The conversion changes the underlying problem"
+      ],
+      "constructionRules": [
+        "Provide all needed labels, units, intervals, and reference conditions.",
+        "Ask about one feature that distinguishes the hypotheses.",
+        "Do not display a representation that already states the answer."
+      ],
+      "interpretationRules": [
+        "Distinguish conceptual difficulty from misreading the representation.",
+        "Keep the conceptual target invariant across representations."
+      ],
+      "examples": [
+        {
+          "level": "understand",
+          "illustrativeOnly": true,
+          "context": "A student has explained that a flat graph means nothing exists; the graph already discussed represents temperature versus time.",
+          "question": "What does the flat line tell you about the temperature itself, compared with how the temperature changes over time?",
+          "diagnosticPurpose": "Distinguish the represented quantity from its change, with the axes already understood."
+        }
+      ],
+      "exampleUse": "Use examples to understand the questioning structure. They are authored illustrations, not validated inventory items or mandatory templates. Never copy their topic, assumptions, or answer interpretation into an unrelated question."
+    },
+    {
+      "id": "clarify-specific-term",
+      "title": "Clarify a specific term",
+      "reviewStatus": "design_reviewed",
+      "validationStatus": "not_empirically_validated",
+      "levels": [
+        "remember",
+        "understand",
+        "apply",
+        "analyze"
+      ],
+      "objective": "Distinguish imprecise wording from a substantive conceptual claim.",
+      "useWhen": "A particular word or short phrase in the student's answer has several plausible meanings.",
+      "requirements": [
+        "An exact student phrase",
+        "A concrete ambiguity that prevents assessment"
+      ],
+      "avoidWhen": [
+        "The claim is already clear and needs a diagnostic prediction rather than a definition"
+      ],
+      "constructionRules": [
+        "Name the exact term and the context where its meaning matters.",
+        "Ask which quantity, entity, or relationship the phrase refers to without supplying the correct definition."
+      ],
+      "interpretationRules": [
+        "Treat a clarified term as evidence only for the specific claim it resolves.",
+        "Do not demand an explanation at a higher learning level than requested."
+      ],
+      "examples": [
+        {
+          "level": "understand",
+          "illustrativeOnly": true,
+          "context": "A student uses momentum and force interchangeably in an explanation of motion.",
+          "question": "When you call momentum a stored force, what does the word force refer to in your explanation?",
+          "diagnosticPurpose": "Clarify a particular student phrase without supplying a definition or asking for all their reasoning."
+        }
+      ],
+      "exampleUse": "Use examples to understand the questioning structure. They are authored illustrations, not validated inventory items or mandatory templates. Never copy their topic, assumptions, or answer interpretation into an unrelated question."
+    }
+  ]
+}

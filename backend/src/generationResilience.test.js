@@ -122,7 +122,7 @@ test('duplicate requested criteria preserve their individual judgments', async (
   const criteria = [{ aspect: 'Charge', ...structuredClone(judgment) }, { aspect: 'Charge', ...structuredClone(judgment), status: 'missing', evidence: [] }];
   const result = await chat(request, async (_system, _messages, tool) => tool.name === 'evaluate_learning'
     ? { ...verdict(), criteria }
-    : { message: 'Could you explain that?', expression: 'attentive' });
+    : { message: 'What does charge mean for a capacitor?', expression: 'attentive' });
   assert.equal(result.assessment.complete, false);
   assert.deepEqual(result.assessment.criteria.map(item => item.status), ['supported', 'missing']);
 });

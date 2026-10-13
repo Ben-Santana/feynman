@@ -1,0 +1,329 @@
+{
+  "version": 1,
+  "cases": {
+    "inertia": {
+      "input": {
+        "topic": "Inertia and motion after contact",
+        "level": "understand",
+        "learningType": "quantitative"
+      },
+      "items": [
+        "Explains why an object can keep moving after contact ends without a continuing push.",
+        "Explains that inertia resists changes in velocity, rather than acting as a force.",
+        "Explains when zero net force implies constant velocity after contact ends.",
+        "Explains how friction or air resistance changes motion after contact ends.",
+        "Explains why net force, rather than motion direction, determines acceleration."
+      ],
+      "generatedAt": "2026-10-13T01:49:45.573Z",
+      "provider": "chatgpt",
+      "model": "Account default",
+      "promptVersion": "1ed6b362365e1015fd4ce68ea57a48f664401c3ceee0009263c8d629323a1cde",
+      "pipeline": "generateLevelRubric",
+      "endpoint": "/api/developer/rubric"
+    },
+    "collision": {
+      "input": {
+        "topic": "Interaction forces in unequal-mass collisions",
+        "level": "understand",
+        "learningType": "quantitative"
+      },
+      "items": [
+        "Explains why unequal-mass objects exert equal and opposite forces on each other throughout a collision.",
+        "Explains when Newton’s third law relates collision forces and F = ma relates each force to acceleration.",
+        "Explains why the smaller mass has a larger acceleration magnitude under the same interaction force.",
+        "Explains why equal and opposite collision forces do not cancel on either object's individual force diagram."
+      ],
+      "generatedAt": "2026-10-13T01:49:51.529Z",
+      "provider": "chatgpt",
+      "model": "Account default",
+      "promptVersion": "1ed6b362365e1015fd4ce68ea57a48f664401c3ceee0009263c8d629323a1cde",
+      "pipeline": "generateLevelRubric",
+      "endpoint": "/api/developer/rubric"
+    },
+    "support": {
+      "input": {
+        "topic": "Force balance for a supported object",
+        "level": "understand",
+        "learningType": "quantitative"
+      },
+      "items": [
+        "Explains why a supported object at rest has zero net force.",
+        "Explains when using ΣF = 0 is appropriate for a supported object.",
+        "Explains how weight, normal force, and tension act on a supported object.",
+        "Explains why resolving forces into components allows separate horizontal and vertical balance equations.",
+        "Explains why the support force equals the weight only when no other forces contribute along that direction."
+      ],
+      "generatedAt": "2026-10-13T01:49:57.810Z",
+      "provider": "chatgpt",
+      "model": "Account default",
+      "promptVersion": "1ed6b362365e1015fd4ce68ea57a48f664401c3ceee0009263c8d629323a1cde",
+      "pipeline": "generateLevelRubric",
+      "endpoint": "/api/developer/rubric"
+    },
+    "apex": {
+      "input": {
+        "topic": "Force and acceleration at a turning point",
+        "level": "understand",
+        "learningType": "quantitative"
+      },
+      "items": [
+        "Explains why velocity is momentarily zero at a turning point in one-dimensional motion.",
+        "Explains why zero velocity at a turning point does not imply zero net force or acceleration.",
+        "Explains how F_net = ma relates acceleration's magnitude and direction to net force and mass.",
+        "Explains why Newton's second law applies at a turning point even when the object is momentarily at rest."
+      ],
+      "generatedAt": "2026-10-13T01:50:07.725Z",
+      "provider": "chatgpt",
+      "model": "Account default",
+      "promptVersion": "1ed6b362365e1015fd4ce68ea57a48f664401c3ceee0009263c8d629323a1cde",
+      "pipeline": "generateLevelRubric",
+      "endpoint": "/api/developer/rubric"
+    },
+    "projectile": {
+      "input": {
+        "topic": "Independent components of projectile motion",
+        "level": "understand",
+        "learningType": "quantitative"
+      },
+      "items": [
+        "Explains why horizontal velocity stays constant while vertical velocity changes under gravity without air resistance.",
+        "Explains why horizontal and vertical motion can be calculated separately using the same elapsed time.",
+        "Explains when constant-velocity horizontal and constant-acceleration vertical equations apply to a projectile.",
+        "Explains how v₀ cos θ and v₀ sin θ represent launch velocity components when θ is measured from horizontal.",
+        "Explains how the chosen vertical direction determines the sign of gravitational acceleration."
+      ],
+      "generatedAt": "2026-10-13T01:50:14.450Z",
+      "provider": "chatgpt",
+      "model": "Account default",
+      "promptVersion": "1ed6b362365e1015fd4ce68ea57a48f664401c3ceee0009263c8d629323a1cde",
+      "pipeline": "generateLevelRubric",
+      "endpoint": "/api/developer/rubric"
+    },
+    "acceleration": {
+      "input": {
+        "topic": "Speed and acceleration from position observations",
+        "level": "understand",
+        "learningType": "quantitative"
+      },
+      "items": [
+        "Explains how displacement divided by elapsed time gives average velocity between position observations.",
+        "Explains why average speed uses distance traveled rather than displacement magnitude.",
+        "Explains how change in velocity divided by elapsed time represents average acceleration.",
+        "Explains when closely spaced position observations can estimate instantaneous velocity and acceleration.",
+        "Explains why velocity estimates from successive intervals must be assigned times to estimate acceleration."
+      ],
+      "generatedAt": "2026-10-13T01:50:21.149Z",
+      "provider": "chatgpt",
+      "model": "Account default",
+      "promptVersion": "1ed6b362365e1015fd4ce68ea57a48f664401c3ceee0009263c8d629323a1cde",
+      "pipeline": "generateLevelRubric",
+      "endpoint": "/api/developer/rubric"
+    },
+    "indirect-torque": {
+      "input": {
+        "topic": "Torque, lever arms, and rotational effects",
+        "level": "understand",
+        "learningType": "quantitative"
+      },
+      "items": [
+        "Explains torque as a force's turning effect about a chosen axis.",
+        "Explains why the lever arm is the perpendicular distance from the axis to the force's line of action.",
+        "Explains how τ = rF sin θ relates torque to force, axis-to-application distance, and angle.",
+        "Explains when torque analysis is appropriate for predicting rotation or rotational equilibrium.",
+        "Explains why a force directed through the rotation axis produces no torque.",
+        "Explains how clockwise and counterclockwise torques contribute opposite signs to net torque."
+      ],
+      "generatedAt": "2026-10-13T01:50:28.195Z",
+      "provider": "chatgpt",
+      "model": "Account default",
+      "promptVersion": "1ed6b362365e1015fd4ce68ea57a48f664401c3ceee0009263c8d629323a1cde",
+      "pipeline": "generateLevelRubric",
+      "endpoint": "/api/developer/rubric"
+    },
+    "indirect-work": {
+      "input": {
+        "topic": "Mechanical work and changes in kinetic energy",
+        "level": "understand",
+        "learningType": "quantitative"
+      },
+      "items": [
+        "Explains why only the force component parallel to displacement contributes to work in W = Fd cos θ.",
+        "Explains how the angle θ between force and displacement determines whether work is positive, negative, or zero.",
+        "Explains why net work equals the change in kinetic energy, W_net = ΔK.",
+        "Explains when W = Fd cos θ applies: a constant force over a straight displacement.",
+        "Explains that the work–energy theorem uses work from all forces, not just one force.",
+        "Explains how mass and speed determine kinetic energy in K = ½mv²."
+      ],
+      "generatedAt": "2026-10-13T01:50:35.520Z",
+      "provider": "chatgpt",
+      "model": "Account default",
+      "promptVersion": "1ed6b362365e1015fd4ce68ea57a48f664401c3ceee0009263c8d629323a1cde",
+      "pipeline": "generateLevelRubric",
+      "endpoint": "/api/developer/rubric"
+    },
+    "indirect-buoyancy": {
+      "input": {
+        "topic": "Buoyancy and equilibrium of a floating object",
+        "level": "understand",
+        "learningType": "quantitative"
+      },
+      "items": [
+        "Explains why the buoyant force equals the weight of the fluid displaced by the object.",
+        "Explains why buoyant force equals the object's weight when it floats at rest with no other vertical forces.",
+        "Explains when Archimedes' principle and force balance can determine how much of an object is submerged.",
+        "Explains why the displaced volume in F_b = ρ_fluid g V_displaced is the submerged volume, not the total volume.",
+        "Explains how the object's average density relative to fluid density determines its submerged fraction."
+      ],
+      "generatedAt": "2026-10-13T01:50:42.443Z",
+      "provider": "chatgpt",
+      "model": "Account default",
+      "promptVersion": "1ed6b362365e1015fd4ce68ea57a48f664401c3ceee0009263c8d629323a1cde",
+      "pipeline": "generateLevelRubric",
+      "endpoint": "/api/developer/rubric"
+    },
+    "indirect-spring": {
+      "input": {
+        "topic": "Elastic potential energy and a constrained spring",
+        "level": "understand",
+        "learningType": "quantitative"
+      },
+      "items": [
+        "Explains why U = ½kx² represents energy stored by stretching or compressing a spring.",
+        "Explains when U = ½kx² applies: constant stiffness within the spring's Hooke's-law range.",
+        "Explains how the spring constant k describes stiffness.",
+        "Explains why x is deformation from the spring's natural length, not necessarily an object's displacement.",
+        "Explains how a constraint relates an object's allowed motion to the spring's deformation."
+      ],
+      "generatedAt": "2026-10-13T01:50:53.856Z",
+      "provider": "chatgpt",
+      "model": "Account default",
+      "promptVersion": "1ed6b362365e1015fd4ce68ea57a48f664401c3ceee0009263c8d629323a1cde",
+      "pipeline": "generateLevelRubric",
+      "endpoint": "/api/developer/rubric"
+    },
+    "indirect-damping": {
+      "input": {
+        "topic": "Damped oscillation and mechanical energy",
+        "level": "understand",
+        "learningType": "quantitative"
+      },
+      "items": [
+        "Explains how damping transfers mechanical energy into thermal energy.",
+        "Explains how kinetic and potential energy exchange during a damped oscillation.",
+        "Explains what each term represents in m ẍ + b ẋ + kx = 0.",
+        "Explains when the linear damping model F = −bv is appropriate.",
+        "Explains why an underdamped oscillator's amplitude decays as e^(−bt/2m).",
+        "Explains how damping strength distinguishes underdamped, critically damped, and overdamped motion."
+      ],
+      "generatedAt": "2026-10-13T01:51:01.043Z",
+      "provider": "chatgpt",
+      "model": "Account default",
+      "promptVersion": "1ed6b362365e1015fd4ce68ea57a48f664401c3ceee0009263c8d629323a1cde",
+      "pipeline": "generateLevelRubric",
+      "endpoint": "/api/developer/rubric"
+    },
+    "indirect-terminal": {
+      "input": {
+        "topic": "Terminal velocity, drag, and net force",
+        "level": "understand",
+        "learningType": "quantitative"
+      },
+      "items": [
+        "Explain why drag opposes motion relative to a fluid and increases with speed.",
+        "Explain how F_net = mg - F_drag describes downward motion when buoyancy is negligible.",
+        "Explain why acceleration decreases as a falling object's drag approaches its weight.",
+        "Explain why terminal velocity means zero net force and constant velocity, not zero velocity.",
+        "Explain when linear drag or quadratic drag is an appropriate model for fluid resistance.",
+        "Explain how mass, fluid density, and cross-sectional area affect terminal speed under quadratic drag."
+      ],
+      "generatedAt": "2026-10-13T01:51:12.502Z",
+      "provider": "chatgpt",
+      "model": "Account default",
+      "promptVersion": "1ed6b362365e1015fd4ce68ea57a48f664401c3ceee0009263c8d629323a1cde",
+      "pipeline": "generateLevelRubric",
+      "endpoint": "/api/developer/rubric"
+    },
+    "ece-series-current": {
+      "input": {
+        "topic": "Current continuity and energy dissipation in a series circuit",
+        "level": "understand",
+        "learningType": "quantitative"
+      },
+      "items": [
+        "Explains why charge conservation requires the same steady current through every component in a series circuit.",
+        "Explains why current is not used up as resistors transfer electrical energy to heat.",
+        "Explains how V = IR relates each resistor's voltage drop to the shared current and its resistance.",
+        "Explains how P = IV represents the rate of electrical energy dissipation in a resistor.",
+        "Explains when P = I²R can be used to compare resistor heating in a steady series circuit.",
+        "Explains why the sum of series voltage drops equals the source voltage in an ideal circuit."
+      ],
+      "generatedAt": "2026-10-13T01:51:19.242Z",
+      "provider": "chatgpt",
+      "model": "Account default",
+      "promptVersion": "1ed6b362365e1015fd4ce68ea57a48f664401c3ceee0009263c8d629323a1cde",
+      "pipeline": "generateLevelRubric",
+      "endpoint": "/api/developer/rubric"
+    },
+    "ece-parallel-voltage": {
+      "input": {
+        "topic": "Voltage and current in parallel resistive branches",
+        "level": "understand",
+        "learningType": "quantitative"
+      },
+      "items": [
+        "Explains why parallel resistive branches connected to the same two nodes have equal voltage.",
+        "Explains how I = V/R relates each branch current to its resistance and the shared voltage.",
+        "Explains when the same voltage can be used in Ohm’s law for multiple resistive branches.",
+        "Explains why the total current equals the sum of the parallel branch currents.",
+        "Explains why a lower-resistance branch carries more current at the same voltage."
+      ],
+      "generatedAt": "2026-10-13T01:51:25.238Z",
+      "provider": "chatgpt",
+      "model": "Account default",
+      "promptVersion": "1ed6b362365e1015fd4ce68ea57a48f664401c3ceee0009263c8d629323a1cde",
+      "pipeline": "generateLevelRubric",
+      "endpoint": "/api/developer/rubric"
+    },
+    "ece-capacitor-energy": {
+      "input": {
+        "topic": "Capacitor voltage, stored charge, and stored energy",
+        "level": "understand",
+        "learningType": "quantitative"
+      },
+      "items": [
+        "Explains how Q = CV relates charge magnitude on either plate to capacitance and voltage across the capacitor.",
+        "Explains capacitance as the charge stored per unit voltage.",
+        "Explains stored energy as work done to separate charge onto the capacitor plates.",
+        "Explains why U = ½CV² makes stored energy grow quadratically with voltage at fixed capacitance.",
+        "Explains when U = ½CV², U = Q²/(2C), or U = ½QV is useful based on the quantities known.",
+        "Explains that these equations assume a constant capacitance over the voltage range considered."
+      ],
+      "generatedAt": "2026-10-13T01:51:32.758Z",
+      "provider": "chatgpt",
+      "model": "Account default",
+      "promptVersion": "1ed6b362365e1015fd4ce68ea57a48f664401c3ceee0009263c8d629323a1cde",
+      "pipeline": "generateLevelRubric",
+      "endpoint": "/api/developer/rubric"
+    },
+    "ece-linearity": {
+      "input": {
+        "topic": "Linearity and superposition in signals and systems",
+        "level": "understand",
+        "learningType": "quantitative"
+      },
+      "items": [
+        "Explains additivity as the response to a sum of inputs equaling the sum of their separate responses.",
+        "Explains homogeneity as scaling an input by a constant scaling its output by the same constant.",
+        "Explains why superposition requires both additivity and homogeneity.",
+        "Explains when known input-output pairs can be combined to predict a system's response using superposition.",
+        "Explains what the weights a and b represent in T[a x₁ + b x₂] = a T[x₁] + b T[x₂]."
+      ],
+      "generatedAt": "2026-10-13T03:00:39.497Z",
+      "provider": "chatgpt",
+      "model": "Account default",
+      "promptVersion": "1ed6b362365e1015fd4ce68ea57a48f664401c3ceee0009263c8d629323a1cde",
+      "pipeline": "generateLevelRubric",
+      "endpoint": "/api/developer/rubric"
+    }
+  }
+}

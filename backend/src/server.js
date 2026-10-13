@@ -1,5 +1,6 @@
 import { InvalidOutputError } from './structuredOutput.js';
 import { createServer } from 'node:http';
+import { randomUUID } from 'node:crypto';
 import { createAccessGate } from './access.js';
 import { pathToFileURL } from 'node:url';
 import { resolveLearningType } from '../../frontend/src/learningTypes.js';
@@ -8,6 +9,8 @@ import { listPrompts, savePrompt, PromptError, promptFile, loadPrompts } from '.
 import { createChatGPT } from './chatgpt.js';
 import { AIError, createProviderQuery } from './providers/LanguageModelProvider.js';
 import { createProviderRegistry } from './providers/registry.js';
+import { compareQuestions } from './strategyComparison.js';
+import { comparisonCases, corpusVersion } from './questionStrategies.js';
 
 export function createApiServer({ query, hosted = false, env = process.env, promptsPath = promptFile, chatgpt = hosted ? null : createChatGPT(), providers = createProviderRegistry({ chatgpt, env }) } = {}) {
   const access = createAccessGate(env, hosted);
@@ -20,10 +23,11 @@ export function createApiServer({ query, hosted = false, env = process.env, prom
     const send = (status, data) => { res.writeHead(status); res.end(JSON.stringify(data)); };
     const calls = req.url === '/api/chat' && req.headers['x-feynman-trace'] === '1' ? [] : null;
     const developer = req.url === '/api/developer/prompts';
+    const comparison = req.url === '/api/developer/question-comparison';
     const callbackRequest = req.url === '/auth/callback' || req.url.startsWith('/auth/callback?');
     if (callbackRequest) console.info('Feynman ChatGPT callback: HTTP request received.');
     // Hosted instances cannot persist local OAuth credentials or source edits.
-    if (hosted && (developer || callbackRequest || ['/api/ai/sign-in', '/api/ai/sign-out', '/api/ai/remove-account'].includes(req.url))) return send(403, { error: 'ChatGPT connections and prompt editing require the local Feynman app. Choose Anthropic in AI settings on this deployment.' });
+    if (hosted && (developer || comparison || callbackRequest || ['/api/ai/sign-in', '/api/ai/sign-out', '/api/ai/remove-account'].includes(req.url))) return send(403, { error: 'Developer tools and ChatGPT connections require the local Feynman app.' });
     if (!hosted && !/^(localhost|127\.0\.0\.1)(:\d+)?$/.test(req.headers.host || '')) return send(403, { error: 'The Feynman API is only available on localhost.' });
     if (req.method === 'GET' && callbackRequest) {
       res.setHeader('Content-Type', 'text/plain; charset=utf-8');
@@ -42,6 +46,7 @@ export function createApiServer({ query, hosted = false, env = process.env, prom
       if (await access.handle(req, res, send)) return;
       if (!access.valid(req)) return send(401, { error: 'Access code required.' });
       if (developer && req.method === 'GET') return send(200, listPrompts(promptsPath));
+      if (comparison && req.method === 'GET') return send(200, { cases: comparisonCases, corpusVersion });
       const provider = req.headers['x-feynman-provider'] || 'anthropic';
       const accounts = chatgpt?.accounts() || [];
       const accountId = req.headers['x-feynman-account'] || accounts.find(item => item.connected)?.id;
@@ -55,7 +60,7 @@ export function createApiServer({ query, hosted = false, env = process.env, prom
       if (req.method === 'GET' && req.url === '/api/ai/models') return send(200, { models: await adapter.listModels() });
       const aiControl = ['/api/ai/sign-in', '/api/ai/sign-out', '/api/ai/remove-account'].includes(req.url);
       if (aiControl && (!req.headers.origin || !/^application\/json(?:;|$)/i.test(req.headers['content-type'] || ''))) return send(403, { error: 'Open AI settings in the local Feynman app to manage accounts.' });
-      if (req.method !== 'POST' || !['/api/chat', '/api/concepts', '/api/concept-suggestions', '/api/rubric', '/api/developer/rubric', '/api/developer/prompts', '/api/ai/sign-in', '/api/ai/sign-out', '/api/ai/remove-account'].includes(req.url)) return send(404, { error: 'Not found' });
+      if (req.method !== 'POST' || !['/api/chat', '/api/concepts', '/api/concept-suggestions', '/api/rubric', '/api/developer/rubric', '/api/developer/prompts', '/api/developer/question-comparison', '/api/ai/sign-in', '/api/ai/sign-out', '/api/ai/remove-account'].includes(req.url)) return send(404, { error: 'Not found' });
       let body = '';
       for await (const chunk of req) {
         body += chunk;
@@ -80,6 +85,12 @@ export function createApiServer({ query, hosted = false, env = process.env, prom
         ...options, signal: options.signal ? AbortSignal.any([options.signal, disconnected.signal]) : disconnected.signal,
       });
       const configurationError = adapter.metadata.configurationHelp;
+      if (comparison) {
+        if (!comparisonCases.some(item => item.id === input.caseId)) return send(400, { error: 'Choose a valid comparison case.' });
+        if (!configured) return send(503, { error: configurationError });
+        const result = await compareQuestions(input.caseId, selectedQuery, loadPrompts(promptsPath));
+        return send(200, { ...result, model, provider, runId: randomUUID(), generatedAt: new Date().toISOString() });
+      }
       if (req.url !== '/api/chat') {
         try { resolveLearningType(input?.learningType); } catch (error) { return send(400, { error: error.message }); }
         if (!configured) return send(503, { error: configurationError });

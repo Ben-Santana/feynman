@@ -138,3 +138,36 @@
 .developer-terminal pre { margin: 4px 0 12px; padding: 14px; background: var(--muted); border-radius: 6px; white-space: pre-wrap; overflow-wrap: anywhere; tab-size: 2; font: inherit; }
 .developer-trace-error { color: var(--primary); }
 @media (max-width: 600px) { .developer-terminal > header { flex-direction: column; gap: 2px; } .developer-terminal-scroll { padding: 8px 12px 12px; } }
+.question-comparison { border: 1px solid var(--border); border-radius: 18px; padding: 24px; }
+.question-comparison h2 { font-size: 23px; margin: 0 0 10px; }
+.question-comparison p { line-height: 1.65; overflow-wrap: anywhere; }
+.comparison-config { margin: 24px 0; padding: 20px; background: var(--muted); border-radius: 12px; }
+.comparison-config label { display: block; margin-bottom: 8px; }
+.comparison-actions { display: flex; gap: 22px; align-items: center; flex-wrap: wrap; margin: 16px 0; }
+.comparison-actions .send-button { padding: 12px 20px; }
+.question-comparison details { margin-top: 16px; }
+.question-comparison summary { cursor: pointer; font-size: 13px; }
+.question-comparison pre { white-space: pre-wrap; overflow-wrap: anywhere; max-height: 450px; overflow: auto; padding: 16px; background: var(--muted); font: 12px/1.65 ui-monospace, monospace; border-radius: 8px; }
+.comparison-transcript { border-left: 2px solid var(--border); padding-left: 18px; }
+.question-comparison ol { padding-left: 22px; font-size: 13px; line-height: 1.8; }
+.comparison-input-labels { display: grid; grid-template-columns: max-content 1fr; gap: 8px 16px; margin: 18px 0; font-size: 13px; }
+.comparison-input-labels dt { font-weight: 500; }
+.comparison-input-labels dd { margin: 0; overflow-wrap: anywhere; }
+.comparison-rubric-heading { margin: 18px 0 8px; font-size: 13px; }
+.comparison-history-heading { display: flex; justify-content: space-between; gap: 16px; align-items: center; }
+.comparison-result { border: 1px solid var(--border); border-radius: 12px; padding: 20px; margin-top: 20px; }
+.comparison-result h3 { margin: 0; font-size: 18px; }
+.comparison-result small { color: var(--muted-foreground); overflow-wrap: anywhere; }
+.comparison-questions { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin: 20px 0; }
+.comparison-questions section { min-width: 0; background: var(--muted); padding: 18px; border-radius: 10px; line-height: 1.7; }
+.comparison-result h4 { margin: 0 0 12px; font-size: 14px; }
+.comparison-strategy { margin-top: 18px; font-size: 13px; }
+.comparison-strategy { padding: 18px; background: var(--muted); border-radius: 10px; }
+.comparison-strategy-details { display: grid; grid-template-columns: minmax(120px, 160px) minmax(0, 1fr); gap: 12px 20px; margin: 0; line-height: 1.65; }
+.comparison-strategy-details dt { font-weight: 500; }
+.comparison-strategy-details dd { margin: 0; overflow-wrap: anywhere; }
+.comparison-plan-heading { margin-top: 24px !important; padding-top: 18px; border-top: 1px solid var(--border); }
+.comparison-strategy ul { padding-left: 20px; line-height: 1.65; }
+.comparison-coverage-gap { padding: 18px; border: 1px solid var(--border); border-radius: 10px; font-size: 13px; }
+@media (max-width: 700px) { .comparison-strategy-details { grid-template-columns: 1fr; gap: 6px; } .comparison-strategy-details dd { margin-bottom: 10px; } }
+@media (max-width: 700px) { .comparison-questions { grid-template-columns: 1fr; } .question-comparison { padding: 14px; } .developer-tabs { gap: 16px; flex-wrap: wrap; } }

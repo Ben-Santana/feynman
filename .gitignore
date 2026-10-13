@@ -39,3 +39,6 @@ backend/.chatgpt/
 *.njsproj
 *.sln
 *.sw?
+
+# Local planning and research documents
+/docs/

@@ -6,7 +6,7 @@ const input = (overrides = {}) => ({ level: 'remember', topic: 'Capacitors', asp
 const evidence = (quote = 'They store energy in an electric field.', messageIndex = 1) => [{ quote, messageIndex }];
 const judgment = (status = 'supported', quote = 'They store energy in an electric field.', messageIndex = 1, result = 'correct') => ({ status, result, evidence: status === 'missing' ? [] : evidence(quote, messageIndex) });
 const verdict = (status = 'supported') => ({ reason: 'Student evidence checked.', criteria: [{ aspect: 'Stored energy', ...judgment(status) }], task: judgment(status) });
-const classmate = { message: 'Could you explain that?', expression: 'attentive' };
+const classmate = { message: 'What does stored energy mean for a capacitor?', expression: 'attentive' };
 
 test('upload generates a complete editable rubric from a text file', async () => {
   const rubric = { remember: 'Identify stored energy.', understand: 'Explain the electric field.', apply: 'Calculate stored energy.', analyze: 'Check a proposed calculation.' };
