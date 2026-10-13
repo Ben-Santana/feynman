@@ -445,16 +445,23 @@ html, body, #root {
 .concept-tracker::-webkit-scrollbar { display: none; }
 .concept-tracker-overflow { mask-image: linear-gradient(to right, transparent, #000 26px, #000 100%); }
 .concept-tracker:focus-visible { outline: 2px solid var(--primary); outline-offset: 2px; border-radius: 12px; }
-.concept-orb { display: grid; place-items: center; flex: none; width: 36px; height: 36px; padding: 3px; border: 1px solid transparent; border-radius: 50%; background: transparent; cursor: pointer; }
+.concept-orb { display: grid; place-items: center; flex: none; width: 40px; height: 40px; padding: 5px; border: 1px solid transparent; border-radius: 50%; background: transparent; cursor: pointer; transition: background .16s ease, border-color .16s ease; -webkit-tap-highlight-color: transparent; }
 .concept-orb-visual { display: block; flex: none; width: 28px; height: 28px; overflow: visible; pointer-events: none; }
 .concept-orb-visual circle { fill: none; stroke-width: 4.5; stroke-linecap: round; transform: rotate(-90deg); transform-origin: center; }
 .concept-orb-track { stroke: var(--border); }
 .concept-orb-progress { stroke: var(--primary); }
 .concept-orb-visual .concept-orb-selection { fill: var(--primary); stroke: none; transform: none; }
-.concept-orb:hover:not(:disabled) { background: var(--surface-hover); }
+@media (hover: hover) {
+  .concept-orb:hover:not(:disabled) { background: color-mix(in srgb, var(--primary) 7%, transparent); border-color: color-mix(in srgb, var(--primary) 16%, transparent); }
+}
+.concept-orb:active:not(:disabled) { background: color-mix(in srgb, var(--primary) 12%, transparent); }
+.concept-orb:disabled { cursor: default; opacity: .55; }
+@media (pointer: coarse) { .concept-orb { width: 44px; height: 44px; } }
+@media (prefers-reduced-motion: reduce) { .concept-orb { transition: none; } }
 .concept-orb:focus-visible { outline: 2px solid var(--primary); outline-offset: 3px; }
-.rubric-help-tooltip.concept-orb-tooltip { position: fixed; z-index: 10; width: max-content; max-width: min(220px, calc(100vw - 24px)); background: var(--black); color: var(--white); opacity: 1; visibility: visible; overflow-wrap: anywhere; text-align: center; transform: translateX(-50%); }
-.rubric-help-tooltip.concept-orb-tooltip::before { left: 50%; border-bottom-color: var(--black); transform: translateX(-50%); }
+.concept-orb-tooltip { position: fixed; z-index: 1000; width: max-content; max-width: min(220px, calc(100vw - 24px)); padding: 6px 9px; border-radius: 7px; background: var(--black); color: var(--white); font-family: "Fredoka", ui-rounded, system-ui, sans-serif; font-size: 12px; font-weight: 500; line-height: 1.35; overflow-wrap: anywhere; text-align: center; pointer-events: none; transform: translateX(-50%); }
+.concept-orb-tooltip::before { position: absolute; top: -5px; left: clamp(10px, calc(50% + var(--tooltip-arrow-offset, 0px)), calc(100% - 10px)); width: 10px; height: 5px; background: var(--black); clip-path: polygon(50% 0, 100% 100%, 0 100%); content: ''; transform: translateX(-50%); }
+.concept-orb-tooltip[data-above="true"]::before { top: 100%; transform: translateX(-50%) rotate(180deg); }
 @media (max-width: 540px) {
   .sessions-shell { padding-inline: 16px; }
   .concept-tracker { gap: 8px; padding-top: 17px; }

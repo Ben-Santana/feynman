@@ -1,9 +1,14 @@
-import { useEffect, useId, useRef, useState } from 'react'
+import { useCallback, useEffect, useId, useMemo, useRef, useState, type CSSProperties } from 'react'
 import attentif from '../assets/bloub-hexagone-attentif-rouge-anime.svg?raw'
 import confus from '../assets/bloub-hexagone-confus-rouge-anime.svg?raw'
 import excite from '../assets/bloub-hexagone-excite-rouge-anime.svg?raw'
 import mefiant from '../assets/bloub-hexagone-mefiant-rouge-anime.svg?raw'
 import neutre from '../assets/bloub-hexagone-neutre-rouge-anime.svg?raw'
+
+import { characterColors, characterShapes, defaultAppearance, type CharacterAppearance, type AccessorySlot } from '../characterAppearance'
+import { characterBodyPath } from '../characterGeometry'
+import { AccessoryArtwork } from './CharacterAccessories'
+import { addLook, gazeSmoothing } from '../bloubLook'
 
 const MORPH_MS = 520
 
@@ -81,9 +86,12 @@ const idleMs = parsedNeutral.durationMs
 const pathTemplate = (neutre.match(/<path d="([^"]+)" class="oeil0"/)?.[1] ?? '').split(
   pathNumberRe(),
 )
-const bodyTemplate = bodyPath.split(pathNumberRe())
-const bodyValues = parsePathValues(bodyPath)
-const ballValues = radialProject(bodyValues, 20)
+type BodyGeometry = { path: string; template: string[]; values: number[]; ball: number[] }
+function bodyGeometry(shape: CharacterAppearance['shape']): BodyGeometry {
+  const path = characterBodyPath(shape, bodyPath)
+  const values = parsePathValues(path)
+  return { path, template: path.split(pathNumberRe()), values, ball: radialProject(values, 20) }
+}
 
 const BURST_POP_MS = 280
 const BURST_EXPAND_START = 1080
@@ -234,26 +242,9 @@ function applyEye(el: SVGPathElement | null, values: number[], matrix: Matrix) {
   el.setAttribute('transform', matrixTransform(matrix))
 }
 
-function applyBody(el: SVGPathElement | null, values: number[]) {
+function applyBody(el: SVGPathElement | null, values: number[], template: string[]) {
   if (!el) return
-  el.setAttribute('d', valuesToPath(values, bodyTemplate))
-}
-
-function addLook(matrix: Matrix, x: number, y: number): Matrix {
-  const dist = Math.hypot(x, y)
-  const tilt = dist === 0 ? 0 : Math.atan2(y, x) * 0.16 * Math.min(1, dist / 20)
-  const cos = Math.cos(tilt)
-  const sin = Math.sin(tilt)
-  const [a, b, c, d, e, f] = matrix
-
-  return [
-    cos * a - sin * b,
-    sin * a + cos * b,
-    cos * c - sin * d,
-    sin * c + cos * d,
-    e + x,
-    f + y,
-  ]
+  el.setAttribute('d', valuesToPath(values, template))
 }
 
 function pointerToSvg(svg: SVGSVGElement, clientX: number, clientY: number) {
@@ -299,7 +290,7 @@ function burstParticlePose(particle: (typeof BURST_PARTICLES)[number], elapsed: 
   }
 }
 
-function sampleBurst(elapsed: number, restEyes: Pose) {
+function sampleBurst(elapsed: number, restEyes: Pose, body: BodyGeometry) {
   const pop = easeOutBack(clamp01(elapsed / BURST_POP_MS))
   const expand = easeOutCubic(
     clamp01((elapsed - BURST_EXPAND_START) / (BURST_EXPAND_END - BURST_EXPAND_START)),
@@ -310,7 +301,7 @@ function sampleBurst(elapsed: number, restEyes: Pose) {
   const bloom = Math.sin(expand * Math.PI) * 0.06
 
   return {
-    body: lerpValues(ballValues, bodyValues, expand),
+    body: lerpValues(body.ball, body.values, expand),
     scale: Math.max(0, pop + bloom),
     eye0: {
       values: restEyes.eye0.values,
@@ -328,12 +319,78 @@ function sampleBurst(elapsed: number, restEyes: Pose) {
 const initialPose = sampleEmotion(emotionsById.neutral, 0)
 const heroRestPose = sampleEmotion(emotionsById.attentive, 0)
 
-export type BloubMode = 'default' | 'hero'
+export type BloubMode = 'default' | 'hero' | 'studio'
 
-export function Bloub({ mode = 'default', expression, showControls = true, followPointer = false }: { mode?: BloubMode; expression?: EmotionId; showControls?: boolean; followPointer?: boolean }) {
+function eyeHeight(pose: Pose) {
+  return Math.max(...pose.eye0.values.map(Math.abs), ...pose.eye1.values.map(Math.abs))
+}
+function faceOffsetFor(shape: CharacterAppearance['shape']) {
+  return shape === 'triangle' ? [-22, 20] : shape === 'star' ? [-12, 0] : shape === 'cloud' ? [-12, -8] : [0, 0]
+}
+function fitPose(pose: Pose, appearance: CharacterAppearance): Pose {
+  // The triangle narrows above the face: compact the eye pair and keep it
+  // in the broad part of the silhouette, including its largest expression.
+  if (appearance.shape === 'triangle') {
+    const offset = faceOffsetFor(appearance.shape)
+    const centerX = (pose.eye0.matrix[4] + pose.eye1.matrix[4]) / 2
+    const centerY = (pose.eye0.matrix[5] + pose.eye1.matrix[5]) / 2 + offset[1]
+    const desiredX = Math.max(-3, Math.min(3, centerX + offset[0]))
+    const minimumY = eyeHeight(pose) > 25 ? 5 : -6
+    const desiredY = Math.max(minimumY, Math.min(14, centerY))
+    const fit = (eye: Pose['eye0']) => ({ ...eye, matrix: [
+      eye.matrix[0] * .8, eye.matrix[1], eye.matrix[2] * .8, eye.matrix[3],
+      (eye.matrix[4] - centerX) * .8 + desiredX - offset[0],
+      eye.matrix[5] + desiredY - centerY,
+    ] as Matrix })
+    pose = { eye0: fit(pose.eye0), eye1: fit(pose.eye1) }
+  }
+  return pose
+}
+
+function glassesTransform(left: Matrix, right: Matrix, height = 22, accessory: CharacterAppearance['accessories']['glasses'] = null) {
+  // Reserve space around the white eyes, including the tallest expression.
+  const paddedEyeScale = (height + 6) / 24
+  if (accessory === 'monocle') {
+    // Uniform scaling preserves a circular lens regardless of eye spacing.
+    return `translate(${right[4]} ${right[5]}) scale(${Math.max(1.05, paddedEyeScale)}) translate(-29 0)`
+  }
+  const x = (left[4] + right[4]) / 2, y = (left[5] + right[5]) / 2
+  const angle = Math.atan2(right[5] - left[5], right[4] - left[4]) * 180 / Math.PI
+  const spacing = 58
+  const width = Math.hypot(right[4] - left[4], right[5] - left[5]) / spacing
+  // Rigid frames keep their silhouette through blinking and expression changes.
+  const scale = Math.max(width * 1.16, paddedEyeScale, .92)
+  return `translate(${x} ${y}) rotate(${angle}) scale(${scale})`
+}
+function faceDetailsTransform(pose: Pose, detail: CharacterAppearance['accessories']['face'], shape: CharacterAppearance['shape']) {
+  const left = pose.eye0.matrix, right = pose.eye1.matrix
+  const x = (left[4] + right[4]) / 2, y = (left[5] + right[5]) / 2
+  const offset = Math.max(0, eyeHeight(pose) - 22)
+  const width = Math.hypot(right[4] - left[4], right[5] - left[5]) / 52
+  const bottom = shape === 'cloud' ? 55 : shape === 'star' ? 64 : 78
+  const localBottom = detail === 'moustache' ? 43 : 37
+  const anchorY = Math.min(y + offset, bottom - faceOffsetFor(shape)[1] - localBottom)
+  return `translate(${x} ${anchorY}) scale(${width} 1)`
+}
+
+export function Bloub({ mode = 'default', expression, showControls = true, followPointer = false, appearance = defaultAppearance, static: isStatic = false, previewSlot }: {
+  mode?: BloubMode; expression?: EmotionId; showControls?: boolean; followPointer?: boolean
+  appearance?: CharacterAppearance; static?: boolean; previewSlot?: AccessorySlot
+}) {
   const isHero = mode === 'hero'
+  const noEntrance = isHero || mode === 'studio' || isStatic
+  const [reducedMotion, setReducedMotion] = useState(() => window.matchMedia('(prefers-reduced-motion: reduce)').matches)
+  const body = useMemo(() => bodyGeometry(appearance.shape), [appearance.shape])
+  const bodyRef = useRef(body)
+  const shape = characterShapes.find(item => item.id === appearance.shape)!
+  const color = characterColors.find(item => item.id === appearance.color)!.hex
+  const faceOffset = faceOffsetFor(appearance.shape)
+  const appearanceRef = useRef(appearance)
+  const faceDetailsRef = useRef<SVGGElement>(null)
+  const glassesRef = useRef<SVGGElement>(null)
+  const accessoriesRef = useRef<SVGGElement>(null)
   const [emotion, setEmotion] = useState<EmotionId>('neutral')
-  const [bursting, setBursting] = useState(!isHero)
+  const [bursting, setBursting] = useState(!noEntrance && !reducedMotion)
   const displayedEmotion: EmotionId = isHero ? 'attentive' : expression ?? emotion
   const reactId = useId().replace(/[^a-zA-Z0-9_-]/g, '')
   const maskId = `bloub-mask-${reactId}`
@@ -353,10 +410,38 @@ export function Bloub({ mode = 'default', expression, showControls = true, follo
   const followPointerRef = useRef(followPointer)
   const pointerRef = useRef<{ x: number; y: number } | null>(null)
   const lookRef = useRef({ x: 0, y: 0 })
-  const burstStateRef = useRef<'idle' | 'waiting' | 'playing'>(isHero ? 'idle' : 'waiting')
+  const burstStateRef = useRef<'idle' | 'waiting' | 'playing'>(noEntrance || reducedMotion ? 'idle' : 'waiting')
   const burstStartedAtRef = useRef(0)
   const idleStartedAtRef = useRef(0)
-  const burstingRef = useRef(!isHero)
+  const burstingRef = useRef(!noEntrance && !reducedMotion)
+
+  const staticEmotion = isStatic || reducedMotion ? displayedEmotion : null
+  const staticAppearance = isStatic || reducedMotion ? appearance : null
+
+  useEffect(() => {
+    if (isStatic) return
+    const media = window.matchMedia('(prefers-reduced-motion: reduce)')
+    const update = () => {
+      setReducedMotion(media.matches)
+      if (media.matches) {
+        burstStateRef.current = 'idle'
+        burstingRef.current = false
+        setBursting(false)
+      }
+    }
+    media.addEventListener('change', update)
+    return () => media.removeEventListener('change', update)
+  }, [isStatic])
+
+  useEffect(() => { appearanceRef.current = appearance }, [appearance])
+
+  useEffect(() => {
+    bodyRef.current = body
+    if (!burstingRef.current) {
+      applyBody(bodyMaskRef.current, body.values, body.template)
+      applyBody(bodyFillRef.current, body.values, body.template)
+    }
+  }, [body])
 
   useEffect(() => {
     modeRef.current = mode
@@ -374,15 +459,17 @@ export function Bloub({ mode = 'default', expression, showControls = true, follo
   }, [displayedEmotion, bursting])
 
   useEffect(() => {
+    if (isStatic || reducedMotion || !(isHero || followPointer)) return
     const onPointerMove = (event: PointerEvent) => {
       pointerRef.current = { x: event.clientX, y: event.clientY }
     }
 
     window.addEventListener('pointermove', onPointerMove, { passive: true })
     return () => window.removeEventListener('pointermove', onPointerMove)
-  }, [])
+  }, [isStatic, reducedMotion, isHero, followPointer])
 
-  const startBurst = () => {
+  const startBurst = useCallback(() => {
+    if (isStatic || reducedMotion) return
     setEmotion('neutral')
     fromPoseRef.current = null
     morphStartedAtRef.current = null
@@ -391,10 +478,10 @@ export function Bloub({ mode = 'default', expression, showControls = true, follo
     burstStartedAtRef.current = performance.now()
     burstingRef.current = true
     setBursting(true)
-  }
+  }, [isStatic, reducedMotion, setEmotion, setBursting])
 
   useEffect(() => {
-    if (isHero) return
+    if (noEntrance || reducedMotion) return
     const node = rootRef.current
     if (!node) return
 
@@ -409,24 +496,46 @@ export function Bloub({ mode = 'default', expression, showControls = true, follo
 
     observer.observe(node)
     return () => observer.disconnect()
-  }, [isHero])
+  }, [noEntrance, reducedMotion, startBurst])
 
   useEffect(() => {
+    if (isStatic || reducedMotion) {
+      const pose = fitPose(sampleEmotion(emotionsById[staticEmotion ?? 'neutral'], 0), appearanceRef.current)
+      applyEye(eye0Ref.current, pose.eye0.values, pose.eye0.matrix)
+      applyEye(eye1Ref.current, pose.eye1.values, pose.eye1.matrix)
+      glassesRef.current?.setAttribute('transform', glassesTransform(pose.eye0.matrix, pose.eye1.matrix, eyeHeight(pose), appearanceRef.current.accessories.glasses))
+      faceDetailsRef.current?.setAttribute('transform', faceDetailsTransform(pose, appearanceRef.current.accessories.face, appearanceRef.current.shape))
+      bodyGroupRef.current?.setAttribute('transform', 'scale(1)')
+      accessoriesRef.current?.setAttribute('opacity', '1')
+      burstStateRef.current = 'idle'
+      burstingRef.current = false
+      applyBody(bodyMaskRef.current, bodyRef.current.values, bodyRef.current.template)
+      applyBody(bodyFillRef.current, bodyRef.current.values, bodyRef.current.template)
+      particlesRef.current.forEach(el => el?.setAttribute('opacity', '0'))
+      return
+    }
     let frame = 0
+    let previousFrame: number | null = null
 
     const tick = (now: number) => {
+      const smoothing = gazeSmoothing(previousFrame === null ? 1000 / 60 : now - previousFrame)
+      previousFrame = now
       const burstState = burstStateRef.current
       const burstingNow = burstState === 'waiting' || burstState === 'playing'
       const elapsed =
         burstState === 'playing' ? now - burstStartedAtRef.current : 0
 
       if (burstingNow && modeRef.current !== 'hero') {
-        const burst = sampleBurst(elapsed, initialPose)
-        applyBody(bodyMaskRef.current, burst.body)
-        applyBody(bodyFillRef.current, burst.body)
+        const burst = sampleBurst(elapsed, initialPose, bodyRef.current)
+        applyBody(bodyMaskRef.current, burst.body, bodyRef.current.template)
+        applyBody(bodyFillRef.current, burst.body, bodyRef.current.template)
         bodyGroupRef.current?.setAttribute('transform', `scale(${burst.scale})`)
-        applyEye(eye0Ref.current, burst.eye0.values, burst.eye0.matrix)
-        applyEye(eye1Ref.current, burst.eye1.values, burst.eye1.matrix)
+        const burstPose = fitPose({ eye0: burst.eye0, eye1: burst.eye1 }, appearanceRef.current)
+        applyEye(eye0Ref.current, burstPose.eye0.values, burstPose.eye0.matrix)
+        applyEye(eye1Ref.current, burstPose.eye1.values, burstPose.eye1.matrix)
+        accessoriesRef.current?.setAttribute('opacity', String(clamp01((elapsed - BURST_EYES_START) / 400)))
+        glassesRef.current?.setAttribute('transform', glassesTransform(burstPose.eye0.matrix, burstPose.eye1.matrix, eyeHeight(burstPose), appearanceRef.current.accessories.glasses))
+        faceDetailsRef.current?.setAttribute('transform', faceDetailsTransform(burstPose, appearanceRef.current.accessories.face, appearanceRef.current.shape))
         burst.particles.forEach((particle, index) => {
           const el = particlesRef.current[index]
           if (!el) return
@@ -445,8 +554,8 @@ export function Bloub({ mode = 'default', expression, showControls = true, follo
           burstStateRef.current = 'idle'
           idleStartedAtRef.current = now
           bodyGroupRef.current?.setAttribute('transform', 'scale(1)')
-          applyBody(bodyMaskRef.current, bodyValues)
-          applyBody(bodyFillRef.current, bodyValues)
+          applyBody(bodyMaskRef.current, bodyRef.current.values, bodyRef.current.template)
+          applyBody(bodyFillRef.current, bodyRef.current.values, bodyRef.current.template)
           particlesRef.current.forEach((el) => {
             el?.setAttribute('r', '0')
             el?.setAttribute('opacity', '0')
@@ -497,34 +606,51 @@ export function Bloub({ mode = 'default', expression, showControls = true, follo
         ]
         const targetLook = lookAt ? lookOffset(lookAt, eyeCenter, 22) : { x: 0, y: 0 }
         const look = lookRef.current
-        look.x = lerp(look.x, targetLook.x, 0.16)
-        look.y = lerp(look.y, targetLook.y, 0.16)
+        look.x = lerp(look.x, targetLook.x, smoothing)
+        look.y = lerp(look.y, targetLook.y, smoothing)
         eye0Matrix = addLook(eye0Matrix, look.x, look.y)
         eye1Matrix = addLook(eye1Matrix, look.x, look.y)
       }
 
+      const fitted = fitPose({ eye0: { ...pose.eye0, matrix: eye0Matrix }, eye1: { ...pose.eye1, matrix: eye1Matrix } }, appearanceRef.current)
+      eye0Matrix = fitted.eye0.matrix
+      eye1Matrix = fitted.eye1.matrix
       applyEye(eye0Ref.current, pose.eye0.values, eye0Matrix)
       applyEye(eye1Ref.current, pose.eye1.values, eye1Matrix)
+      glassesRef.current?.setAttribute('transform', glassesTransform(eye0Matrix, eye1Matrix, eyeHeight(pose), appearanceRef.current.accessories.glasses))
+      faceDetailsRef.current?.setAttribute('transform', faceDetailsTransform(fitted, appearanceRef.current.accessories.face, appearanceRef.current.shape))
       frame = requestAnimationFrame(tick)
     }
 
     frame = requestAnimationFrame(tick)
     return () => cancelAnimationFrame(frame)
-  }, [])
+  }, [isStatic, reducedMotion, staticEmotion, staticAppearance])
 
   const active = emotionsById[displayedEmotion]
-  const restPose = isHero ? heroRestPose : bursting ? {
+  const restPose = fitPose(isStatic || reducedMotion ? sampleEmotion(active, 0) : isHero ? heroRestPose : bursting ? {
     eye0: { values: initialPose.eye0.values, matrix: HIDDEN_EYE },
     eye1: { values: initialPose.eye1.values, matrix: HIDDEN_EYE },
-  } : initialPose
-  const restBody = isHero || !bursting ? bodyPath : valuesToPath(ballValues, bodyTemplate)
+  } : initialPose, appearance)
+  const restBody = !bursting ? body.path : valuesToPath(body.ball, body.template)
+
+  // Keep each category framed consistently, including its “None” option.
+  const faceX = (restPose.eye0.matrix[4] + restPose.eye1.matrix[4]) / 2 + faceOffset[0]
+  const faceY = (restPose.eye0.matrix[5] + restPose.eye1.matrix[5]) / 2 + faceOffset[1]
+  const previewViewBox = previewSlot === 'pin'
+    ? `${shape.pin[0] - 46} ${shape.pin[1] - 34} 92 92`
+    : previewSlot === 'glasses'
+      ? `${faceX - 88} ${faceY - 58} 176 116`
+      : previewSlot === 'face'
+        ? `${faceX - 76} ${faceY - 36} 152 112`
+        : null
 
   const svg = (
     <svg
       ref={svgRef}
-      viewBox="-125 -125 250 250"
+      viewBox={previewViewBox ?? (mode === 'studio' || Object.values(appearance.accessories).some(Boolean) ? '-135 -145 270 290' : '-125 -125 250 250')}
+      style={{ '--character': color } as CSSProperties}
       role="img"
-      aria-label={bursting ? 'Bloub appearing' : `Bloub looking ${active.label.toLowerCase()}`}
+      aria-label={bursting ? `${appearance.name} appearing` : `${appearance.name} looking ${active.label.toLowerCase()}`}
       xmlns="http://www.w3.org/2000/svg"
     >
       <defs>
@@ -537,7 +663,7 @@ export function Bloub({ mode = 'default', expression, showControls = true, follo
           height="316"
         >
           <path ref={bodyMaskRef} d={restBody} fill="#fff" />
-          <path
+          <g transform={`translate(${faceOffset.join(" ")})`}><path
             ref={eye0Ref}
             className="bloub-eye"
             d={valuesToPath(restPose.eye0.values)}
@@ -550,16 +676,25 @@ export function Bloub({ mode = 'default', expression, showControls = true, follo
             d={valuesToPath(restPose.eye1.values)}
             fill="#000"
             transform={matrixTransform(restPose.eye1.matrix)}
-          />
+          /></g>
         </mask>
       </defs>
       <g ref={bodyGroupRef} transform={bursting && !isHero ? 'scale(0)' : undefined}>
         <path ref={bodyFillRef} d={restBody} fill="var(--character-eye)" />
         <g mask={`url(#${maskId})`}>
-          <rect x="-158" y="-158" width="316" height="316" fill="var(--character)" />
+          <rect className="bloub-body-color" x="-158" y="-158" width="316" height="316" fill="var(--character)" />
+        </g>
+        <g ref={accessoriesRef} opacity={bursting ? 0 : 1}>
+          {appearance.accessories.pin && <g transform={`translate(${shape.pin.join(' ')}) scale(.62)`}><g key={appearance.accessories.pin} className="bloub-accessory-enter"><AccessoryArtwork id={appearance.accessories.pin} /></g></g>}
+          <g transform={`translate(${faceOffset.join(' ')})`}>
+            {appearance.accessories.face && <g ref={faceDetailsRef} transform={faceDetailsTransform(restPose, appearance.accessories.face, appearance.shape)}><g key={appearance.accessories.face} className="bloub-accessory-enter"><AccessoryArtwork id={appearance.accessories.face} /></g></g>}
+            <g ref={glassesRef} transform={glassesTransform(restPose.eye0.matrix, restPose.eye1.matrix, eyeHeight(restPose), appearance.accessories.glasses)}>
+              {appearance.accessories.glasses && <g key={appearance.accessories.glasses} className="bloub-accessory-enter"><AccessoryArtwork id={appearance.accessories.glasses} /></g>}
+            </g>
+          </g>
         </g>
       </g>
-      {!isHero &&
+      {!isHero && !isStatic &&
         BURST_PARTICLES.map((_, index) => (
           <circle
             key={index}
@@ -575,6 +710,8 @@ export function Bloub({ mode = 'default', expression, showControls = true, follo
         ))}
     </svg>
   )
+
+  if (isStatic) return <div className="bloub-svg bloub-thumbnail">{svg}</div>
 
   if (isHero) {
     return (
@@ -594,7 +731,7 @@ export function Bloub({ mode = 'default', expression, showControls = true, follo
   return (
     <div ref={rootRef} className="flex w-full max-w-sm flex-col items-center">
       <div
-        className={`relative aspect-square w-full max-w-[320px] ${bursting ? '' : 'bloub-float'}`}
+        className={`relative aspect-square w-full max-w-[320px] ${bursting || reducedMotion ? '' : 'bloub-float'}`}
       >
         <div className="bloub-svg absolute inset-0">{svg}</div>
       </div>
@@ -604,6 +741,7 @@ export function Bloub({ mode = 'default', expression, showControls = true, follo
           type="button"
           onClick={startBurst}
           aria-pressed={bursting}
+          disabled={reducedMotion}
           className={buttonClass(bursting)}
         >
           Burst

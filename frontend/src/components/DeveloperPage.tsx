@@ -32,7 +32,7 @@ async function request<T>(path: string, body?: unknown, signal = AbortSignal.tim
   return data as T
 }
 
-export function DeveloperPage({ onBack }: { onBack: () => void }) {
+export function DeveloperPage({ onBack, characterName = 'Feynman' }: { onBack: () => void; characterName?: string }) {
   const [tab, setTab] = useState<'prompts' | 'chat'>('prompts')
   const [dirty, setDirty] = useState(false)
   return <section className="developer-page">
@@ -44,7 +44,7 @@ export function DeveloperPage({ onBack }: { onBack: () => void }) {
         <button type="button" id="chat-tab" role="tab" aria-selected={tab === 'chat'} aria-controls="chat-panel" tabIndex={tab === 'chat' ? 0 : -1} onClick={() => setTab('chat')} onKeyDown={event => { if (event.key === 'ArrowRight' || event.key === 'ArrowLeft') { setTab('prompts'); document.getElementById('prompts-tab')?.focus() } }}>Chat playground</button>
       </div>
       <div id="prompts-panel" role="tabpanel" aria-labelledby="prompts-tab" hidden={tab !== 'prompts'}><PromptEditor onDirtyChange={setDirty} /></div>
-      <div id="chat-panel" role="tabpanel" aria-labelledby="chat-tab" hidden={tab !== 'chat'}><ChatPlayground dirtyPrompts={dirty} /></div>
+      <div id="chat-panel" role="tabpanel" aria-labelledby="chat-tab" hidden={tab !== 'chat'}><ChatPlayground characterName={characterName} dirtyPrompts={dirty} /></div>
     </div>
   </section>
 }
@@ -142,7 +142,7 @@ function PromptEditor({ onDirtyChange }: { onDirtyChange: (dirty: boolean) => vo
   </div>
 }
 
-function ChatPlayground({ dirtyPrompts }: { dirtyPrompts: boolean }) {
+function ChatPlayground({ dirtyPrompts, characterName }: { dirtyPrompts: boolean; characterName: string }) {
   const [composerVersion, setComposerVersion] = useState(0)
   const [savedTests, setSavedTests] = useState<SavedTest[]>([])
   const [savedId, setSavedId] = useState('')
@@ -288,7 +288,7 @@ function ChatPlayground({ dirtyPrompts }: { dirtyPrompts: boolean }) {
       <div className="developer-conversation">
         {run && <header className="developer-conversation-heading"><div><h2>{run.topic}</h2><p>{nameLevel(run.level)} · {learningTypes[run.learningType].label}</p></div><button type="button" className="developer-button-secondary" disabled={working} onClick={() => { setSavedId(''); setSaveNotice(''); setRun(null); setCallTurns([]); setMessages([]); setResult(null); setDraft(''); setError('') }}>Clear test</button></header>}
         <div ref={log} className="developer-chat-log" role="log" aria-label="Test conversation" aria-live="polite">
-          {[...messages, ...(pending ? [pending] : [])].map((message, index) => <div key={index} className={`chat-message ${message.role} ${message.paper ? 'developer-message-with-paper' : ''}`}><div className="chat-message-copy"><span>{message.role === 'user' ? 'You' : 'Feynman'}</span><div className="chat-message-text"><ChatText>{message.content}</ChatText></div></div>{message.paper && <PaperReview key={message.paper.id} paper={message.paper} review={messages.find(item => item.review?.paperId === message.paper?.id)?.review} busy={working} error={error} onSubmit={send} />}</div>)}
+          {[...messages, ...(pending ? [pending] : [])].map((message, index) => <div key={index} className={`chat-message ${message.role} ${message.paper ? 'developer-message-with-paper' : ''}`}><div className="chat-message-copy"><span>{message.role === 'user' ? 'You' : characterName}</span><div className="chat-message-text"><ChatText>{message.content}</ChatText></div></div>{message.paper && <PaperReview characterName={characterName} key={message.paper.id} paper={message.paper} review={messages.find(item => item.review?.paperId === message.paper?.id)?.review} busy={working} error={error} onSubmit={send} />}</div>)}
           {busy && <p className="developer-muted" role="status">{run ? 'Thinking…' : 'Starting your test…'}</p>}
           {result?.finalSummary && <div className="developer-report"><strong>Learning report{result.analysisGrade !== undefined ? ` · ${result.analysisGrade}%` : ''}</strong><p>{result.finalSummary}</p></div>}
         </div>
