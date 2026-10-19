@@ -6,7 +6,7 @@
       "runtime": "node",
       "entrypoint": "src/vercel.js",
       "functions": {
-        "src/vercel.js": { "includeFiles": ["prompts.json", "assets/**"] }
+        "src/vercel.js": { "includeFiles": "{prompts.json,assets/**}" }
       }
     },
     "frontend": {
