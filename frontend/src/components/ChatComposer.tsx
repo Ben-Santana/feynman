@@ -185,7 +185,7 @@ export function ChatComposer({ value, onChange, onSend, busy, className }: {
       </svg>
     </TooltipButton>
     <div className="composer-send-slot" data-visible={showSend} data-busy={busy} inert={!showSend} aria-hidden={!showSend}>
-      <button type="submit" className="send-button" disabled={busy}>{busy ? 'Thinking…' : 'Send'}</button>
+      <button type="submit" className="send-button" disabled={busy}>{busy ? 'Thinking' : 'Send'}</button>
     </div>
   </form>
 }

@@ -9,9 +9,14 @@ type TextDraft = { x: number; y: number; width: number; value: string }
 const colors = [
   { name: 'Ink', value: '#242424' },
   { name: 'Red', value: '#e8483f' },
-  { name: 'Charcoal', value: '#484848' },
-  { name: 'Graphite', value: '#777777' },
-  { name: 'Gray', value: '#aaaaaa' },
+  { name: 'Orange', value: '#c76612' },
+  { name: 'Gold', value: '#a67c00' },
+  { name: 'Green', value: '#278144' },
+  { name: 'Teal', value: '#168078' },
+  { name: 'Blue', value: '#2864cf' },
+  { name: 'Purple', value: '#8245bf' },
+  { name: 'Pink', value: '#c5367b' },
+  { name: 'Brown', value: '#865337' },
 ]
 const shapes: { id: Shape; label: string }[] = [
   { id: 'line', label: 'Line' },

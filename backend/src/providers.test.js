@@ -1,4 +1,4 @@
-import { accessCookie } from './accessTestHelper.js';
+import { testAccountService, testAuthorization } from './accessTestHelper.js';
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { Readable } from 'node:stream';
@@ -92,9 +92,8 @@ test('invalid structured data and unexpected errors produce safe failures; actio
 });
 
 async function invoke(server, { url = '/api/health', method = 'GET', body, provider = 'test-api', model = '', trace = false } = {}) {
-  const cookie = await accessCookie(server);
   const req = Readable.from(body === undefined ? [] : [JSON.stringify(body)]);
-  Object.assign(req, { method, url, headers: { cookie, host: 'localhost:5173', origin: 'http://localhost:5173', 'content-type': 'application/json', ...(provider ? { 'x-feynman-provider': provider } : {}), 'x-feynman-model': model, ...(trace ? { 'x-feynman-trace': '1' } : {}) } });
+  Object.assign(req, { method, url, headers: { authorization: testAuthorization, host: 'localhost:5173', origin: 'http://localhost:5173', 'content-type': 'application/json', ...(provider ? { 'x-feynman-provider': provider } : {}), 'x-feynman-model': model, ...(trace ? { 'x-feynman-trace': '1' } : {}) } });
   return new Promise(resolve => {
     const res = { status: 200, setHeader() {}, writeHead(status) { this.status = status; }, end(value) { resolve({ status: this.status, data: JSON.parse(value) }); } };
     server.listeners('request')[0](req, res);
@@ -107,7 +106,7 @@ test('a third registered API supports discovery, health, models, rubric, and cha
     requests.push(request);
     return request.response.name === 'generate_rubric' ? { items: ['Explains conservation of energy.'] } : { message: 'How would you explain this scenario?', expression: 'attentive' };
   } }));
-  const server = createApiServer({ chatgpt, providers }); t.after(() => server.close());
+  const server = createApiServer({ accountService: testAccountService(), chatgpt, providers }); t.after(() => server.close());
   const discovery = await invoke(server, { url: '/api/ai/providers', provider: 'removed-api' });
   assert.equal(discovery.status, 200);
   assert.deepEqual(discovery.data.providers.map(item => item.id), ['chatgpt', 'anthropic', 'test-api']);
@@ -127,7 +126,7 @@ test('a third registered API supports discovery, health, models, rubric, and cha
 
 test('unconfigured registered APIs return their configuration help before inference', async t => {
   const providers = new ProviderRegistry().register(TestProvider, () => new TestProvider({ configured: false, generate: async () => assert.fail('Must not call the provider') }));
-  const server = createApiServer({ chatgpt, providers }); t.after(() => server.close());
+  const server = createApiServer({ accountService: testAccountService(), chatgpt, providers }); t.after(() => server.close());
   const response = await invoke(server, { method: 'POST', url: '/api/developer/rubric', body: { topic: 'Energy', level: 'understand' } });
   assert.equal(response.status, 503); assert.equal(response.data.error, 'Set TEST_API_KEY.');
 });
@@ -238,7 +237,7 @@ test('Claude model discovery reports authentication failures and missing configu
 test('conversation tracing includes actual calls and preserves failed calls only when requested', async t => {
   let fail = false;
   const providers = createProviderRegistry({ chatgpt, env: {} }).register(TestProvider, () => new TestProvider());
-  const server = createApiServer({ chatgpt, providers, query: async () => {
+  const server = createApiServer({ accountService: testAccountService(), chatgpt, providers, query: async () => {
     if (fail) throw new AIError('Model unavailable.', 503);
     return { message: 'Explain your prediction?', expression: 'confused' };
   } });
@@ -266,7 +265,7 @@ test('conversation tracing includes actual calls and preserves failed calls only
 test('generation failures are upstream errors and malformed request bodies are input errors', async t => {
   let calls = 0;
   const providers = new ProviderRegistry().register(TestProvider, () => new TestProvider({ generate: async () => { calls++; return { items: [] }; } }));
-  const server = createApiServer({ chatgpt, providers }); t.after(() => server.close());
+  const server = createApiServer({ accountService: testAccountService(), chatgpt, providers }); t.after(() => server.close());
   const response = await invoke(server, { url: '/api/developer/rubric', method: 'POST', body: { topic: 'Circuits', level: 'remember' } });
   assert.equal(response.status, 502);
   assert.equal(calls, 2);

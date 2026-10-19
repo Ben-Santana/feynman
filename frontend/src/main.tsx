@@ -2,13 +2,14 @@ import { StrictMode } from 'react'
 import { createRoot } from 'react-dom/client'
 import './index.css'
 import App from './App.tsx'
-import AccessGate from './components/AccessGate.tsx'
-import { defaultTheme, setTheme } from './theme.ts'
+import { AccountGate } from './components/AccountGate.tsx'
+import { ToastProvider } from './components/Toast.tsx'
+import { initializeDisplayPreferences } from './displayPreferences.ts'
 
-setTheme(defaultTheme)
+initializeDisplayPreferences()
 
 createRoot(document.getElementById('root')!).render(
   <StrictMode>
-    <AccessGate><App /></AccessGate>
+    <ToastProvider><AccountGate>{(account, onProfileUpdated, authMode) => <App key={account.id} account={account} onProfileUpdated={onProfileUpdated} authMode={authMode} />}</AccountGate></ToastProvider>
   </StrictMode>,
 )

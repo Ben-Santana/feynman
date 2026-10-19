@@ -1,0 +1,79 @@
+.account-login { min-height: 100dvh; display: grid; place-items: center; padding: 40px 20px; background: radial-gradient(ellipse at 50% 24%, color-mix(in srgb, var(--primary) 5%, transparent), transparent 48%), var(--background); color: var(--foreground); font-family: "Fredoka", ui-rounded, system-ui, sans-serif; }
+.account-login section { width: min(100%, 420px); }
+.account-avatar { position: relative; width: 168px; margin: 0 auto 18px; pointer-events: none; }
+.account-avatar::after { position: absolute; bottom: -1px; left: 42px; right: 42px; height: 8px; border-radius: 50%; background: color-mix(in srgb, var(--black) 8%, transparent); filter: blur(4px); content: ''; }
+.account-card { padding: 32px; border: 1px solid color-mix(in srgb, var(--border) 55%, transparent); border-radius: 24px; background: color-mix(in srgb, var(--background) 35%, var(--white)); box-shadow: 0 12px 48px color-mix(in srgb, var(--foreground) 4%, transparent); }
+[data-theme="dark"] .account-card { background: color-mix(in srgb, var(--background) 95%, var(--white)); }
+.account-heading { margin-bottom: 28px; text-align: center; }
+.account-login h1 { margin: 0; font-size: clamp(1.625rem, 5vw, 1.875rem); font-weight: 500; line-height: 1.2; letter-spacing: -.025em; }
+.account-login p { line-height: 1.6; }
+.account-heading p { margin: 10px 0 0; font-size: 0.875rem; color: var(--muted-foreground); }
+.account-login small { display: block; margin-top: 16px; color: var(--muted-foreground); font-size: 0.75rem; line-height: 1.6; }
+.account-login button { padding: 10px 16px; border-radius: 8px; background: var(--primary); color: var(--primary-foreground); cursor: pointer; border: 0; }
+.account-login button { min-height: 48px; margin-top: 22px; width: 100%; border-radius: 12px; font-size: 1rem; font-weight: 500; transition: background .18s ease, color .18s ease, box-shadow .18s ease; }
+.account-login button:hover:not(:disabled) { background: var(--primary-hover); box-shadow: var(--shadow-primary); }
+.account-links { display: flex; align-items: center; justify-content: center; flex-wrap: wrap; gap: 4px 20px; margin-top: 20px; }
+.account-login .account-secondary { width: auto; min-height: 36px; margin: 0; padding: 6px 0; border: 0; border-radius: 4px; background: transparent; color: var(--muted-foreground); font-size: 0.8125rem; font-weight: 400; }
+.account-login .account-secondary:hover:not(:disabled) { background: transparent; color: var(--foreground); box-shadow: none; text-decoration: underline; text-underline-offset: 4px; }
+.account-notice, .account-login .account-error { margin: 20px 0 0; padding: 12px 14px; border-radius: 10px; background: var(--muted); font-size: 0.8125rem; overflow-wrap: anywhere; }
+.account-login .account-error { background: color-mix(in srgb, var(--primary) 8%, transparent); }
+.account-error { color: var(--destructive, #b43232); }
+.account-menu { position: fixed; top: 24px; right: 24px; z-index: 70; font: 400 0.875rem/1.4 ui-sans-serif, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; }
+.account-menu button { font: inherit; cursor: pointer; border: 0; }
+.account-menu :is(button, input):focus-visible { outline: 2px solid var(--primary); outline-offset: 3px; }
+.account-menu .profile-trigger { display: flex; align-items: center; gap: 8px; height: 44px; padding: 5px 9px 5px 5px; border: 1px solid var(--border); border-radius: 999px; background: var(--background); color: var(--muted-foreground); box-shadow: 0 2px 8px #00000005; transition: border-color .16s, background .16s; }
+.profile-trigger:hover, .profile-trigger[aria-expanded="true"] { border-color: var(--neutral-400); background: var(--muted); }
+.profile-avatar { display: grid; place-items: center; flex: none; width: 32px; height: 32px; border-radius: 50%; background: color-mix(in srgb, var(--primary) 11%, var(--background)); color: var(--primary-hover); font-size: 0.75rem; font-weight: 600; }
+.profile-avatar svg { width: 19px; height: 19px; }
+.profile-chevron { width: 14px; height: 14px; transition: transform .16s; }
+.profile-trigger[aria-expanded="true"] .profile-chevron { transform: rotate(180deg); }
+.account-menu.account-menu-sidebar { position: relative; top: auto; right: auto; width: 100%; min-width: 0; }
+.account-menu-sidebar .profile-trigger { width: 100%; height: 56px; gap: 10px; padding: 8px; border: 0; border-radius: 10px; background: transparent; color: var(--foreground); box-shadow: none; }
+.account-menu-sidebar .profile-trigger:hover, .account-menu-sidebar .profile-trigger[aria-expanded="true"] { background: var(--surface); }
+.profile-trigger-copy { flex: 1; min-width: 0; text-align: left; }
+.profile-trigger-copy strong, .profile-trigger-copy small { display: block; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.profile-trigger-copy strong { font-size: 0.8125rem; font-weight: 500; }
+.profile-trigger-copy small { margin-top: 3px; color: var(--muted-foreground); font-size: 0.6875rem; }
+.account-menu-sidebar .profile-chevron { flex: none; transform: rotate(180deg); }
+.account-menu-sidebar .profile-trigger[aria-expanded="true"] .profile-chevron { transform: rotate(0); }
+.account-menu-sidebar .profile-panel { top: auto; bottom: calc(100% + 12px); right: auto; left: 0; max-height: calc(100dvh - 112px); }
+.profile-panel { position: absolute; top: calc(100% + 10px); right: 0; width: min(232px, calc(100vw - 32px)); max-height: calc(100dvh - 94px); overflow-y: auto; padding: 8px; border: 1px solid var(--border); border-radius: 16px; background: color-mix(in srgb, var(--background) 35%, var(--white)); color: var(--foreground); box-shadow: 0 12px 40px #00000014, 0 2px 6px #00000008; animation: profile-panel-enter .14s ease-out; }
+[data-theme="dark"] .profile-panel { background: color-mix(in srgb, var(--background) 94%, var(--white)); box-shadow: 0 12px 40px #0004; }
+.profile-identity { display: flex; align-items: center; gap: 12px; padding: 12px 10px 16px; }
+.profile-identity > div { min-width: 0; }
+.profile-identity .profile-avatar { width: 40px; height: 40px; font-size: 0.875rem; }
+.profile-identity strong { display: block; overflow-wrap: anywhere; font-size: 0.875rem; font-weight: 600; }
+.profile-email { display: block; margin-top: 2px; overflow-wrap: anywhere; color: var(--muted-foreground); font-size: 0.75rem; }
+.profile-identity small { display: inline-block; margin-top: 6px; padding: 2px 6px; border-radius: 5px; background: var(--muted); color: var(--muted-foreground); font-size: 0.625rem; font-weight: 500; text-transform: capitalize; }
+.profile-actions { display: grid; gap: 2px; padding-block: 6px; border-top: 1px solid var(--border); }
+.profile-actions button { display: flex; align-items: center; gap: 12px; width: 100%; min-height: 42px; padding: 10px 12px; border-radius: 8px; background: transparent; color: var(--foreground); text-align: left; transition: background .16s; }
+.profile-actions button:hover:not(:disabled) { background: var(--muted); }
+.profile-actions svg { flex: none; width: 18px; height: 18px; color: var(--muted-foreground); }
+.profile-actions .profile-sign-out, .profile-sign-out svg { color: var(--primary-hover); }
+.profile-actions .profile-sign-out:hover:not(:disabled) { background: color-mix(in srgb, var(--primary) 8%, transparent); }
+.profile-footer { padding-bottom: 0; }
+.profile-notice { margin: 6px 10px 10px; font-size: 0.75rem; line-height: 1.5; overflow-wrap: anywhere; }
+@keyframes profile-panel-enter { from { opacity: 0; transform: translateY(-4px); } to { opacity: 1; transform: translateY(0); } }
+@media (max-width: 540px) { .account-menu { top: 16px; right: 16px; } .profile-panel { max-height: calc(100dvh - 78px); } }
+@media (prefers-reduced-motion: reduce) { .profile-panel { animation: none; } .account-menu .profile-trigger, .profile-chevron, .profile-actions button { transition: none; } }
+.account-login button:disabled, .account-menu button:disabled { opacity: .5; cursor: default; }
+
+.account-login label { display: block; margin-top: 18px; font-size: 0.8125rem; font-weight: 500; }
+.account-login form > label:first-child { margin-top: 0; }
+.account-login input { display: block; width: 100%; box-sizing: border-box; min-height: 54px; margin-top: 8px; padding: 13px 15px; border: 1px solid var(--border); border-radius: 12px; background: var(--background); color: var(--foreground); font: 400 1.125rem/1.4 "Fredoka", ui-rounded, system-ui, sans-serif; transition: border-color .18s ease; }
+.account-login input::placeholder { color: var(--neutral-400); opacity: 1; }
+.account-login input:hover:not(:disabled) { border-color: var(--neutral-400); }
+.account-login input:focus-visible { border-color: var(--primary); }
+.account-login input:focus-visible, .account-login button:focus-visible { outline: 2px solid var(--primary); outline-offset: 3px; }
+.account-role { min-width: 0; margin: 0 0 18px; padding: 0; border: 0; }
+.account-role legend { margin-bottom: 8px; padding: 0; font-size: 0.8125rem; font-weight: 500; }
+.account-role-options { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; }
+.account-role-options label { display: flex; align-items: center; gap: 10px; min-height: 54px; margin: 0; padding: 12px; border: 1px solid var(--border); border-radius: 12px; cursor: pointer; }
+.account-role-options label:has(input:checked) { border-color: var(--primary); background: color-mix(in srgb, var(--primary) 8%, var(--background)); }
+.account-role-options input { flex: none; width: 16px; height: 16px; min-height: 0; margin: 0; padding: 0; accent-color: var(--primary); }
+.account-role:disabled label { opacity: .5; cursor: default; }
+@media (max-width: 480px) { .account-login { padding: 24px 16px; } .account-card { padding: 26px 24px; border-radius: 20px; } .account-avatar { width: 148px; margin-bottom: 16px; } }
+@media (prefers-reduced-motion: reduce) { .account-avatar .bloub-float { animation: none; } .account-login button, .account-login input { transition: none; } }
+
+.profile-account-type { display: flex; align-items: center; gap: 12px; padding: 12px; color: var(--muted-foreground); font-size: 0.8125rem; text-transform: capitalize; }
+.profile-account-type svg { width: 18px; height: 18px; flex: none; }

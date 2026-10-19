@@ -1,0 +1,12 @@
+---
+description: Keep Feynman UI copy concise, concrete, and useful; avoid decorative filler.
+alwaysApply: true
+---
+
+# UI copy
+
+- Do not add decorative subtitles, motivational taglines, cute filler, or generic personalization copy to the UI unless the user explicitly requests it.
+- Avoid lines like "A few details that make this space yours," "Every good adventure starts with a name," or "A little curiosity. A place to make it grow."
+- Prefer a clear heading alone when the page or control already explains itself. Do not replace removed filler with another tagline.
+- Add helper text only when it explains a meaningful action, requirement, limitation, state, or consequence that is not already obvious.
+- Keep necessary instructions and validation messages short, specific, and direct.

@@ -1,0 +1,10 @@
+.consent-page section { width: min(100%, 780px); }
+.consent-page .account-heading { margin-bottom: 24px; }
+.consent-document-heading { display: flex; justify-content: space-between; flex-wrap: wrap; gap: 12px; margin-bottom: 12px; font-size: .875rem; }
+.consent-page a { color: var(--primary-hover); text-underline-offset: 3px; }
+.consent-document { display: block; width: 100%; height: min(52dvh, 540px); min-height: 280px; border: 1px solid var(--border); border-radius: 12px; background: var(--muted); }
+.consent-page .consent-hint { margin: 8px 0 0; font-size: .8125rem; color: var(--muted-foreground); }
+.consent-page .consent-check { display: flex; align-items: flex-start; gap: 12px; line-height: 1.6; font-weight: 400; cursor: pointer; }
+.consent-page .consent-check input { width: 18px; min-height: 18px; height: 18px; flex: none; margin: 3px 0 0; padding: 0; accent-color: var(--primary); }
+.consent-page .consent-download { background: var(--muted); color: var(--foreground); }
+@media (max-width: 540px) { .consent-page { padding: 20px 12px; } .consent-page .account-card { padding: 22px 18px; } }

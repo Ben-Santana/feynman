@@ -1,3 +1,4 @@
+import { ReadingText } from './ReadingText'
 import { BackButton } from './BackButton'
 import { learningTypes, type LearningType } from '../learningTypes.js'
 import { levelIds, targetCount, type Concept, type Level } from '../learningFlow'
@@ -44,16 +45,16 @@ function AssessmentDetails({ concept, learningType }: { concept: Concept; learni
     <div className="summary-assessment-content">
       {assessments.map(({ level, reason, quotes }) => <section key={level}>
         <h4>{levelLabel(level)} assessment</h4>
-        {reason && <p>{reason}</p>}
-        {quotes.length > 0 && <details className="summary-evidence"><summary>Supporting evidence <span>{quotes.length}</span></summary>{quotes.map(quote => <blockquote key={quote}>{quote}</blockquote>)}</details>}
+        {reason && <p><ReadingText>{reason}</ReadingText></p>}
+        {quotes.length > 0 && <details className="summary-evidence"><summary>Supporting evidence <span>{quotes.length}</span></summary>{quotes.map(quote => <blockquote key={quote}><ReadingText>{quote}</ReadingText></blockquote>)}</details>}
       </section>)}
-      {concept.finalSummary && <section><h4>Session feedback</h4><p>{concept.finalSummary}</p></section>}
+      {concept.finalSummary && <section><h4>Session feedback</h4><p><ReadingText>{concept.finalSummary}</ReadingText></p></section>}
       {learningType === 'quantitative' && typeof concept.analysisGrade === 'number' && <p className="summary-grade">Analyze assessment <strong>{concept.analysisGrade}%</strong></p>}
     </div>
   </details>
 }
 
-export function SessionSummary({ title, learningType, concepts, onBack, onNewSession }: { title: string; learningType: LearningType; concepts: Concept[]; onBack: () => void; onNewSession: () => void }) {
+export function SessionSummary({ title, learningType, concepts, onBack, onNewSession, backDestination = 'sessions' }: { backDestination?: string; title: string; learningType: LearningType; concepts: Concept[]; onBack: () => void; onNewSession: () => void }) {
   const completedConcepts = concepts.filter(concept => concept.passed >= targetCount(concept.target)).length
   const completedLevels = concepts.reduce((count, concept) => count + passedLevels(concept).length, 0)
   const completedGoals = concepts.reduce((count, concept) => count + passedLevels(concept).reduce((total, level) => total + checklistItems(concept.rubric[level]).length, 0), 0)
@@ -61,7 +62,7 @@ export function SessionSummary({ title, learningType, concepts, onBack, onNewSes
   const complete = concepts.length > 0 && !studyFurther.length
 
   return <section className="summary-page" aria-labelledby="summary-title">
-    <nav className="back-navigation summary-nav" aria-label="Summary navigation"><BackButton onClick={onBack} destination="sessions" /></nav>
+    <nav className="back-navigation summary-nav" aria-label="Summary navigation"><BackButton onClick={onBack} destination={backDestination} /></nav>
     <div className="summary-shell">
 
       <header className="summary-header">
@@ -92,7 +93,7 @@ export function SessionSummary({ title, learningType, concepts, onBack, onNewSes
               <div className="summary-concept-content">
                 {levels.map(level => <section className="summary-level" key={level} aria-label={`${levelLabel(level)} goals for ${concept.name}`}>
                   <div className="summary-level-heading"><h4>{levelLabel(level)}</h4></div>
-                  <ul className="summary-goals" role="list">{checklistItems(concept.rubric[level]).map((item, itemIndex) => <li key={itemIndex}><span className="summary-goal-check"><SummaryIcon name="check" /></span><span>{item}</span></li>)}</ul>
+                  <ul className="summary-goals" role="list">{checklistItems(concept.rubric[level]).map((item, itemIndex) => <li key={itemIndex}><span className="summary-goal-check"><SummaryIcon name="check" /></span><span><ReadingText>{item}</ReadingText></span></li>)}</ul>
                 </section>)}
                 {!levels.length && <p className="summary-no-goals">No levels have been completed for this concept yet.</p>}
                 <AssessmentDetails concept={concept} learningType={learningType} />
@@ -104,7 +105,7 @@ export function SessionSummary({ title, learningType, concepts, onBack, onNewSes
         <aside className="summary-sidebar" aria-label="Next steps">
           <section className={`summary-next${complete ? ' summary-next-complete' : ''}`} aria-labelledby="summary-next-title">
             <h2 id="summary-next-title">{complete ? 'All goals met.' : 'What to practice'}</h2>
-            {!complete && <ul className="summary-next-goals">{studyFurther.map(item => <li key={`${item.id}-${item.level}`}><strong>{item.concept} · {levelLabel(item.level)}</strong><ul>{item.criteria.map((criterion, index) => <li key={index}>{criterion}</li>)}</ul></li>)}</ul>}
+            {!complete && <ul className="summary-next-goals">{studyFurther.map(item => <li key={`${item.id}-${item.level}`}><strong>{item.concept} · {levelLabel(item.level)}</strong><ul>{item.criteria.map((criterion, index) => <li key={index}><ReadingText>{criterion}</ReadingText></li>)}</ul></li>)}</ul>}
           </section>
           <section className="summary-keep-going" aria-labelledby="summary-keep-title">
             <h2 id="summary-keep-title">Make it stick.</h2>

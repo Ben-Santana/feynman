@@ -1,5 +1,6 @@
 import { createElement } from 'react'
 import katex from 'katex'
+import { ReadingText } from './ReadingText.ts'
 import { repairTrailingBraces } from './mathRendering.ts'
 
 type Part = { source: string; math?: string; display?: boolean }
@@ -39,10 +40,10 @@ export function chatTextParts(source: string): Part[] {
 export function ChatText({ children }: { children: string }) {
   return createElement('div', { className: 'chat-plain-text', style: { whiteSpace: 'pre-wrap', overflowWrap: 'anywhere' } },
     ...chatTextParts(children).map((part, index) => {
-      if (!part.math) return part.source
+      if (!part.math) return createElement(ReadingText, { key: index }, part.source)
       try {
         const html = katex.renderToString('\\displaystyle ' + repairTrailingBraces(part.math, Boolean(part.display)), { displayMode: Boolean(part.display), throwOnError: true, trust: false, strict: 'ignore' })
         return createElement('span', { key: index, className: `chat-equation${part.display ? ' chat-equation-display' : ''}`, dangerouslySetInnerHTML: { __html: html } })
-      } catch { return part.source }
+      } catch { return createElement(ReadingText, { key: index }, part.source) }
     }))
 }

@@ -1,0 +1,54 @@
+.course-cover { --banner-unit: .384615cqh; container-type: size; position: relative; isolation: isolate; flex: none; width: 100%; height: 220px; overflow: hidden; border-radius: 12px; background: #2e513c; }
+.course-cover img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; }
+.course-cover-shape { position: absolute; display: block; pointer-events: none; border-radius: 50%; }
+/* Fixed artwork dimensions scale with the cover height; the dashboard keeps its original scale. */
+/* Red: overlapping arches. */
+.course-cover-red { background: #792f2c; }
+.course-cover-red .course-cover-shape-one { width: 34%; height: 130%; right: 18%; bottom: -38%; border-radius: 50% 50% 0 0; background: #a8453e; }
+.course-cover-red .course-cover-shape-two { width: 26%; height: 105%; right: -2%; bottom: -24%; border-radius: 50% 50% 0 0; background: #642724; }
+.course-cover-red .course-cover-shape-three { width: 22%; height: 92%; right: 24%; bottom: -38%; border-radius: 50% 50% 0 0; background: #bb5b50; }
+/* Coral: a cropped sunset disc. */
+.course-cover-coral { background: #873e29; }
+.course-cover-coral .course-cover-shape-one { width: calc(400 * var(--banner-unit)); height: calc(400 * var(--banner-unit)); right: 8%; top: calc(-60 * var(--banner-unit)); background: #b55e41; }
+.course-cover-coral .course-cover-shape-two { width: calc(280 * var(--banner-unit)); height: calc(280 * var(--banner-unit)); right: calc(8% + calc(60 * var(--banner-unit))); top: 0; background: #9e482f; }
+.course-cover-coral .course-cover-shape-three { width: calc(160 * var(--banner-unit)); height: calc(160 * var(--banner-unit)); right: calc(8% + calc(120 * var(--banner-unit))); top: calc(60 * var(--banner-unit)); background: #ca7855; }
+/* Orange: broad diagonal ribbons. */
+.course-cover-peach { background: #895125; }
+.course-cover-peach .course-cover-shape-one { width: 18%; height: 160%; right: 40%; top: -30%; border-radius: 0; background: #ac6b33; transform: skewX(-28deg); }
+.course-cover-peach .course-cover-shape-two { width: 18%; height: 160%; right: 22%; top: -30%; border-radius: 0; background: #6e3d20; transform: skewX(-28deg); }
+.course-cover-peach .course-cover-shape-three { width: 18%; height: 160%; right: 4%; top: -30%; border-radius: 0; background: #c18749; transform: skewX(-28deg); }
+/* Mustard: golden dunes. */
+.course-cover-butter { background: #77602b; }
+.course-cover-butter .course-cover-shape-one { width: 100%; height: calc(460 * var(--banner-unit)); bottom: calc(-370 * var(--banner-unit)); left: -20%; background: #9a7a34; transform: rotate(18deg); }
+.course-cover-butter .course-cover-shape-two { width: 90%; height: calc(360 * var(--banner-unit)); bottom: calc(-300 * var(--banner-unit)); right: -20%; background: #59471f; transform: rotate(-15deg); }
+.course-cover-butter .course-cover-shape-three { width: calc(90 * var(--banner-unit)); height: calc(90 * var(--banner-unit)); right: 25%; top: calc(26 * var(--banner-unit)); background: #c4a252; }
+/* Sage: a pair of oversized leaves. */
+.course-cover-mint { background: #2e513c; }
+.course-cover-mint .course-cover-shape-one { width: 34%; height: 66%; right: 17%; top: 3%; border-radius: 100% 0 100% 0; background: #497456; transform: rotate(-12deg); }
+.course-cover-mint .course-cover-shape-two { width: 30%; height: 66%; right: -1%; bottom: -5%; border-radius: 0 100% 0 100%; background: #3c644b; transform: rotate(-12deg); }
+.course-cover-mint .course-cover-shape-three { width: calc(3 * var(--banner-unit)); height: 110%; right: 25%; top: 8%; border-radius: calc(3 * var(--banner-unit)); background: #648d6b; transform: rotate(25deg); }
+/* Lavender: tilted orbital paths and a small planet. */
+.course-cover-lavender { background: #49345f; }
+.course-cover-lavender .course-cover-shape-one { width: 65%; height: 70%; right: -8%; top: 4%; border: calc(2 * var(--banner-unit)) solid #72548e; background: transparent; transform: rotate(-24deg); }
+.course-cover-lavender .course-cover-shape-two { width: 65%; height: 70%; right: -8%; top: 28%; border: calc(2 * var(--banner-unit)) solid #64477e; background: transparent; transform: rotate(-24deg); }
+.course-cover-lavender .course-cover-shape-three { width: calc(90 * var(--banner-unit)); height: calc(90 * var(--banner-unit)); right: 21%; top: 26%; background: #8765a4; }
+/* Dusty rose: soft, overlapping tiles. */
+.course-cover-rose { background: #71394e; }
+.course-cover-rose .course-cover-shape-one { width: calc(230 * var(--banner-unit)); height: calc(230 * var(--banner-unit)); right: 29%; top: calc(-95 * var(--banner-unit)); border-radius: calc(36 * var(--banner-unit)); background: #98536d; transform: rotate(18deg); }
+.course-cover-rose .course-cover-shape-two { width: calc(220 * var(--banner-unit)); height: calc(220 * var(--banner-unit)); right: 8%; top: calc(65 * var(--banner-unit)); border-radius: calc(36 * var(--banner-unit)); background: #5c2e41; transform: rotate(-14deg); }
+.course-cover-rose .course-cover-shape-three { width: calc(150 * var(--banner-unit)); height: calc(150 * var(--banner-unit)); right: -3%; top: calc(-35 * var(--banner-unit)); border-radius: calc(28 * var(--banner-unit)); background: #ac647d; transform: rotate(18deg); }
+/* Graphite: staggered bars on charcoal. */
+.course-cover-graphite { background: #25292d; }
+.course-cover-graphite .course-cover-shape-one { width: 54%; height: calc(62 * var(--banner-unit)); right: -5%; top: 12%; border-radius: calc(100 * var(--banner-unit)); background: #41474b; transform: rotate(-18deg); }
+.course-cover-graphite .course-cover-shape-two { width: 66%; height: calc(62 * var(--banner-unit)); right: -8%; top: 51%; border-radius: calc(100 * var(--banner-unit)); background: #4c5257; transform: rotate(-18deg); }
+.course-cover-graphite .course-cover-shape-three { width: 38%; height: calc(62 * var(--banner-unit)); right: 1%; top: 88%; border-radius: calc(100 * var(--banner-unit)); background: #353b40; transform: rotate(-18deg); }
+/* Blue: geometric outlines on a grid. */
+.course-cover-sky { background-color: #285e7c; background-image: linear-gradient(#ffffff12 1px, transparent 1px), linear-gradient(90deg, #ffffff12 1px, transparent 1px); background-size: 32px 32px; }
+.course-cover-sky .course-cover-shape-one { width: calc(270 * var(--banner-unit)); height: calc(270 * var(--banner-unit)); right: 14%; top: calc(25 * var(--banner-unit)); border: calc(1 * var(--banner-unit)) solid #ffffff65; }
+.course-cover-sky .course-cover-shape-two { width: calc(190 * var(--banner-unit)); height: calc(190 * var(--banner-unit)); right: calc(14% + calc(40 * var(--banner-unit))); top: calc(65 * var(--banner-unit)); border: calc(1 * var(--banner-unit)) solid #ffffff65; }
+.course-cover-sky .course-cover-shape-three { width: calc(110 * var(--banner-unit)); height: calc(110 * var(--banner-unit)); left: 14%; top: calc(52 * var(--banner-unit)); border-radius: 0; border: calc(1 * var(--banner-unit)) solid #ffffff70; transform: rotate(30deg); }
+.course-cover-none, .course-cover-image { background: var(--surface); }
+.course-cover-none .course-cover-shape, .course-cover-image .course-cover-shape { display: none; }
+@media (max-width: 700px) {
+  .course-cover { height: 170px; }
+}

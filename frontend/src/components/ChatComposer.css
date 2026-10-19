@@ -1,6 +1,6 @@
 .chat-composer.math-composer { align-items: flex-start; flex-wrap: nowrap; gap: 0; --composer-input-height: 44px; --composer-send-gap: 12px; }
 .composer-send-slot { flex: none; width: 0; height: var(--composer-input-height); overflow: hidden; --send-width: 88px; transition: width 240ms cubic-bezier(.22, 1, .36, 1); }
-.composer-send-slot[data-busy="true"] { --send-width: 120px; }
+.composer-send-slot[data-busy="true"] { --send-width: 104px; }
 .composer-send-slot[data-visible="true"] { width: calc(var(--send-width) + var(--composer-send-gap)); }
 .composer-send-slot .send-button { width: var(--send-width); height: var(--composer-input-height); margin-left: var(--composer-send-gap); padding: 0; white-space: nowrap; transform: translateX(calc(100% + var(--composer-send-gap))); transition: transform 240ms cubic-bezier(.22, 1, .36, 1), background-color 150ms ease; }
 .composer-send-slot[data-visible="true"] .send-button { transform: translateX(0); }
@@ -27,9 +27,9 @@
 .equation-tools-slot[data-visible="true"] { opacity: 1; visibility: visible; transform: translateY(0); transition-delay: 0s; }
 .equation-tools { display: grid; width: 372px; max-width: 100%; grid-template-columns: repeat(auto-fit, 36px); gap: 6px; padding: 0; }
 .equation-tools-slot[data-visible="true"] .equation-tools { animation: equation-tools-reveal 320ms cubic-bezier(.22, 1, .36, 1) both; }
-.equation-tools button { display: inline-flex; flex-shrink: 0; align-items: center; gap: 6px; padding: 6px 9px; height: 36px; border-radius: 6px; border: 1px solid var(--border); cursor: pointer; font-size: 12px; white-space: nowrap; transition: background-color 150ms ease; }
+.equation-tools button { display: inline-flex; flex-shrink: 0; align-items: center; gap: 6px; padding: 6px 9px; height: 36px; border-radius: 6px; border: 1px solid var(--border); cursor: pointer; font-size: 0.75rem; white-space: nowrap; transition: background-color 150ms ease; }
 .equation-tools-slot[data-visible="true"] .equation-tools button { animation: equation-tool-slide 260ms cubic-bezier(.22, 1, .36, 1) both; }
-.equation-tools button span:first-child { font: 18px Georgia, serif; }
+.equation-tools button span:first-child { font: 1.125rem Georgia, serif; }
 .equation-tools button { justify-content: center; width: 36px; padding: 0; }
 .equation-tools button:hover { background: var(--surface-hover); }
 @keyframes equation-tools-reveal {
@@ -46,7 +46,7 @@
   .equation-tools-slot[data-visible="true"] :is(.equation-tools, .equation-tools button) { animation: none; }
   .composer-send-slot, .composer-send-slot .send-button { transition: none; }
 }
-.equation-hint { position: absolute; z-index: 2; bottom: calc(100% + 8px); left: 0; box-sizing: border-box; width: max-content; max-width: 100%; margin: 0; padding: 6px 10px; border: 1px solid var(--primary); border-radius: 8px; background: var(--background); font-size: 12px; line-height: 1.5; color: var(--primary); box-shadow: 0 2px 8px rgb(0 0 0 / .08); pointer-events: none; }
+.equation-hint { position: absolute; z-index: 2; bottom: calc(100% + 8px); left: 0; box-sizing: border-box; width: max-content; max-width: 100%; margin: 0; padding: 6px 10px; border: 1px solid var(--primary); border-radius: 8px; background: var(--background); font-size: 0.75rem; line-height: 1.5; color: var(--primary); box-shadow: 0 2px 8px rgb(0 0 0 / .08); pointer-events: none; }
 .math-composer button:disabled { opacity: .45; cursor: not-allowed; }
 .math-composer :is(button, [role="textbox"]):focus-visible { outline: 2px solid var(--primary); outline-offset: 2px; }
 .chat-plain-text > .chat-equation { display: inline-block; vertical-align: middle; max-width: 100%; overflow-x: auto; padding: 2px 0; font-size: 1.08em; }

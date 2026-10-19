@@ -1,0 +1,58 @@
+.admin-shell { width: min(100%, 1040px); margin: 0 auto; padding: 54px 48px 64px; }
+.admin-shell h1 { margin: 0 0 32px; font: 500 clamp(1.75rem, 3vw, 2.25rem)/1.2 "Fredoka", ui-rounded, system-ui, sans-serif; letter-spacing: -.025em; }
+.admin-page button { min-height: 40px; padding: 9px 16px; border: 1px solid transparent; border-radius: 9px; font: inherit; font-size: 0.8125rem; font-weight: 500; cursor: pointer; transition: background .15s, border-color .15s; }
+.admin-page button:disabled { opacity: .4; cursor: default; }
+.admin-page :is(button, input, select):focus-visible { outline: 2px solid var(--primary); outline-offset: 3px; }
+.admin-search { display: flex; align-items: center; gap: 12px; margin: 0 0 24px; }
+.admin-search-field { position: relative; flex: 1; min-width: 0; }
+.admin-search-field > svg { position: absolute; top: 13px; left: 14px; width: 17px; height: 17px; color: var(--muted-foreground); pointer-events: none; }
+.admin-search input { width: 100%; height: 44px; padding: 10px 14px 10px 40px; border: 1px solid var(--border); border-radius: 10px; background: var(--background); color: var(--foreground); font: inherit; font-size: 0.8125rem; }
+.admin-search input::placeholder { color: var(--muted-foreground); opacity: 1; }
+.admin-search button { min-height: 44px; background: var(--primary); color: var(--primary-foreground); }
+.admin-search button:hover:not(:disabled) { background: var(--primary-hover); }
+.admin-directory { --admin-role-width: 140px; overflow: hidden; border: 1px solid var(--dashboard-line, var(--border)); border-radius: 14px; background: var(--background); }
+.admin-list-heading, .admin-users li { display: grid; grid-template-columns: minmax(0, 1fr) var(--admin-role-width); align-items: center; gap: 24px; padding: 18px 24px; }
+.admin-list-heading { padding-block: 13px; border-bottom: 1px solid var(--dashboard-line, var(--border)); background: var(--muted); color: var(--muted-foreground); font-size: 0.6875rem; font-weight: 500; }
+.admin-users { margin: 0; padding: 0; list-style: none; }
+.admin-users li + li { border-top: 1px solid var(--dashboard-line, var(--border)); }
+.admin-user-identity { min-width: 0; overflow-wrap: anywhere; }
+.admin-user-identity strong { display: block; font-size: 0.875rem; font-weight: 500; line-height: 1.5; }
+.admin-user-identity > span { display: block; margin-top: 3px; color: var(--muted-foreground); font-size: 0.75rem; line-height: 1.5; }
+.admin-role-control { position: relative; min-width: 0; }
+.admin-role-control select { appearance: none; width: 100%; min-height: 40px; padding: 9px 34px 9px 12px; border: 1px solid var(--border); border-radius: 8px; background: transparent; color: var(--foreground); font: inherit; font-size: 0.75rem; cursor: pointer; transition: border-color .15s; }
+.admin-role-control select:hover:not(:disabled) { border-color: var(--neutral-400); }
+.admin-role-control select:disabled { cursor: default; opacity: .6; }
+.admin-role-control select option { background: var(--background); color: var(--foreground); }
+.admin-role-control > svg { position: absolute; top: 13px; right: 12px; width: 14px; height: 14px; color: var(--muted-foreground); pointer-events: none; }
+.admin-role-loading { position: absolute; top: 4px; right: 0; pointer-events: none; }
+.admin-pagination { display: flex; align-items: center; justify-content: space-between; gap: 16px; padding: 16px 24px; border-top: 1px solid var(--dashboard-line, var(--border)); }
+.admin-pagination > span { color: var(--muted-foreground); font-size: 0.75rem; font-variant-numeric: tabular-nums; }
+.admin-pagination-actions { display: flex; gap: 8px; }
+.admin-pagination button { display: flex; align-items: center; justify-content: center; gap: 6px; min-height: 36px; padding: 7px 11px; border-color: var(--border); background: transparent; color: var(--foreground); font-size: 0.75rem; }
+.admin-pagination button:hover:not(:disabled) { background: var(--muted); border-color: var(--neutral-400); }
+.admin-pagination button svg { flex: none; width: 14px; height: 14px; }
+.admin-empty { margin: 0; padding: 56px 24px; color: var(--muted-foreground); font-size: 0.8125rem; text-align: center; }
+.admin-error { margin: 0 0 20px; padding: 12px 16px; border: 1px solid color-mix(in srgb, var(--red) 25%, transparent); border-radius: 10px; background: color-mix(in srgb, var(--red) 6%, transparent); color: var(--primary-hover); font-size: 0.8125rem; overflow-wrap: anywhere; }
+@media (max-width: 1000px) { .admin-shell { padding: 42px 32px 48px; } }
+@media (max-width: 760px) { .admin-shell { padding: 32px 20px 40px; } }
+@media (max-width: 600px) {
+  .admin-shell h1 { margin-bottom: 24px; }
+  .admin-search { gap: 8px; }
+  .admin-search input, .admin-role-control select { font-size: 1rem; }
+  .admin-search button { padding-inline: 12px; }
+  .admin-list-heading { display: none; }
+  .admin-users li { grid-template-columns: minmax(0, 1fr); gap: 12px; padding: 18px 16px; }
+  .admin-role-control { width: 160px; }
+  .admin-role-control select { min-height: 44px; }
+  .admin-role-control > svg { top: 15px; }
+  .admin-role-loading { top: 6px; }
+  .admin-pagination { align-items: flex-start; flex-direction: column; gap: 12px; padding: 16px; }
+  .admin-pagination-actions { width: 100%; }
+  .admin-pagination button { flex: 1; min-height: 40px; }
+}
+@media (prefers-reduced-motion: reduce) { .admin-page button, .admin-role-control select { transition: none; } }
+
+.admin-user-actions { display: grid; gap: 8px; }
+.admin-page .admin-approve { background: var(--primary); color: var(--primary-foreground); }
+.admin-page .admin-approve:hover:not(:disabled) { background: var(--primary-hover); }
+.admin-user-identity > .admin-approval-status { margin-top: 6px; font-weight: 500; color: var(--foreground); }

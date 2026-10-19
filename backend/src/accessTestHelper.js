@@ -1,17 +1,12 @@
-import { Readable } from 'node:stream';
+import { AccountError } from './accounts.js';
 
-export async function accessCookie(server, { host = 'localhost:5173', origin = 'http://localhost:5173' } = {}) {
-  const req = Readable.from([JSON.stringify({ code: '6767' })]);
-  Object.assign(req, { method: 'POST', url: '/api/access', headers: { host, origin, 'content-type': 'application/json' } });
-  return new Promise((resolve, reject) => {
-    const headers = {};
-    server.emit('request', req, {
-      setHeader(name, value) { headers[name.toLowerCase()] = value; },
-      writeHead(status) { this.status = status; },
-      end() {
-        if (this.status !== 200) return reject(new Error(`Access setup failed: ${this.status}`));
-        resolve(headers['set-cookie'].split(';')[0]);
-      },
-    });
-  });
+// Explicit dependency injection for API unit tests; no runtime auth bypass.
+export const testAuthorization = 'Bearer test-admin';
+export function testAccountService(role = 'admin') {
+  return {
+    async authenticate(req) {
+      if (req.headers.authorization !== testAuthorization) throw new AccountError('Sign in with your WPI account.');
+      return { id: '11111111-1111-4111-8111-111111111111', email: 'test@wpi.edu', display_name: 'Test', role };
+    },
+  };
 }

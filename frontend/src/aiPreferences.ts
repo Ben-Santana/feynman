@@ -1,4 +1,5 @@
 import { FRUIT_FLY_MODEL, fruitFlyResponse } from './fruitFly.ts'
+import { currentAccount } from './accounts.ts'
 
 // The backend registry is authoritative; preserve unknown IDs so settings can report them.
 export type AIProvider = string
@@ -10,14 +11,16 @@ export type ProviderInfo = {
 }
 export type AIPreferences = { provider: AIProvider; accountId: string; model: string }
 const key = 'feynman-ai-preferences'
+const storageKey = () => currentAccount() ? `${key}:${currentAccount()!.id}` : key
+const defaultProvider = () => currentAccount() ? 'anthropic' : 'chatgpt'
 export function aiPreferences(): AIPreferences {
   try {
-    const saved = JSON.parse(localStorage.getItem(key) || '{}')
-    return { provider: typeof saved.provider === 'string' && saved.provider ? saved.provider : 'chatgpt', accountId: typeof saved.accountId === 'string' ? saved.accountId : '', model: typeof saved.model === 'string' ? saved.model : '' }
-  } catch { return { provider: 'chatgpt', accountId: '', model: '' } }
+    const saved = JSON.parse(localStorage.getItem(storageKey()) || '{}')
+    return { provider: typeof saved.provider === 'string' && saved.provider ? saved.provider : defaultProvider(), accountId: typeof saved.accountId === 'string' ? saved.accountId : '', model: typeof saved.model === 'string' ? saved.model : '' }
+  } catch { return { provider: defaultProvider(), accountId: '', model: '' } }
 }
 export function saveAIPreferences(value: AIPreferences) {
-  localStorage.setItem(key, JSON.stringify(value))
+  localStorage.setItem(storageKey(), JSON.stringify(value))
   window.dispatchEvent(new Event('feynman-ai-change'))
 }
 export function aiHeaders(): Record<string, string> {

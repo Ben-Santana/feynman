@@ -1,4 +1,6 @@
 import type { AccessoryId } from '../characterAppearance'
+import type { Ref } from 'react'
+import { MONOCLE_CHAIN_REST_PATH } from '../monocleChain'
 
 // Shared local coordinates: eyewear is centered on the eye pair, face details
 // sit beneath it, and pins use the body's anchor. Keep the art flat and rounded.
@@ -10,7 +12,7 @@ function Temples({ color = ink }: { color?: string }) {
   return <g stroke={color} strokeWidth="4" fill="none"><path d="M-54-5-60-8M54-5 60-8" /><path d="M-5-4Q0-9 5-4" /></g>
 }
 
-export function AccessoryArtwork({ id }: { id: AccessoryId }) {
+export function AccessoryArtwork({ id, monocleChainRef }: { id: AccessoryId; monocleChainRef?: Ref<SVGPathElement> }) {
   switch (id) {
     case 'round': return <g fill="none" stroke={ink} strokeWidth="4.5" strokeLinecap="round" strokeLinejoin="round">
       <Temples /><circle cx="-29" r="26" /><circle cx="29" r="26" />
@@ -19,7 +21,7 @@ export function AccessoryArtwork({ id }: { id: AccessoryId }) {
       <Temples /><rect x="-57" y="-26" width="55" height="52" rx="18" /><rect x="2" y="-26" width="55" height="52" rx="18" />
     </g>
     case 'monocle': return <g fill="none" stroke="#B59B69" strokeLinecap="round" strokeLinejoin="round">
-      <circle cx="29" r="26" strokeWidth="3.5" /><path d="M48 19C57 33 56 48 46 58" strokeWidth="2" />
+      <circle cx="29" r="26" strokeWidth="3.5" /><path ref={monocleChainRef} d={MONOCLE_CHAIN_REST_PATH} strokeWidth="2" />
     </g>
     case 'blush': return <g fill="#F5BCAF"><ellipse cx="-32" cy="31" rx="11" ry="6" /><ellipse cx="32" cy="31" rx="11" ry="6" /></g>
     case 'freckles': return <g fill="#FFE5CB">

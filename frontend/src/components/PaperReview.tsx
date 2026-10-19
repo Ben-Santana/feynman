@@ -1,6 +1,8 @@
 import { useEffect, useRef, useState } from 'react'
 import Markdown from 'react-markdown'
 import 'katex/dist/katex.min.css'
+import { useDisplayPreferences } from '../useDisplayPreferences'
+import { emphasizeReadingTree } from '../readingText'
 import { mathProps } from './mathRendering'
 import { paperParts } from './paperContent'
 import { collectPaperGrades, nextUngradedDeck, paperPosition, rotatePaperDeck } from './paperDeck'
@@ -10,14 +12,17 @@ export type Exercise = { id: string; markdown: string; problem?: string; steps?:
 export type Paper = Exercise & { papers?: Exercise[] }
 export type PaperGrade = { paperId: string; grade: 'pass' | 'fail'; selectedSteps: number[] }
 export type Review = { paperId: string; grade?: 'pass' | 'fail'; selectedSteps?: number[]; grades?: PaperGrade[]; explanation: string }
+function rehypeReadingEmphasis() { return emphasizeReadingTree }
+
 export function MathText({ children }: { children: string }) {
+  const { boldWordStarts } = useDisplayPreferences()
   const spacedMath = children.split(/(\$\$[\s\S]*?\$\$|\$(?!\$)[^$\n]+\$)/g).map(part => {
     if (part.startsWith('$') && !part.startsWith('$$') && /\\(?:frac|dfrac|tfrac)/.test(part)) {
       return `\n\n$$\n${part.slice(1, -1)}\n$$\n\n`
     }
     return part
   }).join('')
-  return <Markdown {...mathProps} components={{ img: () => null, a: ({ children }) => <span>{children}</span> }}>{spacedMath}</Markdown>
+  return <Markdown {...mathProps} rehypePlugins={boldWordStarts ? [...mathProps.rehypePlugins, rehypeReadingEmphasis] : mathProps.rehypePlugins} components={{ img: () => null, a: ({ children }) => <span>{children}</span> }}>{spacedMath}</Markdown>
 }
 
 export function PaperReview({ paper, review, busy, error, onSubmit, characterName = 'Feynman' }: { characterName?: string; paper: Paper; review?: Review; busy: boolean; error?: string; onSubmit: (review: Review) => Promise<boolean> }) {

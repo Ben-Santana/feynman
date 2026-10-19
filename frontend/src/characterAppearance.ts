@@ -2,12 +2,12 @@ export const characterColors = [
   { id: 'red', name: 'Original red', hex: '#e8483f' },
   { id: 'coral', name: 'Coral', hex: '#e8663f' },
   { id: 'peach', name: 'Orange', hex: '#e8943f' },
-  { id: 'butter', name: 'Yellow', hex: '#e8c63f' },
-  { id: 'mint', name: 'Green', hex: '#3fe894' },
+  { id: 'butter', name: 'Mustard', hex: '#d8b358' },
+  { id: 'mint', name: 'Sage', hex: '#70ad81' },
   { id: 'sky', name: 'Blue', hex: '#3fa4e8' },
-  { id: 'lavender', name: 'Violet', hex: '#943fe8' },
-  { id: 'rose', name: 'Pink', hex: '#e83f85' },
-  { id: 'periwinkle', name: 'Indigo', hex: '#3f4de8' },
+  { id: 'lavender', name: 'Lavender', hex: '#a17bc4' },
+  { id: 'rose', name: 'Dusty rose', hex: '#d47796' },
+  { id: 'graphite', name: 'Graphite', hex: '#62666b' },
 ] as const
 export const characterShapes = [
   { id: 'hexagon', name: 'Hexagon', family: 'Geometric', pin: [-43, 56] },
@@ -56,7 +56,7 @@ export function normalizeAppearance(value: unknown): CharacterAppearance {
   const equipped = source.accessories && typeof source.accessories === 'object' ? source.accessories as Record<string, unknown> : {}
   return {
     name: normalizeCharacterName(source.name),
-    color: characterColors.find(item => item.id === source.color)?.id ?? defaultAppearance.color,
+    color: source.color === 'periwinkle' ? 'graphite' : characterColors.find(item => item.id === source.color)?.id ?? defaultAppearance.color,
     shape: characterShapes.find(item => item.id === source.shape)?.id ?? defaultAppearance.shape,
     accessories: Object.fromEntries(accessorySlots.map(slot => [slot.id,
       accessories.find(item => item.id === equipped[slot.id] && item.slot === slot.id)?.id ?? null,

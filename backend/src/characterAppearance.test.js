@@ -10,15 +10,28 @@ function storage(t) {
   return values;
 }
 
-test('body palette changes hue while retaining the original red HSV saturation and value', () => {
-  const saturationAndValue = hex => {
+test('body palette keeps the original favorites and softens the brighter alternatives', () => {
+  const saturation = hex => {
     const channels = hex.slice(1).match(/../g).map(channel => parseInt(channel, 16));
     const maximum = Math.max(...channels);
-    return [(maximum - Math.min(...channels)) / maximum, maximum / 255];
+    return (maximum - Math.min(...channels)) / maximum;
   };
-  const original = saturationAndValue(characterColors[0].hex);
-  for (const color of characterColors) assert.deepEqual(saturationAndValue(color.hex), original);
+  const palette = Object.fromEntries(characterColors.map(color => [color.id, color.hex]));
+  assert.equal(palette.red, '#e8483f');
+  assert.equal(palette.coral, '#e8663f');
+  assert.equal(palette.peach, '#e8943f');
+  assert.equal(palette.sky, '#3fa4e8');
+  for (const id of ['butter', 'mint', 'lavender', 'rose']) assert.ok(saturation(palette[id]) < 0.6);
+  assert.ok(saturation(palette.graphite) < 0.1);
+  assert.equal(palette.periwinkle, undefined);
   assert.equal(new Set(characterColors.map(color => color.hex)).size, characterColors.length);
+});
+
+test('saved indigo looks migrate to graphite while keeping the rest of the outfit', t => {
+  const values = storage(t);
+  const appearance = { ...defaultAppearance, color: 'periwinkle', name: 'Mochi', shape: 'cloud', accessories: { glasses: 'round', face: 'freckles', pin: null } };
+  values.set(APPEARANCE_KEY, JSON.stringify({ version: 1, appearance }));
+  assert.deepEqual(loadAppearance(), { ...appearance, color: 'graphite' });
 });
 
 test('a saved complete outfit survives reload without changing defaults', t => {

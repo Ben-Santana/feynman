@@ -12,5 +12,9 @@
     "lint": "npm run lint -w frontend",
     "preview": "npm run preview -w frontend",
     "test": "node --test backend/src/*.test.js"
+  },
+  "devDependencies": {
+    "@electric-sql/pglite": "^0.5.9",
+    "fake-indexeddb": "^6.2.5"
   }
 }

@@ -1,3 +1,4 @@
+import { accountFetch } from '../accounts'
 import { useEffect, useRef, useState } from 'react'
 import { aiHeaders, fruitFlySelected } from '../aiPreferences'
 import { ChatText } from './ChatText'
@@ -26,7 +27,7 @@ function readHistory(): Result[] {
   try { const data = removeInventorySource(JSON.parse(localStorage.getItem(storageKey) || '[]')); return Array.isArray(data) ? data.filter(item => typeof item?.runId === 'string' && typeof item?.baseline?.message === 'string' && Array.isArray(item?.case?.messages)).slice(0, 20) : [] } catch { return [] }
 }
 async function api<T>(body?: unknown, signal?: AbortSignal): Promise<T> {
-  const response = await fetch('/api/developer/question-comparison', { signal, headers: { ...aiHeaders(), ...(body ? { 'Content-Type': 'application/json' } : {}) }, ...(body ? { method: 'POST', body: JSON.stringify(body) } : {}) })
+  const response = await accountFetch('/api/developer/question-comparison', { signal, headers: { ...aiHeaders(), ...(body ? { 'Content-Type': 'application/json' } : {}) }, ...(body ? { method: 'POST', body: JSON.stringify(body) } : {}) })
   const data = await response.json()
   if (!response.ok) throw new Error(data.error || 'Comparison failed.')
   return data

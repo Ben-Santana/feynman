@@ -262,7 +262,7 @@ export const promptCatalog = [
       "level"
     ],
     "subgroup": "Generation & extraction",
-    "description": "Sent to the rubric-generation model by Generate items or Regenerate items in the chat playground. Returns only the selected concept’s selected-level checklist for editing before a test."
+    "description": "Sent to the rubric-generation model by Generate items or Regenerate items in the chat workshop. Returns only the selected concept’s selected-level checklist for editing before a test."
   },
   {
     "id": "rubric.extractConcepts",

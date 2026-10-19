@@ -1,4 +1,4 @@
-import { accessCookie } from './accessTestHelper.js';
+import { testAccountService, testAuthorization } from './accessTestHelper.js';
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { mkdtempSync, rmSync, readFileSync, statSync } from 'node:fs';
@@ -143,7 +143,7 @@ test('pending authorization survives a backend restart and callbacks remain one-
 
 test('the main backend serves the loopback callback without accepting an alternate host', async t => {
   const { runtime } = fixture(t, async () => { throw new Error('Unexpected token exchange'); });
-  const server = createApiServer({ chatgpt: runtime });
+  const server = createApiServer({ accountService: testAccountService(), chatgpt: runtime });
   t.after(() => server.close());
   async function callbackResponse(host) {
     const req = Readable.from([]);
@@ -408,9 +408,8 @@ test('account catalog preserves visible model ordering and is cached separately'
 });
 
 async function invoke(server, { method = 'GET', url = '/api/health', body, headers = {} } = {}) {
-  const cookie = await accessCookie(server);
   const req = Readable.from(body === undefined ? [] : [JSON.stringify(body)]);
-  Object.assign(req, { method, url, headers: { cookie, host: 'localhost:5173', origin: 'http://localhost:5173', 'content-type': 'application/json', ...headers } });
+  Object.assign(req, { method, url, headers: { authorization: testAuthorization, host: 'localhost:5173', origin: 'http://localhost:5173', 'content-type': 'application/json', ...headers } });
   return new Promise(resolve => {
     const res = { status: 200, setHeader() {}, writeHead(status) { this.status = status; }, end(value) { resolve({ status: this.status, data: JSON.parse(value) }); } };
     server.listeners('request')[0](req, res);
@@ -423,7 +422,7 @@ test('API supports ChatGPT without an Anthropic key and rejects remote hosts and
   t.after(() => { if (previousKey === undefined) delete process.env.ANTHROPIC_API_KEY; else process.env.ANTHROPIC_API_KEY = previousKey; });
   let signIns = 0;
   const chatgpt = { accounts: () => [{ id: clientId, connected: true, email: 'person@example.com' }], close() {}, beginSignIn: async () => { signIns++; return { url: 'https://auth.openai.com/' }; } };
-  const server = createApiServer({ chatgpt, query: async () => ({ items: ['Explains conservation of energy.'] }) });
+  const server = createApiServer({ accountService: testAccountService(), chatgpt, query: async () => ({ items: ['Explains conservation of energy.'] }) });
   t.after(() => server.close());
   const headers = { 'x-feynman-provider': 'chatgpt', 'x-feynman-account': clientId };
   const health = await invoke(server, { headers });

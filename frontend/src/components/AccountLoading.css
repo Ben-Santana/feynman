@@ -1,0 +1,7 @@
+.account-loading { display: inline-flex; align-items: center; justify-content: center; vertical-align: middle; }
+.account-loading-stage { display: block; position: relative; width: 260px; height: 250px; }
+.account-loading-avatar { position: absolute; left: 26px; top: 20px; width: 208px; }
+.account-loading-avatar .bloub-loading-shadow { filter: blur(2px); }
+.account-loading-compact { width: 40px; height: 32px; }
+.account-loading-compact .account-loading-stage { flex: none; transform: scale(.16); }
+.loading-screen { display: grid; place-items: center; width: 100%; min-height: 100svh; }

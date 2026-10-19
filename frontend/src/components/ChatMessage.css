@@ -1,0 +1,28 @@
+.avatar-thought { position: absolute; z-index: 3; top: 3%; right: 0; width: 112px; pointer-events: none; transform-origin: 12% 95%; opacity: 0; visibility: hidden; }
+.avatar-thought[data-thinking="true"] { opacity: 1; visibility: visible; }
+.avatar-thought[data-active="true"] { animation: thought-appear 180ms cubic-bezier(.2, 1.2, .4, 1) both; }
+.avatar-thought svg { display: block; width: 100%; overflow: visible; filter: drop-shadow(0 2px 4px rgb(0 0 0 / .1)); animation: thought-float 2.2s ease-in-out 180ms infinite; }
+.thought-cloud, .thought-trail { fill: var(--white); }
+.thought-dot { fill: var(--black); transform-box: fill-box; transform-origin: center; animation: thought-dot .9s ease-in-out infinite; }
+.thought-dot-1 { animation-delay: 100ms; }
+.thought-dot-2 { animation-delay: 200ms; }
+.thought-trail { animation: thought-trail 1.8s ease-in-out infinite; }
+.thought-trail-near { animation-delay: 150ms; }
+.reply-orb { position: fixed; z-index: 1000; top: 0; left: 0; box-sizing: border-box; width: 24px; height: 24px; border-radius: 12px; opacity: 0; background: var(--muted); transform-origin: center; will-change: transform, width, height, border-radius; pointer-events: none; }
+.chat-message[data-arrival="flight"] { opacity: 0; pointer-events: none; }
+.chat-message[data-arrival="typing"] > * { animation: reply-content-appear 100ms ease-out both; }
+.reply-text-reveal { display: grid; }
+.reply-text-size, .reply-text-visible { grid-area: 1 / 1; min-width: 0; }
+.reply-text-size { visibility: hidden; pointer-events: none; user-select: none; }
+@keyframes thought-appear { from { opacity: 0; transform: scale(.25) translate(-14px, 14px); } to { opacity: 1; transform: scale(1) translate(0, 0); } }
+@keyframes thought-float { 0%, 100% { transform: translateY(0) rotate(-3deg); } 50% { transform: translateY(-5px) rotate(2deg); } }
+@keyframes thought-dot { 0%, 60%, 100% { opacity: .35; transform: translateY(0) scale(.85); } 30% { opacity: 1; transform: translateY(-4px) scale(1); } }
+@keyframes thought-trail { 0%, 100% { opacity: .6; } 50% { opacity: 1; } }
+@keyframes reply-content-appear { from { opacity: 0; } to { opacity: 1; } }
+@media (max-width: 540px) { .avatar-thought { width: 66px; top: -44px; right: -3px; } }
+@media (prefers-reduced-motion: reduce) {
+  .avatar-thought, .avatar-thought[data-active="true"], .avatar-thought svg, .thought-dot, .thought-trail { animation: none; }
+  .reply-orb { display: none; }
+  .chat-message[data-arrival="flight"] { opacity: 1; }
+  .chat-message[data-arrival="typing"] > * { animation: none; }
+}

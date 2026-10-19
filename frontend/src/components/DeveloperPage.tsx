@@ -1,7 +1,7 @@
+import { accountFetch } from '../accounts'
 import { ChatComposer } from './ChatComposer'
 import { loadPlayground, savePlayground } from '../learningStore'
 import { ChatText } from './ChatText'
-import { BackButton } from './BackButton'
 import { useEffect, useRef, useState } from 'react'
 import { aiHeaders, fruitFlySelected, localAIResponse } from '../aiPreferences'
 import { learningTypeIds, learningTypes, type LearningType } from '../learningTypes.js'
@@ -9,11 +9,12 @@ import { levelIds, type ChatResult, type Level, type Message } from '../learning
 import { checklistItems, checklistText } from '../rubricChecklist.js'
 import { PaperReview, type Review } from './PaperReview'
 import { RubricChecklistEditor } from './RubricChecklistEditor'
+import { LoadingAnimation, LoadingScreen } from './AccountLoading'
 import './DeveloperPage.css'
 import { QuestionComparison } from './QuestionComparison'
 
 type Prompt = { id: string; title: string; group: string; subgroup: string; description: string; text: string; variables: string[] }
-type PromptFile = { file: string; version: string; prompts: Prompt[] }
+type PromptFile = { file: string; version: string; prompts: Prompt[]; editable: boolean }
 type TestConfig = { learningType: LearningType; level: Level; topic: string; criterion: string }
 const nameLevel = (level: string) => level[0].toUpperCase() + level.slice(1)
 const promptCountLabel = (count: number) => `${count} ${count === 1 ? 'prompt' : 'prompts'}`
@@ -25,7 +26,7 @@ async function request<T>(path: string, body?: unknown, signal = AbortSignal.tim
   signal.throwIfAborted()
   const local = path === '/api/health' && fruitFlySelected() ? { configured: true, model: 'fruit fly brain' } : localAIResponse(path, body)
   if (local !== undefined) { onTrace?.(local as T & { calls?: PromptCall[]; error?: string }); return local as T }
-  const response = await fetch(path, { signal, headers: { ...aiHeaders(), ...(onTrace ? { 'X-Feynman-Trace': '1' } : {}), ...(body === undefined ? {} : { 'Content-Type': 'application/json' }) }, ...(body === undefined ? {} : { method: 'POST', body: JSON.stringify(body) }) })
+  const response = await accountFetch(path, { signal, headers: { ...aiHeaders(), ...(onTrace ? { 'X-Feynman-Trace': '1' } : {}), ...(body === undefined ? {} : { 'Content-Type': 'application/json' }) }, ...(body === undefined ? {} : { method: 'POST', body: JSON.stringify(body) }) })
   let data
   try { data = await response.json() } catch { throw new Error('Could not reach the API. Start the app with npm run dev.') }
   onTrace?.(data)
@@ -33,13 +34,13 @@ async function request<T>(path: string, body?: unknown, signal = AbortSignal.tim
   return data as T
 }
 
-export function DeveloperPage({ onBack, characterName = 'Feynman' }: { onBack: () => void; characterName?: string }) {
+export function DeveloperPage({ onDirtyChange, characterName = 'Feynman' }: { onDirtyChange: (dirty: boolean) => void; characterName?: string }) {
   const [tab, setTab] = useState<'prompts' | 'chat' | 'comparison'>('prompts')
   const [dirty, setDirty] = useState(false)
+  useEffect(() => { onDirtyChange(dirty); return () => onDirtyChange(false) }, [dirty, onDirtyChange])
   return <section className="developer-page">
-    <nav className="back-navigation developer-nav" aria-label="Developer navigation"><BackButton destination="home" onClick={() => { if (!dirty || window.confirm('Leave developer tools and discard unsaved prompt edits?')) onBack() }} /><span>Feynman <span aria-hidden="true">/</span> Developer tools</span></nav>
     <div className="developer-shell">
-      <h1 className="sr-only">Developer tools</h1>
+      <header className="developer-page-heading"><h1>Developer tools</h1></header>
       <div className="developer-tabs" role="tablist" aria-label="Developer tools" onKeyDown={event => {
         if (!['ArrowLeft', 'ArrowRight', 'Home', 'End'].includes(event.key)) return
         event.preventDefault()
@@ -48,7 +49,7 @@ export function DeveloperPage({ onBack, characterName = 'Feynman' }: { onBack: (
         setTab(tabs[index]); document.getElementById(`${tabs[index]}-tab`)?.focus()
       }}>
         <button type="button" id="prompts-tab" role="tab" aria-selected={tab === 'prompts'} aria-controls="prompts-panel" tabIndex={tab === 'prompts' ? 0 : -1} onClick={() => setTab('prompts')}>Prompts {dirty && <i aria-label="Unsaved edits" />}</button>
-        <button type="button" id="chat-tab" role="tab" aria-selected={tab === 'chat'} aria-controls="chat-panel" tabIndex={tab === 'chat' ? 0 : -1} onClick={() => setTab('chat')}>Chat playground</button>
+        <button type="button" id="chat-tab" role="tab" aria-selected={tab === 'chat'} aria-controls="chat-panel" tabIndex={tab === 'chat' ? 0 : -1} onClick={() => setTab('chat')}>Chat workshop</button>
         <button type="button" id="comparison-tab" role="tab" aria-selected={tab === 'comparison'} aria-controls="comparison-panel" tabIndex={tab === 'comparison' ? 0 : -1} onClick={() => setTab('comparison')}>Question strategies</button>
       </div>
       <div id="prompts-panel" role="tabpanel" aria-labelledby="prompts-tab" hidden={tab !== 'prompts'}><PromptEditor onDirtyChange={setDirty} /></div>
@@ -70,6 +71,7 @@ function PromptEditor({ onDirtyChange }: { onDirtyChange: (dirty: boolean) => vo
   const [notice, setNotice] = useState('')
   const saveLock = useRef(false)
   const prompt = file?.prompts.find(item => item.id === selected)
+  const editable = file?.editable === true
   const text = prompt ? drafts[prompt.id] ?? prompt.text : ''
   const editedCount = file?.prompts.filter(item => drafts[item.id] !== undefined && drafts[item.id] !== item.text).length ?? 0
   const changed = Boolean(prompt && text !== prompt.text)
@@ -96,12 +98,12 @@ function PromptEditor({ onDirtyChange }: { onDirtyChange: (dirty: boolean) => vo
   }, [])
   async function reload() {
     setLoading(true); setError(''); setNotice('')
-    try { setFile(await request<PromptFile>('/api/developer/prompts')); setNotice('Reloaded the file. Any unsaved edits are kept for review.') }
+    try { setFile(await request<PromptFile>('/api/developer/prompts')); setNotice(editable ? 'Reloaded the file. Any unsaved edits are kept for review.' : 'Reloaded prompts.') }
     catch (reason) { setError(errorText(reason)) }
     finally { setLoading(false) }
   }
   async function save() {
-    if (!file || !prompt || !changed || saveLock.current) return
+    if (!editable || !file || !prompt || !changed || saveLock.current) return
     saveLock.current = true; setSaving(true); setError(''); setNotice('')
     try {
       setFile(await request<PromptFile>('/api/developer/prompts', { id: prompt.id, text, version: file.version }))
@@ -109,10 +111,11 @@ function PromptEditor({ onDirtyChange }: { onDirtyChange: (dirty: boolean) => vo
     } catch (reason) { setError(errorText(reason)) }
     finally { saveLock.current = false; setSaving(false) }
   }
+  if (loading && !file) return <LoadingScreen label="Loading prompts" />
   return <div className="developer-prompts">
     <aside className="developer-prompt-browser">
       <div className="developer-browser-heading"><h2>Prompt library</h2><span>{file?.prompts.length ?? '…'}</span></div>
-      <label className="sr-only" htmlFor="prompt-search">Search prompts</label><input id="prompt-search" type="search" placeholder="Search prompts & purposes…" value={search} onChange={event => { setSearch(event.target.value); setExpanded(values => Object.fromEntries(Object.entries(values).filter(([key]) => !key.startsWith('search:')))) }} />
+      <label className="sr-only" htmlFor="prompt-search">Search prompts</label><input id="prompt-search" type="search" placeholder="Search prompts…" value={search} onChange={event => { setSearch(event.target.value); setExpanded(values => Object.fromEntries(Object.entries(values).filter(([key]) => !key.startsWith('search:')))) }} />
       <div className="developer-prompt-list">
         {groups.map((group, groupIndex) => {
           const items = matches.filter(item => item.group === group)
@@ -135,17 +138,17 @@ function PromptEditor({ onDirtyChange }: { onDirtyChange: (dirty: boolean) => vo
           </div>
         })}
         {file && !matches.length && <p className="developer-muted">No prompts match your search.</p>}
-        {loading && !file && <p className="developer-muted" role="status">Loading prompts…</p>}
       </div>
-      <button type="button" className="developer-reload" disabled={loading || saving} onClick={() => void reload()}>{loading ? 'Loading…' : '↻ Reload from file'}</button>
+      <button type="button" className="developer-reload" disabled={loading || saving} onClick={() => void reload()}>{loading ? <LoadingAnimation label="Reloading prompts" compact /> : '↻ Reload from file'}</button>
     </aside>
     <div className="developer-prompt-workspace">
       {prompt ? <>
-        <header className="developer-editor-heading"><div><p className="developer-eyebrow">{prompt.group} / {prompt.subgroup}</p><h2>{prompt.title}</h2><p className="developer-prompt-purpose">{prompt.description}</p><code>{file?.file} <span aria-hidden="true">→</span> {prompt.id}</code></div><span className={`developer-status ${changed ? 'is-edited' : ''}`}>{changed ? 'Unsaved' : 'Saved in file'}</span></header>
-        <div className="developer-variable-note">{prompt.variables.length ? <>Keep the template variables: {prompt.variables.map(variable => <code key={variable}>{'{{' + variable + '}}'}</code>)}</> : 'Plain text instructions. Changes apply to chat and rubric requests using this prompt.'}</div>
-        <label className="sr-only" htmlFor="prompt-text">Prompt text for {prompt.title}</label><textarea id="prompt-text" className="developer-code-editor" spellCheck={false} value={text} maxLength={30000} disabled={saving || loading} onChange={event => { setDrafts(values => ({ ...values, [prompt.id]: event.target.value })); setNotice('') }} />
-        <footer className="developer-editor-footer"><span>{text.length.toLocaleString()} characters{editedCount > 0 && ` · ${editedCount} edited ${editedCount === 1 ? 'prompt' : 'prompts'}`}</span><div><button type="button" className="developer-button-secondary" disabled={!changed || saving} onClick={() => { setDrafts(values => { const next = { ...values }; delete next[prompt.id]; return next }); setNotice(''); setError('') }}>Discard edit</button><button type="button" className="send-button" disabled={!changed || !text.trim() || saving || loading} onClick={() => void save()}>{saving ? 'Saving…' : 'Save prompt'}</button></div></footer>
-      </> : <div className="developer-empty"><span aria-hidden="true">{'{ }'}</span><h2>Your prompts, in one place.</h2><p>Load the local API to inspect and edit the instructions used by the classroom and rubric generator.</p></div>}
+        <header className="developer-editor-heading"><div><p className="developer-eyebrow">{prompt.group} / {prompt.subgroup}</p><h2>{prompt.title}</h2><p className="developer-prompt-purpose">{prompt.description}</p><code>{file?.file} <span aria-hidden="true">→</span> {prompt.id}</code></div><span className={`developer-status ${changed ? 'is-edited' : ''}`}>{!editable ? 'Read-only' : changed ? 'Unsaved' : 'Saved in file'}</span></header>
+        {!editable && <p className="developer-muted">Prompts are read-only on this deployment. Use the local app to edit them.</p>}
+        <div className="developer-variable-note">{prompt.variables.length ? <>{editable ? 'Keep the template variables:' : 'Template variables:'} {prompt.variables.map(variable => <code key={variable}>{'{{' + variable + '}}'}</code>)}</> : editable ? 'Plain text instructions. Changes apply to chat and rubric requests using this prompt.' : 'Plain text instructions.'}</div>
+        <label className="sr-only" htmlFor="prompt-text">Prompt text for {prompt.title}</label><textarea id="prompt-text" className="developer-code-editor" spellCheck={false} value={text} maxLength={30000} readOnly={!editable} disabled={saving || loading} onChange={event => { if (!editable) return; setDrafts(values => ({ ...values, [prompt.id]: event.target.value })); setNotice('') }} />
+        <footer className="developer-editor-footer"><span>{text.length.toLocaleString()} characters{editedCount > 0 && ` · ${editedCount} edited ${editedCount === 1 ? 'prompt' : 'prompts'}`}</span>{editable && <div><button type="button" className="developer-button-secondary" disabled={!changed || saving} onClick={() => { setDrafts(values => { const next = { ...values }; delete next[prompt.id]; return next }); setNotice(''); setError('') }}>Discard edit</button><button type="button" className="send-button" disabled={!changed || !text.trim() || saving || loading} onClick={() => void save()}>{saving ? 'Saving…' : 'Save prompt'}</button></div>}</footer>
+      </> : <div className="developer-empty"><span aria-hidden="true">{'{ }'}</span><h2>Choose a prompt</h2><p>Inspect the instructions used by the classroom and rubric generator.</p></div>}
       {error && <p className="developer-error" role="alert">{error}</p>}{notice && <p className="developer-notice" role="status">{notice}</p>}
     </div>
   </div>
@@ -273,8 +276,9 @@ function ChatPlayground({ dirtyPrompts, characterName }: { dirtyPrompts: boolean
   return <div className="developer-playground">
     <aside className="developer-test-config">
       <label htmlFor="saved-playground-test">Saved tests</label>
-      <select id="saved-playground-test" value={savedId} disabled={working || !savedReady} onChange={event => { const test = savedTests.find(item => item.id === event.target.value); if (test) openTest(test) }}>
-        <option value="">{savedReady ? 'Choose a saved test…' : 'Loading saved tests…'}</option>
+      {!savedReady && <LoadingAnimation label="Loading saved tests" compact />}
+      <select hidden={!savedReady} id="saved-playground-test" value={savedId} disabled={working || !savedReady} onChange={event => { const test = savedTests.find(item => item.id === event.target.value); if (test) openTest(test) }}>
+        <option value="">Choose a saved test…</option>
         {savedTests.map(test => <option key={test.id} value={test.id}>{test.run.topic} · {learningTypes[test.run.learningType].label} · {nameLevel(test.run.level)} · {new Date(test.updatedAt).toLocaleString()}</option>)}
       </select>
       <button type="button" className="developer-button-secondary" disabled={working || !run || !savedReady} onClick={() => void saveTest()}>{savingTest ? 'Saving…' : savedId ? 'Save changes' : 'Save test'}</button>
@@ -283,13 +287,12 @@ function ChatPlayground({ dirtyPrompts, characterName }: { dirtyPrompts: boolean
       <fieldset disabled={working}><legend>Learning level</legend><div className="developer-levels">{levelIds.map(id => <button type="button" key={id} aria-pressed={id === level} onClick={() => { setLevel(id); setRubricNotice(''); setRubricError('') }}>{nameLevel(id)}</button>)}</div></fieldset>
       <label htmlFor="test-concept">Concept</label><input id="test-concept" disabled={working} value={topic} maxLength={300} placeholder="e.g. Ohm’s law" onChange={event => { setTopic(event.target.value); setRubricNotice(''); setRubricError('') }} />
       <div className="developer-checklist-heading"><label>{nameLevel(level)} rubric items</label><span>{aspects.length}/20</span></div>
-      <button type="button" className="developer-generate-rubric" disabled={working || !topic.trim() || health?.configured === false} onClick={() => void generateItems()}>{generatingRubric ? 'Generating items…' : aspects.length ? '✦ Regenerate items' : '✦ Generate items'}</button>
+      <button type="button" className="developer-generate-rubric" disabled={working || !topic.trim() || health?.configured === false} onClick={() => void generateItems()}>{generatingRubric ? <LoadingAnimation label="Generating rubric items" compact delayMs={0} /> : aspects.length ? '✦ Regenerate items' : '✦ Generate items'}</button>
       {aspects.length > 0 && <p className="developer-config-note developer-regenerate-note">Regenerating replaces this level’s list.</p>}
-      {generatingRubric && <p className="developer-config-note" role="status">Writing a checklist for {topic.trim()} at {nameLevel(level)}…</p>}
       {rubricError && <p className="developer-error" role="alert">{rubricError}</p>}
       {rubricNotice && <p className="developer-notice" role="status">{rubricNotice}</p>}
       <RubricChecklistEditor id="test-checklist" name={`${nameLevel(level)} test rubric`} value={criterion} invalid={false} disabled={working} onChange={value => { setCriterion(value); setRubricNotice('') }} />
-      <button type="button" className="send-button developer-start" disabled={working || !topic.trim() || !aspects.length || health?.configured === false} onClick={() => void start()}>{busy ? 'Thinking…' : run ? 'Start new test →' : 'Start test →'}</button>
+      <button type="button" className="send-button developer-start" disabled={working || !topic.trim() || !aspects.length || health?.configured === false} onClick={() => void start()}>{busy ? <LoadingAnimation label="Thinking" compact delayMs={0} /> : run ? 'Start new test →' : 'Start test →'}</button>
       {dirtyPrompts && <p className="developer-warning">You have unsaved prompt edits. Save them in the Prompts tab to use them in a test.</p>}
       {health?.configured === false && <p className="developer-warning">Choose a configured provider in AI settings to run chat tests.</p>}
     </aside>
@@ -298,7 +301,7 @@ function ChatPlayground({ dirtyPrompts, characterName }: { dirtyPrompts: boolean
         {run && <header className="developer-conversation-heading"><div><h2>{run.topic}</h2><p>{nameLevel(run.level)} · {learningTypes[run.learningType].label}</p></div><button type="button" className="developer-button-secondary" disabled={working} onClick={() => { setSavedId(''); setSaveNotice(''); setRun(null); setCallTurns([]); setMessages([]); setResult(null); setDraft(''); setError('') }}>Clear test</button></header>}
         <div ref={log} className="developer-chat-log" role="log" aria-label="Test conversation" aria-live="polite">
           {[...messages, ...(pending ? [pending] : [])].map((message, index) => <div key={index} className={`chat-message ${message.role} ${message.paper ? 'developer-message-with-paper' : ''}`}><div className="chat-message-copy"><span>{message.role === 'user' ? 'You' : characterName}</span><div className="chat-message-text"><ChatText>{message.content}</ChatText></div></div>{message.paper && <PaperReview characterName={characterName} key={message.paper.id} paper={message.paper} review={messages.find(item => item.review?.paperId === message.paper?.id)?.review} busy={working} error={error} onSubmit={send} />}</div>)}
-          {busy && <p className="developer-muted" role="status">{run ? 'Thinking…' : 'Starting your test…'}</p>}
+          {busy && <LoadingAnimation label={run ? 'Thinking' : 'Starting your test'} delayMs={0} />}
           {result?.finalSummary && <div className="developer-report"><strong>Learning report{result.analysisGrade !== undefined ? ` · ${result.analysisGrade}%` : ''}</strong><p>{result.finalSummary}</p></div>}
         </div>
         {run && (finished ? <div className="developer-test-ended" role="status">{result?.assessment?.complete ? `${nameLevel(run.level)} complete.` : 'Assessment finished.'} Start a new test to try again.</div> : awaitingReview ? <div className="developer-test-ended">Grade all three papers to continue.</div> : <ChatComposer key={composerVersion} className="developer-composer" value={draft} onChange={setDraft} onSend={() => { void send() }} busy={working} />)}

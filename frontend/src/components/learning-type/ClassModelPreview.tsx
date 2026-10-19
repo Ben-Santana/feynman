@@ -13,13 +13,24 @@ function disposeModel(model: THREE.Object3D) {
   materials.forEach(material => material.dispose())
 }
 
-export default function ClassModelPreview({ position }: { position: number }) {
+export default function ClassModelPreview({ position, onStatusChange }: {
+  position: number
+  onStatusChange?: (status: 'loading' | 'ready' | 'failed') => void
+}) {
   const host = useRef<HTMLDivElement>(null)
   const target = useRef(position)
   const modelFactory = useRef(createClassModels)
   const requestRender = useRef<() => void>(() => {})
   const [status, setStatus] = useState<'loading' | 'ready' | 'failed'>('loading')
   const [rendererVersion, setRendererVersion] = useState(0)
+  const [canInitialize, setCanInitialize] = useState(false)
+  // Give the loading animation a paint before building geometry or touching WebGL.
+  useEffect(() => {
+    let task: ReturnType<typeof setTimeout> | undefined
+    const frame = requestAnimationFrame(() => { task = setTimeout(() => setCanInitialize(true), 0) })
+    return () => { cancelAnimationFrame(frame); clearTimeout(task) }
+  }, [])
+  useEffect(() => { onStatusChange?.(status) }, [status, onStatusChange])
   useEffect(() => { target.current = position; requestRender.current() }, [position])
   useEffect(() => {
     let disposed = false
@@ -33,11 +44,12 @@ export default function ClassModelPreview({ position }: { position: number }) {
 
   useEffect(() => {
     const element = host.current
-    if (!element) return
+    if (!element || !canInitialize) return
     let disposed = false
     let frame = 0
     let contextLost = false
     let hasRendered = false
+    let prepared = false
     queueMicrotask(() => { if (!disposed) setStatus('loading') })
     let renderer: THREE.WebGLRenderer
     try { renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true, powerPreference: 'default' }) }
@@ -165,7 +177,7 @@ export default function ClassModelPreview({ position }: { position: number }) {
       }
     }
     const resume = () => {
-      if (!disposed && !contextLost && pageVisible && inView && !frame) { lastTime = 0; frame = requestAnimationFrame(render) }
+      if (prepared && !disposed && !contextLost && pageVisible && inView && !frame) { lastTime = 0; frame = requestAnimationFrame(render) }
     }
     requestRender.current = resume
     const onVisibility = () => { pageVisible = !document.hidden; resume() }
@@ -181,7 +193,32 @@ export default function ClassModelPreview({ position }: { position: number }) {
     stage.addEventListener('pointerup', onLeave)
     motion.addEventListener('change', onMotionChange)
 
-    resume()
+    // Compile every material and upload every model while the picker is covered.
+    // Later selections reuse this renderer, its programs, and its geometry buffers.
+    let warmupIndex = 0
+    const warmNextModel = () => {
+      frame = 0
+      if (disposed || contextLost) return
+      try {
+        slots.forEach(slot => {
+          slot.group.visible = slot.index === warmupIndex
+          slot.group.scale.setScalar(1.12)
+          slot.model.object.rotation.set(...slot.model.rotation)
+        })
+        renderer.render(scene, camera)
+        warmupIndex += 1
+        if (warmupIndex < slots.length) frame = requestAnimationFrame(warmNextModel)
+        else { prepared = true; resume() }
+      } catch (error) {
+        console.error('Unable to prepare class models', error)
+        setStatus('failed')
+      }
+    }
+    void renderer.compileAsync(scene, camera).then(() => {
+      if (!disposed && !contextLost) frame = requestAnimationFrame(warmNextModel)
+    }).catch(error => {
+      if (!disposed) { console.error('Unable to prepare class materials', error); setStatus('failed') }
+    })
     return () => {
       disposed = true
       cancelAnimationFrame(frame)
@@ -202,10 +239,9 @@ export default function ClassModelPreview({ position }: { position: number }) {
       renderer.domElement.remove()
     }
   // Rebuild when model definitions change during development or WebGL recovers.
-  }, [rendererVersion])
+  }, [rendererVersion, canInitialize])
 
   return <div className="class-models" ref={host} data-position={position} data-render-status={status} aria-hidden="true">
-    {status === 'loading' && <div className="class-model-loading"><span /></div>}
     {status === 'failed' && <div className="class-model-fallback">{['∴', '∑', '⚗', '◇'][THREE.MathUtils.euclideanModulo(position, 4)]}</div>}
   </div>
 }

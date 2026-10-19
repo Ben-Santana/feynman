@@ -1,6 +1,5 @@
 // A deliberately tiny, entirely local joke. Never send this ID to an AI provider.
 export const FRUIT_FLY_MODEL = 'fruit-fly-brain'
-export const FRUIT_FLY_UNLOCK_KEY = 'feynman-fruit-fly-unlocked'
 const fruits = ['banana', 'mango', 'peach', 'pear', 'strawberry', 'pineapple', 'watermelon', 'cherry']
 const levels = ['remember', 'understand', 'apply', 'analyze']
 

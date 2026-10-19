@@ -1,7 +1,9 @@
+import { accountFetch } from '../accounts'
 import { useCallback, useEffect, useRef, useState, type ReactNode } from 'react'
 import { aiHeaders, aiPreferences, saveAIPreferences, type AIPreferences, type ProviderInfo } from '../aiPreferences'
-import { BackButton } from './BackButton'
-import { FRUIT_FLY_MODEL, FRUIT_FLY_UNLOCK_KEY, spaceTapStreak } from '../fruitFly'
+import { FRUIT_FLY_MODEL, spaceTapStreak } from '../fruitFly'
+import { LoadingScreen } from './AccountLoading'
+import { matchesSetting } from '../settingsSearch'
 import './AISettings.css'
 
 type Account = { id: string; label: string; email: string; revision: string; connected: boolean }
@@ -17,26 +19,32 @@ function ModelSelect({ value, disabled, onChange, children }: { value: string; d
 }
 
 async function request<T>(path: string, body?: unknown): Promise<T> {
-  const response = await fetch(path, { signal: AbortSignal.timeout(45000), headers: { ...aiHeaders(), ...(body === undefined ? {} : { 'Content-Type': 'application/json' }) }, ...(body === undefined ? {} : { method: 'POST', body: JSON.stringify(body) }) })
+  const response = await accountFetch(path, { signal: AbortSignal.timeout(45000), headers: { ...aiHeaders(), ...(body === undefined ? {} : { 'Content-Type': 'application/json' }) }, ...(body === undefined ? {} : { method: 'POST', body: JSON.stringify(body) }) })
   let result
   try { result = await response.json() } catch { throw new Error('The local API returned an invalid response. Restart the app with npm run dev, then try again.') }
   if (!response.ok) throw new Error(result.error || 'Could not connect to the API. Start the app with npm run dev.')
   return result
 }
 
-export function AISettings({ onBack }: { onBack: () => void }) {
+export function AISettings({ query = '', active = true }: { query?: string; active?: boolean }) {
+  const showProvider = matchesSetting('provider', query)
+  const showAccounts = matchesSetting('accounts', query)
+  const showModel = matchesSetting('model', query)
+  const showUsage = matchesSetting('usage', query)
   const [prefs, setPrefs] = useState(aiPreferences)
   const [health, setHealth] = useState<Health | null>(null)
   const [providers, setProviders] = useState<ProviderInfo[]>([])
   const [models, setModels] = useState<Model[]>([])
+  const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
   const [notice, setNotice] = useState('')
   const [busy, setBusy] = useState(false)
   const [waiting, setWaiting] = useState(false)
   const [welcome, setWelcome] = useState(false)
-  const [flyUnlocked, setFlyUnlocked] = useState(() => localStorage.getItem(FRUIT_FLY_UNLOCK_KEY) === '1' || aiPreferences().model === FRUIT_FLY_MODEL)
   const [flyRevealed, setFlyRevealed] = useState(false)
+  if (!active && flyRevealed) setFlyRevealed(false)
   const flySelected = prefs.model === FRUIT_FLY_MODEL
+  const flyUnlocked = flySelected || flyRevealed
   const pending = useRef<{ until: number; popup: Window; accountId?: string; before: Map<string, string> } | null>(null)
   const lock = useRef(false)
   const welcomeDialog = useRef<HTMLDialogElement>(null)
@@ -76,24 +84,33 @@ export function AISettings({ onBack }: { onBack: () => void }) {
     }
   }, [choose])
   useEffect(() => {
-    if (flyUnlocked) return
+    if (!active) return
     let taps: number[] = []
+    const hide = () => {
+      if (!document.hidden) return
+      taps = []
+      setFlyRevealed(false)
+    }
     const discover = (event: KeyboardEvent) => {
+      if (flyUnlocked || document.hidden) return
       if (event.code !== 'Space' || event.altKey || event.ctrlKey || event.metaKey || event.isComposing) return
       // Leave typing, button activation, and model selection alone.
       if (event.target instanceof Element && event.target.closest('input, textarea, select, button, a, [contenteditable], [role="button"], dialog[open]')) return
       event.preventDefault()
       taps = spaceTapStreak(taps, performance.now(), event.repeat)
       if (taps.length === 8) {
-        localStorage.setItem(FRUIT_FLY_UNLOCK_KEY, '1')
-        setFlyRevealed(true); setFlyUnlocked(true)
+        setFlyRevealed(true)
       }
     }
     window.addEventListener('keydown', discover)
-    return () => window.removeEventListener('keydown', discover)
-  }, [flyUnlocked])
+    document.addEventListener('visibilitychange', hide)
+    return () => {
+      window.removeEventListener('keydown', discover)
+      document.removeEventListener('visibilitychange', hide)
+    }
+  }, [flyUnlocked, active])
   useEffect(() => {
-    const load = async () => { try { await reload() } catch (reason) { setError(reason instanceof Error ? reason.message : 'Could not load AI settings.') } }
+    const load = async () => { try { await reload() } catch (reason) { setError(reason instanceof Error ? reason.message : 'Could not load AI settings.') } finally { setLoading(false) } }
     void load()
     const refresh = () => { void reload().catch(reason => setError(reason.message)) }
     const sync = () => { setPrefs(aiPreferences()); refresh() }
@@ -113,8 +130,9 @@ export function AISettings({ onBack }: { onBack: () => void }) {
     return () => { cancelled = true }
   }, [prefs.provider, prefs.accountId, selectedProvider?.supportsModelSelection, selectedProvider?.configured, selected?.revision, flySelected])
   useEffect(() => {
-    if (welcome && !welcomeDialog.current?.open) welcomeDialog.current?.showModal()
-  }, [welcome])
+    if (active && welcome && !welcomeDialog.current?.open) welcomeDialog.current?.showModal()
+    if (!active) welcomeDialog.current?.close()
+  }, [welcome, active])
   function dismissWelcome() { localStorage.setItem('feynman-chatgpt-welcomed', '1'); setWelcome(false); welcomeDialog.current?.close() }
   async function signIn(accountId?: string, newRegistration = false) {
     if (lock.current) return
@@ -144,11 +162,12 @@ export function AISettings({ onBack }: { onBack: () => void }) {
     } catch (reason) { setError(reason instanceof Error ? reason.message : 'Could not remove account.') }
     finally { lock.current = false; setBusy(false) }
   }
+  if (loading) return <LoadingScreen label="Loading providers" />
   return <section className="ai-settings-page">
-    <nav className="back-navigation" aria-label="AI settings navigation"><BackButton destination="previous page" onClick={onBack} /></nav>
     <div className="ai-settings-shell">
-      <header className="ai-settings-heading"><h1>AI settings</h1><p>Choose your AI.</p></header>
-      <fieldset className={`ai-provider-options${flyUnlocked ? ' ai-provider-options-unlocked' : ''}`}><legend className="ai-visually-hidden">AI provider</legend>
+      <header className="ai-settings-heading"><h2>AI settings</h2></header>
+      <h3 className="ai-provider-heading" hidden={!showProvider}>AI provider</h3>
+      <fieldset hidden={!showProvider} className={`ai-provider-options${flyUnlocked ? ' ai-provider-options-unlocked' : ''}`}><legend className="ai-visually-hidden">AI provider</legend>
         {providers.map(provider => <label key={provider.id} data-selected={!flySelected && prefs.provider === provider.id}><input type="radio" name="provider" value={provider.id} checked={!flySelected && prefs.provider === provider.id} disabled={busy || waiting} onChange={() => choose({ ...prefs, provider: provider.id, model: '' })} /><span><strong>{provider.id === 'chatgpt' ? 'ChatGPT' : provider.id === 'anthropic' ? 'Claude' : provider.label}</strong><small>{provider.configurationKind === 'chatgpt' ? 'Use your plan' : 'Use an API key'}</small></span></label>)}
         {flyUnlocked && <label className={flyRevealed ? 'fruit-fly-reveal' : undefined} data-selected={flySelected}>
           <input type="radio" name="provider" value={FRUIT_FLY_MODEL} checked={flySelected} disabled={busy || waiting} onChange={() => choose({ ...prefs, model: FRUIT_FLY_MODEL })} />
@@ -156,9 +175,10 @@ export function AISettings({ onBack }: { onBack: () => void }) {
         </label>}
       </fieldset>
       {flyRevealed && <span className="ai-visually-hidden" role="status">Secret model unlocked: fruit fly brain.</span>}
-      {!flySelected && (selectedProvider?.configurationKind === 'chatgpt' ? <div className="ai-connection">
-        <div className="ai-connection-heading"><h2>ChatGPT</h2><span className="ai-connection-status">{selected?.connected ? 'Connected' : 'Not connected'}</span></div><p className="ai-settings-note">Uses your eligible plan’s limits.</p>
-        <fieldset className="ai-account-options"><legend>Accounts</legend>
+      {flySelected && showModel && <div className="ai-connection"><div className="ai-connection-heading"><h3>Model</h3></div><p>fruit fly brain</p></div>}
+      {!flySelected && (showAccounts || showModel || showUsage) && (selectedProvider?.configurationKind === 'chatgpt' ? <div className="ai-connection">
+        <div className="ai-connection-heading"><h3>ChatGPT</h3><span className="ai-connection-status" data-ready={Boolean(selected?.connected)}>{selected?.connected ? 'Connected' : 'Not connected'}</span></div><p className="ai-settings-note" hidden={!showUsage}>Uses your eligible plan’s limits.</p>
+        <fieldset className="ai-account-options" hidden={!showAccounts}><legend>Accounts</legend>
           <div className="ai-account-grid">
             {health?.accounts.map(account => <div className="ai-account-card" key={account.id} data-selected={prefs.accountId === account.id}>
               <label className="ai-account-choice">
@@ -172,19 +192,20 @@ export function AISettings({ onBack }: { onBack: () => void }) {
             <button type="button" className="ai-account-add" disabled={busy || waiting} onClick={() => void signIn(undefined, Boolean(health?.accounts.length || health?.pendingRegistration))}><span className="ai-account-avatar" aria-hidden="true">+</span><strong>Add account</strong><small>Connect with ChatGPT</small></button>
           </div>
         </fieldset>
-        {selected?.connected && <><ModelSelect value={prefs.model} disabled={!models.length || busy || waiting} onChange={model => choose({ ...prefs, model })}><option value="">Account default{models[0] ? ` · ${models[0].name}` : ''}</option>{models.map(model => <option key={model.slug} value={model.slug}>{model.name}</option>)}</ModelSelect>{prefs.model && models.length > 0 && !models.some(model => model.slug === prefs.model) && <p role="alert">Your saved model is unavailable. Choose another model.</p>}</>}
-        <div className="ai-settings-actions">
-          {selected && !selected.connected && <button type="button" className="ai-chatgpt-button" disabled={busy || waiting} onClick={() => void signIn(selected?.id)}>Continue with ChatGPT</button>}
-          <a href="https://chatgpt.com/settings/usage" target="_blank" rel="noreferrer">Manage usage ↗</a>
+        {showModel && (selected?.connected ? <><ModelSelect value={prefs.model} disabled={!models.length || busy || waiting} onChange={model => choose({ ...prefs, model })}><option value="">Account default{models[0] ? ` · ${models[0].name}` : ''}</option>{models.map(model => <option key={model.slug} value={model.slug}>{model.name}</option>)}</ModelSelect>{prefs.model && models.length > 0 && !models.some(model => model.slug === prefs.model) && <p role="alert">Your saved model is unavailable. Choose another model.</p>}</> : <p className="ai-settings-note">Connect a ChatGPT account to choose a model.</p>)}
+        <div className="ai-settings-actions" hidden={!showAccounts && !showUsage && !showModel}>
+          {(showAccounts || showModel) && !selected?.connected && <button type="button" className="ai-chatgpt-button" disabled={busy || waiting} onClick={() => void signIn(selected?.id)}>Continue with ChatGPT</button>}
+          {showUsage && <a href="https://chatgpt.com/settings/usage" target="_blank" rel="noreferrer">Manage usage ↗</a>}
         </div>
         {waiting && <p role="status">Finish sign-in in the browser tab, then return here. <button type="button" className="ai-secondary-button" onClick={() => { pending.current?.popup.close(); pending.current = null; setWaiting(false) }}>Cancel</button></p>}
         
-      </div> : selectedProvider && <div className="ai-connection"><div className="ai-connection-heading"><h2>{selectedProvider.id === 'anthropic' ? 'Claude' : selectedProvider.label}</h2><span className="ai-connection-status">{selectedProvider.configured ? 'Ready' : 'Setup needed'}</span></div><p className="ai-settings-note">{selectedProvider.configured ? 'Billed to your API key.' : selectedProvider.configurationHelp}</p>
-        {selectedProvider.configured && (selectedProvider.supportsModelSelection ? <ModelSelect value={prefs.model} disabled={!models.length || busy || waiting} onChange={model => choose({ ...prefs, model })}><option value="">Provider default</option>{models.map(model => <option key={model.slug} value={model.slug}>{model.name}</option>)}</ModelSelect> : <p>Configured model: {selectedProvider.model}</p>)}
-        {selectedProvider.supportsModelSelection && prefs.model && models.length > 0 && !models.some(model => model.slug === prefs.model) && <p role="alert">Your saved model is unavailable. Choose another model.</p>}
+      </div> : selectedProvider && <div className="ai-connection"><div className="ai-connection-heading"><h3>{selectedProvider.id === 'anthropic' ? 'Claude' : selectedProvider.label}</h3><span className="ai-connection-status" data-ready={selectedProvider.configured}>{selectedProvider.configured ? 'Ready' : 'Setup needed'}</span></div><p className="ai-settings-note" hidden={!showUsage && selectedProvider.configured}>{selectedProvider.configured ? 'Billed to your API key.' : selectedProvider.configurationHelp}</p>
+        {showAccounts && query.trim() && <p className="ai-settings-note">Choose ChatGPT as your AI provider to manage connected accounts. <button type="button" className="ai-secondary-button" disabled={busy || waiting} onClick={() => choose({ ...prefs, provider: 'chatgpt', model: '' })}>Use ChatGPT</button></p>}
+        {showModel && selectedProvider.configured && (selectedProvider.supportsModelSelection ? <ModelSelect value={prefs.model} disabled={!models.length || busy || waiting} onChange={model => choose({ ...prefs, model })}><option value="">Provider default</option>{models.map(model => <option key={model.slug} value={model.slug}>{model.name}</option>)}</ModelSelect> : <p>Configured model: {selectedProvider.model}</p>)}
+        {showModel && selectedProvider.supportsModelSelection && prefs.model && models.length > 0 && !models.some(model => model.slug === prefs.model) && <p role="alert">Your saved model is unavailable. Choose another model.</p>}
         </div>)}
       {error && !flySelected && <p className="chat-error" role="alert">{error}</p>}{notice && <p role="status">{notice}</p>}
-      <button type="button" className="send-button" onClick={onBack}>Done</button>
+      {!loading && providers.length > 0 && <p className="ai-settings-autosave">Changes save automatically on this browser.</p>}
     </div>
     <dialog ref={welcomeDialog} className="ai-welcome" aria-labelledby="ai-welcome-title" onCancel={dismissWelcome}><h2 id="ai-welcome-title">You’re using your ChatGPT plan</h2><p>Eligible usage in Feynman uses your ChatGPT plan. Review limits and app access in your ChatGPT settings.</p><a href="https://chatgpt.com/settings/usage" target="_blank" rel="noreferrer">Manage usage ↗</a><button type="button" className="send-button" autoFocus onClick={dismissWelcome}>Got it</button></dialog>
   </section>

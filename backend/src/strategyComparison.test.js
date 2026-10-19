@@ -6,7 +6,7 @@ import { chat, validate } from './chat.js';
 import { strategyLevelInstructions, strategyExampleContext, clearQuestionInstructions, coreGenerationContext } from './strategyPlanning.js';
 import { Readable } from 'node:stream';
 import { createApiServer } from './server.js';
-import { accessCookie } from './accessTestHelper.js';
+import { testAuthorization, testAccountService } from './accessTestHelper.js';
 import { readFileSync } from 'node:fs';
 
 function fakeQuery({ invalidEvidence = false, complete = false, caseId = 'inertia' } = {}) {
@@ -326,13 +326,12 @@ test('every comparison uses its saved level-pipeline rubric without runtime rege
 
 async function invoke(server, { method = 'GET', body, hosted = false } = {}) {
   // Authenticate only this isolated in-memory test server, never the running app.
-  const cookie = hosted ? '' : await accessCookie(server);
   const req = Readable.from(body === undefined ? [] : [JSON.stringify(body)]);
-  Object.assign(req, { method, url: '/api/developer/question-comparison', socket: { remoteAddress: '127.0.0.1' }, headers: { cookie, host: hosted ? 'preview.vercel.app' : 'localhost:3001', origin: hosted ? 'https://preview.vercel.app' : 'http://localhost:5173', 'content-type': 'application/json' } });
+  Object.assign(req, { method, url: '/api/developer/question-comparison', socket: { remoteAddress: '127.0.0.1' }, headers: { authorization: testAuthorization, host: hosted ? 'preview.vercel.app' : 'localhost:3001', origin: hosted ? 'https://preview.vercel.app' : 'http://localhost:5173', 'content-type': 'application/json' } });
   return new Promise(resolve => server.emit('request', req, { setHeader() {}, writeHead(status) { this.status = status; }, end(body) { resolve({ status: this.status, data: JSON.parse(body) }); } }));
 }
 test('local comparison API lists fixed cases without a provider and returns versioned paired results', async t => {
-  const server = createApiServer({ chatgpt: null, env: { ANTHROPIC_API_KEY: 'test-only' }, query: fakeQuery() });
+  const server = createApiServer({ accountService: testAccountService(), chatgpt: null, env: { ANTHROPIC_API_KEY: 'test-only' }, query: fakeQuery() });
   t.after(() => server.close());
   const listed = await invoke(server);
   assert.equal(listed.status, 200);
@@ -347,8 +346,8 @@ test('local comparison API lists fixed cases without a provider and returns vers
   assert.equal(generated.data.provider, 'anthropic');
 });
 test('comparison generation requires configured provider and developer endpoint is blocked on hosted deployments', async t => {
-  const local = createApiServer({ chatgpt: null, env: {}, query: () => { throw new Error('must not run'); } });
-  const hosted = createApiServer({ hosted: true, env: { VERCEL_URL: 'preview.vercel.app' } });
+  const local = createApiServer({ accountService: testAccountService(), chatgpt: null, env: {}, query: () => { throw new Error('must not run'); } });
+  const hosted = createApiServer({ accountService: testAccountService(), hosted: true, env: { VERCEL_URL: 'preview.vercel.app' } });
   t.after(() => { local.close(); hosted.close(); });
   assert.equal((await invoke(local)).status, 200);
   assert.equal((await invoke(local, { method: 'POST', body: { caseId: 'inertia' } })).status, 503);
