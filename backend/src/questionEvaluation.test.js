@@ -45,22 +45,24 @@ test('a blind model review is mapped back to the branches and keeps its limitati
 });
 
 async function invoke(server, body, hosted = false) {
-  const authorization = hosted ? '' : testAuthorization;
+  const authorization = testAuthorization;
   const req = Readable.from([JSON.stringify(body)]);
   Object.assign(req, { method: 'POST', url: '/api/developer/question-review', socket: { remoteAddress: '127.0.0.1' }, headers: { authorization, host: hosted ? 'preview.vercel.app' : 'localhost:3001', origin: hosted ? 'https://preview.vercel.app' : 'http://localhost:5173', 'content-type': 'application/json' } });
   return new Promise(resolve => server.emit('request', req, { setHeader() {}, writeHead(status) { this.status = status; }, end(text) { resolve({ status: this.status, data: JSON.parse(text) }); } }));
 }
 
-test('question review endpoint validates input, uses the connected provider, and is local-only', async t => {
+test('question review endpoint validates input and supports hosted Anthropic admins', async t => {
   let calls = 0;
   const local = createApiServer({ accountService: testAccountService(), chatgpt: null, env: { ANTHROPIC_API_KEY: 'test-only' }, query: async () => { calls++; return makeReview(); } });
-  const hosted = createApiServer({ accountService: testAccountService(), hosted: true, env: { VERCEL_URL: 'preview.vercel.app' } });
+  const hosted = createApiServer({ accountService: testAccountService(), hosted: true, env: { VERCEL_URL: 'preview.vercel.app', ANTHROPIC_API_KEY: 'test-only' }, query: async () => makeReview() });
   t.after(() => { local.close(); hosted.close(); });
   const valid = { caseId: fixture.id, baseline, enhanced };
   assert.equal((await invoke(local, { ...valid, caseId: 'missing' })).status, 400);
   assert.equal((await invoke(local, { ...valid, enhanced: '' })).status, 400);
   assert.equal(calls, 0);
-  assert.equal((await invoke(hosted, valid, true)).status, 403);
+  const hostedResult = await invoke(hosted, valid, true);
+  assert.equal(hostedResult.status, 200);
+  assert.equal(hostedResult.data.provider, 'anthropic');
   const result = await invoke(local, valid);
   assert.equal(result.status, 200);
   assert.equal(result.data.questions.enhanced.total, 10);

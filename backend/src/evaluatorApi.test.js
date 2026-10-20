@@ -8,7 +8,7 @@ import { evaluatorComparisonCases } from './evaluatorTestCases.js';
 import { createEvaluationContext } from './evaluatorContracts.js';
 
 async function invoke(server, { body, hosted = false, cookie: providedCookie, origin, method = body === undefined ? 'GET' : 'POST' } = {}) {
-  const authorization = providedCookie ?? (hosted ? '' : testAuthorization);
+  const authorization = providedCookie ?? testAuthorization;
   const req = Readable.from(body === undefined ? [] : [JSON.stringify(body)]);
   Object.assign(req, { method, url: '/api/developer/evaluator-comparison', headers: { authorization, host: hosted ? 'preview.vercel.app' : 'localhost:3001', origin: origin ?? (hosted ? 'https://preview.vercel.app' : 'http://localhost:5173'), 'content-type': 'application/json' } });
   return new Promise(resolve => server.emit('request', req, { setHeader() {}, writeHead(status) { this.status = status; }, end(body) { resolve({ status: this.status, data: JSON.parse(body) }); } }));
@@ -90,8 +90,8 @@ test('new developer endpoint enforces access, origin, hosting, provider configur
   t.after(() => { local.close(); hosted.close(); });
   assert.equal((await invoke(local, { cookie: '' })).status, 401);
   assert.equal((await invoke(local, { origin: 'https://other.example' })).status, 403);
-  assert.equal((await invoke(hosted, { hosted: true })).status, 403);
-  assert.equal((await invoke(hosted, { hosted: true, body: request })).status, 403);
+  assert.equal((await invoke(hosted, { hosted: true })).status, 200);
+  assert.equal((await invoke(hosted, { hosted: true, body: request })).status, 503);
   assert.equal((await invoke(local)).status, 200);
   assert.equal((await invoke(local, { body: { caseId: 'missing' } })).status, 400);
   assert.equal((await invoke(local, { body: { caseId: 'inertia' } })).status, 400);
@@ -99,4 +99,14 @@ test('new developer endpoint enforces access, origin, hosting, provider configur
   assert.equal((await invoke(local, { body: { ...request, evaluatorCriteria: [] } })).status, 400);
   assert.equal((await invoke(local, { body: request })).status, 503);
   assert.equal(calls, 0);
+});
+
+test('hosted admins run evaluator ablations through Anthropic', async t => {
+ const server = createApiServer({ accountService: testAccountService(), hosted: true, env: { VERCEL_URL: 'preview.vercel.app', ANTHROPIC_API_KEY: 'test-only' }, query: queryFixture });
+ t.after(() => server.close());
+ const result = await invoke(server, { hosted: true, body: { ...request, mode: 'ablation' } });
+ assert.equal(result.status, 200);
+ assert.equal(result.data.provider, 'anthropic');
+ assert.equal(result.data.refined.assessment.completion.eligible, true);
+ assert.equal(Object.keys(result.data.ablation.variants).length, 4);
 });

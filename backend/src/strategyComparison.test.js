@@ -437,13 +437,17 @@ test('local comparison API lists fixed cases without a provider and returns vers
   assert.match(generated.data.promptVersion, /^[a-f0-9]{64}$/);
   assert.equal(generated.data.provider, 'anthropic');
 });
-test('comparison generation requires configured provider and developer endpoint is blocked on hosted deployments', async t => {
+test('comparison generation requires configured provider and hosted admins can run Anthropic comparisons', async t => {
   const local = createApiServer({ accountService: testAccountService(), chatgpt: null, env: {}, query: () => { throw new Error('must not run'); } });
-  const hosted = createApiServer({ accountService: testAccountService(), hosted: true, env: { VERCEL_URL: 'preview.vercel.app' } });
+  const hosted = createApiServer({ accountService: testAccountService(), hosted: true, env: { VERCEL_URL: 'preview.vercel.app', ANTHROPIC_API_KEY: 'test-only' }, query: fakeQuery() });
   t.after(() => { local.close(); hosted.close(); });
   assert.equal((await invoke(local)).status, 200);
   assert.equal((await invoke(local, { method: 'POST', body: { caseId: 'inertia' } })).status, 503);
-  assert.equal((await invoke(hosted, { hosted: true })).status, 403);
+  assert.equal((await invoke(hosted, { hosted: true })).status, 200);
+  const result = await invoke(hosted, { hosted: true, method: 'POST', body: { caseId: 'inertia' } });
+  assert.equal(result.status, 200);
+  assert.equal(result.data.provider, 'anthropic');
+  assert.ok(result.data.enhanced.message);
 });
 
 

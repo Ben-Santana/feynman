@@ -37,7 +37,6 @@ export function createApiServer({ query, hosted = false, env = process.env, prom
     // Hosted instances cannot persist local OAuth credentials or source edits.
     if (hosted && developer && req.method !== 'GET') return send(403, { error: 'Prompts are read-only on this deployment. Use the local Feynman app to edit them.' });
     if (hosted && (callbackRequest || ['/api/ai/sign-in', '/api/ai/sign-out', '/api/ai/remove-account'].includes(req.url))) return send(403, { error: 'ChatGPT connections require the local Feynman app. Choose Anthropic in AI settings on this deployment.' });
-    if (hosted && (comparison || questionReview || evaluatorComparison)) return send(403, { error: 'Question comparisons require the local Feynman app.' });
     if (!hosted && !/^(localhost|127\.0\.0\.1)(:\d+)?$/.test(req.headers.host || '')) return send(403, { error: 'The Feynman API is only available on localhost.' });
     if (req.method === 'GET' && callbackRequest) {
       res.setHeader('Content-Type', 'text/plain; charset=utf-8');
@@ -94,6 +93,7 @@ export function createApiServer({ query, hosted = false, env = process.env, prom
       if (comparison && req.method === 'GET') return send(200, { cases: comparisonCases, corpusVersion, savedEvaluation: readSavedQuestionEvaluation() });
       if (evaluatorComparison && req.method === 'GET') return send(200, { cases: evaluatorCases, evaluatorVersion, deferred: deferredEvaluatorWork });
       const provider = req.headers['x-feynman-provider'] || 'anthropic';
+      if (hosted && (comparison || questionReview || evaluatorComparison) && provider !== 'anthropic') return send(403, { error: 'Hosted comparisons use Anthropic. Choose Anthropic in AI settings.' });
       const accounts = account.role === 'admin' ? chatgpt?.accounts() || [] : [];
       const accountId = req.headers['x-feynman-account'] || accounts.find(item => item.connected)?.id;
       const selectedModel = req.headers['x-feynman-model'] || '';
