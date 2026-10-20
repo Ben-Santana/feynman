@@ -1,0 +1,156 @@
+{
+  "schemaVersion": 1,
+  "scope": "affected leakage and leading-question regressions",
+  "coverageCases": 51,
+  "provider": "chatgpt",
+  "model": "gpt-6.1-sol",
+  "corpusVersion": "question-strategies-5",
+  "promptVersion": "1ed6b362365e1015fd4ce68ea57a48f664401c3ceee0009263c8d629323a1cde",
+  "caseIds": [
+    "coverage-necessary-sufficient-apply"
+  ],
+  "sourceHashes": {
+    "backend/src/questionTargeting.js": "30877660e805761da341ce9e7d413fdad64bce9955d194a1cda28bc7ea71d764",
+    "backend/src/strategyComparison.js": "4b9a5b63e15620a6cd635e8d0fd178f8ebacd7ec77d712eb61783d946c3c3f4b",
+    "backend/src/strategyPlanning.js": "bec8411116b299201c715ad80c57e39989c55ef5d154f5b847daae137fae30dc",
+    "backend/src/questionEvaluation.js": "85b3f99c9ffde3d6ea7858933a3d93931b33a82f2c4ba5ae6b6d443f1914472b",
+    "backend/src/chat.js": "3de9b46206fb53de8e64572f18ed09a0c543debef3a1d37a0809e792180f6a73",
+    "backend/question-strategies.json": "f4a3b7d81681f5776237bd5c5259ddbc175973aeb09871f6bd76168c2067f320",
+    "backend/strategy-comparison-cases.json": "02872b02ad2de6e44daa2251584d31b017d4843c51395f03b8b8518f5e5acfe2",
+    "backend/comparison-rubrics.json": "02af39643f9398c1f84fbfc7df8ec15c4df806e317fbaf377e8400c94c7a9138"
+  },
+  "fingerprint": "211bc39e84dd1d1b66ffd512cbb9642177a17ca2796a4126ef1779a026b2eefd",
+  "startedAt": "2026-10-19T01:14:14.058Z",
+  "totalCases": 1,
+  "results": [
+    {
+      "caseId": "coverage-necessary-sufficient-apply",
+      "title": "Separate necessary from sufficient conditions — apply",
+      "level": "apply",
+      "learningType": "theoretical",
+      "expectedStrategyId": "necessary-sufficient",
+      "attempts": [
+        {
+          "finishedAt": "2026-10-19T01:15:29.173Z",
+          "durationMs": 75112,
+          "status": "applied",
+          "reviewError": null
+        }
+      ],
+      "status": "applied",
+      "runId": "c9c00c68-567f-4f98-a4a4-388b3909d716",
+      "generatedAt": "2026-10-19T01:15:17.073Z",
+      "selectedStrategyId": "necessary-sufficient",
+      "baseline": "How would you check your claim that $10$ is divisible by six against the meaning of divisibility by six?",
+      "enhanced": "If you check 10 directly for divisibility by six, what do you find, and what does that result tell you about the proposed even-number test?",
+      "coverageGap": null,
+      "traceFile": "cases/coverage-necessary-sufficient-apply.json",
+      "callCount": 7,
+      "generationDurationMs": 63018,
+      "review": {
+        "version": "blind-question-review-1",
+        "mapping": {
+          "A": "enhanced",
+          "B": "baseline"
+        },
+        "questions": {
+          "enhanced": {
+            "label": "A",
+            "clarity": {
+              "score": 2,
+              "reason": "Clearly asks for a direct check of 10 and the implication of that same check for the proposed test; these form one focused target."
+            },
+            "levelFit": {
+              "score": 2,
+              "reason": "Requires applying divisibility to the supplied integer to test sufficiency, rather than merely recalling a definition."
+            },
+            "diagnosticValue": {
+              "score": 2,
+              "reason": "Elicits both whether 10 is divisible by six and whether the even-number condition suffices, directly probing the unresolved inference."
+            },
+            "grounding": {
+              "score": 2,
+              "reason": "The supplied integer and the meanings already introduced suffice to answer the question correctly."
+            },
+            "nonLeading": {
+              "score": 2,
+              "reason": "Requests a check and its interpretation without supplying the result or asserting that the test fails."
+            },
+            "strengths": [
+              "Connects the concrete check explicitly to the sufficiency claim.",
+              "Allows the learner to produce the result and draw the implication independently."
+            ],
+            "concerns": [],
+            "total": 10
+          },
+          "baseline": {
+            "label": "B",
+            "clarity": {
+              "score": 2,
+              "reason": "Clearly asks how the learner would check the specific divisibility claim using its meaning."
+            },
+            "levelFit": {
+              "score": 2,
+              "reason": "Calls for a checking method applied to 10, which is appropriate theoretical application."
+            },
+            "diagnosticValue": {
+              "score": 1,
+              "reason": "Can elicit a meaningful checking procedure, but does not explicitly require carrying it out or relating its result to the claimed sufficiency of evenness."
+            },
+            "grounding": {
+              "score": 2,
+              "reason": "Checking 10 against the meaning of divisibility by six is sound and requires only available prerequisites."
+            },
+            "nonLeading": {
+              "score": 2,
+              "reason": "Neutrally refers to the learner's claim and supplies neither the answer nor a corrective principle."
+            },
+            "strengths": [
+              "Invites an independent, definition-based check of the learner's claim.",
+              "Does not endorse the claim that 10 is divisible by six."
+            ],
+            "concerns": [
+              {
+                "dimension": "diagnosticValue",
+                "severity": "minor",
+                "quote": "How would you check your claim",
+                "reason": "A learner could describe a procedure without executing it or reconsidering whether evenness suffices, leaving the specific sufficiency inference unresolved."
+              }
+            ],
+            "total": 9
+          }
+        },
+        "preference": "enhanced",
+        "reason": "Both are clear, grounded, and non-leading applications to 10. A more directly elicits the actual check and its implication for sufficiency, whereas B can be answered with only a proposed checking procedure.",
+        "limitation": "Single blind model review of next-question design; not independent expert validation or a learner-outcome measurement.",
+        "provider": "chatgpt",
+        "model": "gpt-6.1-sol"
+      },
+      "baselineMeetsScreen": true,
+      "enhancedMeetsScreen": true
+    }
+  ],
+  "updatedAt": "2026-10-19T01:15:29.178Z",
+  "summary": {
+    "attempted": 1,
+    "total": 1,
+    "applied": 1,
+    "fallback": 0,
+    "noQuestion": 0,
+    "errors": 0,
+    "reviewErrors": 0,
+    "reviewedApplications": 1,
+    "baselineMean": 9,
+    "enhancedMean": 10,
+    "baselineMeetsScreen": 1,
+    "enhancedMeetsScreen": 1,
+    "preferences": {
+      "baseline": 0,
+      "enhanced": 1,
+      "tie": 0,
+      "neither": 0
+    }
+  },
+  "screenRule": "All five dimensions >= 1, total >= 8/10, no major concern. Applied pairs only; fallbacks, no-question runs and errors excluded from quality means.",
+  "limitations": "One retained complete pair per authored strategy-level case, with recorded operational retries and a blind same-model design review. Targeted candidates can abstain. This is not open-selector coverage, independent expert validation, or evidence of learning gains."
+}

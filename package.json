@@ -11,7 +11,9 @@
     "build": "npm run build -w frontend",
     "lint": "npm run lint -w frontend",
     "preview": "npm run preview -w frontend",
-    "test": "node --test backend/src/*.test.js"
+    "test": "node --test backend/src/*.test.js",
+    "test:evaluator": "node --test backend/src/evaluator*.test.js backend/src/conversationRefinement.test.js backend/src/chat.test.js backend/src/learningFlow.test.js backend/src/learningTypes.test.js backend/src/generationResilience.test.js",
+    "evaluate:evaluator": "node scripts/evaluate-evaluator.mjs"
   },
   "devDependencies": {
     "@electric-sql/pglite": "^0.5.9",

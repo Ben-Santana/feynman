@@ -15,5 +15,5 @@ export default defineConfig({
   resolve: { alias: { '@feynman/reading': fileURLToPath(new URL('./src/reading-runtime', import.meta.url)) } },
   // Keep the runtime on the app module graph so it shares the preference store.
   optimizeDeps: { exclude: ['@feynman/reading/jsx-runtime', '@feynman/reading/jsx-dev-runtime'] },
-  server: { port: 5173, strictPort: true, watch: { usePolling: true }, proxy: { '/api': 'http://127.0.0.1:3001' } },
+  server: { host: '127.0.0.1', port: 5173, strictPort: true, watch: { usePolling: true }, proxy: { '/api': 'http://127.0.0.1:3001' } },
 })

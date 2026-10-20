@@ -1,0 +1,61 @@
+[
+  {
+    "id": "coverage-necessary-sufficient-apply",
+    "title": "Separate necessary from sufficient conditions — apply",
+    "group": "Strategy coverage · Apply",
+    "topic": "Testing sufficiency with a concrete integer",
+    "level": "apply",
+    "learningType": "theoretical",
+    "expectedStrategyId": "necessary-sufficient",
+    "comparisonMode": "targeted",
+    "messages": [
+      {
+        "role": "assistant",
+        "content": "A proposed test says any positive even integer is divisible by six. Apply the meanings of even and divisible by six to the number 10."
+      },
+      {
+        "role": "user",
+        "content": "Ten passes the even-number test."
+      },
+      {
+        "role": "assistant",
+        "content": "Which part of your account are you least certain about?"
+      },
+      {
+        "role": "user",
+        "content": "Passing that test is sufficient, so 10 must also pass divisibility by six without a separate check."
+      }
+    ],
+    "reviewGuide": {
+      "target": "Use the supplied case to test the claimed sufficiency.",
+      "risks": [
+        "Do not give the divisibility result or substitute a generic definition request."
+      ],
+      "scope": "One next-question design review; no learner response or learning-effect claim."
+    },
+    "reviewedRubricItems": [
+      "Uses the supplied integer 10 to test whether being even suffices for divisibility by six."
+    ],
+    "rubricReview": {
+      "method": "authored_fixture_scope_review",
+      "reviewedAt": "2026-10-18T20:00:03.310Z",
+      "reason": "Narrowed the generated topic rubric to the supplied fixed task and its specific evidence target. This is benchmark-author review, not independent expert validation."
+    },
+    "aspects": [
+      "Uses the supplied integer 10 to test whether being even suffices for divisibility by six."
+    ],
+    "rubricGeneration": {
+      "generatedAt": "2026-10-18T19:48:27.545Z",
+      "provider": "chatgpt",
+      "model": "gpt-6.1-sol",
+      "promptVersion": "1ed6b362365e1015fd4ce68ea57a48f664401c3ceee0009263c8d629323a1cde",
+      "pipeline": "generateLevelRubric",
+      "endpoint": "/api/developer/rubric",
+      "generatedItems": [
+        "Selects a concrete integer satisfying all conditions in a new sufficiency question.",
+        "Uses two allowed integers with different answers to demonstrate that the conditions are insufficient.",
+        "Predicts whether an added constraint makes the answer identical for every allowed integer."
+      ]
+    }
+  }
+]

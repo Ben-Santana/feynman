@@ -2,8 +2,8 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { compareQuestions } from './strategyComparison.js';
 import { comparisonCases, retrieveStrategies, strategies } from './questionStrategies.js';
-import { chat, validate } from './chat.js';
-import { strategyLevelInstructions, strategyExampleContext, clearQuestionInstructions, coreGenerationContext } from './strategyPlanning.js';
+import { chat as conversationChat, validate } from './chat.js';
+import { strategyLevelInstructions, strategyExampleContext, clearQuestionInstructions, coreGenerationContext, validateSelection } from './strategyPlanning.js';
 import { Readable } from 'node:stream';
 import { createApiServer } from './server.js';
 import { testAuthorization, testAccountService } from './accessTestHelper.js';
@@ -69,12 +69,67 @@ test('all eligible reviewed examples reach selection and generation, including o
   const result = await compareQuestions('inertia', fakeQuery(), undefined, { catalog });
   const expected = strategyExampleContext(catalog.map(strategy => ({ strategy })), 'understand');
   assert.deepEqual(result.exampleContext, expected);
-  assert.equal(expected.length, 8);
+  assert.ok(expected.some(example => example.context === 'Additional reviewed illustration.'));
   const selector = result.calls.find(call => call.name === 'select_strategy');
   assert.deepEqual(JSON.parse(selector.request.messages[0].content).exampleContext, expected);
   const generator = result.calls.find(call => call.branch === 'strategy learner');
   for (const example of expected) assert.ok(generator.request.instructions.includes(JSON.stringify(example)), example.strategyId);
   assert.ok(!generator.request.instructions.includes('A numerical exercise.'));
+});
+
+test('every supported level retrieves strategies with matching examples and generation guidance', () => {
+  for (const level of ['remember', 'understand', 'apply', 'analyze']) {
+    const input = { ...comparisonCases[0], level };
+    const candidates = retrieveStrategies({}, input);
+    assert.deepEqual(candidates.map(({ strategy }) => strategy.id), strategies.filter(strategy => strategy.levels.includes(level)).map(strategy => strategy.id));
+    assert.ok(candidates.length > 0);
+    assert.ok(strategyLevelInstructions(level).length > 0);
+    const examples = strategyExampleContext(candidates, level);
+    for (const { strategy } of candidates) {
+      assert.ok(examples.some(example => example.strategyId === strategy.id));
+      const context = coreGenerationContext(input, strategy, {});
+      assert.ok(context.strategy.constructionRules.includes(strategy.levelGuidance[level]));
+    }
+    assert.ok(examples.every(example => example.level === level && !('responseSignals' in example)));
+  }
+});
+
+test('Remember retrieves recall and term clarification without disguising causal strategies as recall', async () => {
+  const input = { ...comparisonCases[0], level: 'remember' };
+  assert.deepEqual(retrieveStrategies({}, input).map(({ strategy }) => strategy.id).sort(), ['clarify-specific-term', 'recall-specific-element']);
+  const selection = await fakeQuery()('', [], { name: 'select_strategy' });
+  const forcedCandidates = strategies.map(strategy => ({ strategy }));
+  assert.throws(() => validateSelection(selection, forcedCandidates, input), /does not support the active learning level/);
+  assert.throws(() => coreGenerationContext(input, strategies.find(strategy => strategy.id === 'remove-condition'), selection.plan), /does not support the active learning level/);
+  const recall = { ...selection, strategyId: 'recall-specific-element' };
+  assert.equal(validateSelection(recall, retrieveStrategies({}, input), input).id, 'recall-specific-element');
+  assert.deepEqual(strategyExampleContext(forcedCandidates, 'remember').map(example => example.strategyId).sort(), ['clarify-specific-term', 'recall-specific-element']);
+});
+
+test('new strategy generation retains observable settings and learning type without private response interpretations', async () => {
+  const input = comparisonCases[0];
+  const { plan } = await fakeQuery()('', [], { name: 'select_strategy' });
+  const adapted = { ...plan, scenario: 'An explicit system, interval, and observed transfers.', assumptions: ['No unreported boundary flows.'] };
+  const originalIds = new Set(['controlled-comparison', 'boundary-case', 'remove-condition', 'quantity-versus-change', 'reconcile-claims', 'representation-change', 'clarify-specific-term']);
+  const additions = strategies.filter(strategy => !originalIds.has(strategy.id) && strategy.levels.includes(input.level));
+  assert.ok(additions.length > 0);
+  for (const strategy of additions) {
+    const context = coreGenerationContext(input, strategy, adapted);
+    assert.equal(context.learningType, input.learningType);
+    assert.deepEqual(context.setting, { description: adapted.scenario, assumptions: adapted.assumptions });
+    assert.equal(context.responseSignals, undefined);
+    assert.equal(context.distinctFrom, undefined);
+  }
+});
+
+test('term clarification cannot replace an Apply or Analyze task', async () => {
+  const selection = { ...await fakeQuery()('', [], { name: 'select_strategy' }), strategyId: 'clarify-specific-term' };
+  const strategy = strategies.find(item => item.id === selection.strategyId);
+  for (const level of ['apply', 'analyze']) {
+    const input = { ...comparisonCases[0], level };
+    assert.ok(!retrieveStrategies({}, input).some(candidate => candidate.strategy.id === strategy.id));
+    assert.throws(() => validateSelection(selection, [{ strategy }], input), /does not support the active learning level/);
+  }
 });
 
 test('generator excludes full diagnostics, drafted plan, interpretations, and baseline rubric-focus instructions', async () => {
@@ -92,7 +147,7 @@ test('generator excludes full diagnostics, drafted plan, interpretations, and ba
   assert.ok(checks.some(call => call.request.messages[0].content.includes(markers[2])));
   assert.ok(checks.some(call => call.request.messages[0].content.includes(markers[5])));
   assert.ok(!generator.request.instructions.includes('Learning-type framework'));
-  assert.deepEqual(Object.keys(result.generationContext), ['topic', 'level', 'rubricItem', 'studentClaim', 'diagnosticObjective', 'strategy', 'setting']);
+  assert.deepEqual(Object.keys(result.generationContext), ['topic', 'level', 'learningType', 'rubricItem', 'studentClaim', 'diagnosticObjective', 'strategy', 'setting']);
   assert.deepEqual(Object.keys(result.generationContext.strategy), ['id', 'title', 'constructionRules']);
 });
 
@@ -100,7 +155,7 @@ test('strategy-specific generation fields are included only when needed', () => 
   const input = comparisonCases.find(item => item.id === 'indirect-torque');
   const plan = { targetQuote: input.messages[3].content, rubricItem: input.aspects[0], objective: 'Clarify larger force.', scenario: 'Existing wrench discussion.', assumptions: ['Same hand push'], heldFixed: ['Push'], varied: ['Handle length'], construction: 'Drafted question should not reach generation.', responseSignals: [], limitations: ['Not needed by generation.'] };
   const clarify = coreGenerationContext(input, strategies.find(s => s.id === 'clarify-specific-term'), plan);
-  assert.deepEqual(Object.keys(clarify), ['topic', 'level', 'rubricItem', 'studentClaim', 'diagnosticObjective', 'strategy']);
+  assert.deepEqual(Object.keys(clarify), ['topic', 'level', 'learningType', 'rubricItem', 'studentClaim', 'diagnosticObjective', 'strategy']);
   const comparison = coreGenerationContext(input, strategies.find(s => s.id === 'controlled-comparison'), plan);
   assert.deepEqual(comparison.comparison, { heldFixed: ['Push'], varied: ['Handle length'] });
   assert.equal(comparison.setting, undefined);
@@ -218,12 +273,12 @@ test('catalog retrieval uses review and level eligibility, not equal/unequal top
   assert.deepEqual(retrieveStrategies({}, comparisonCases[0], catalog), []);
 });
 
-test('indirect fixtures are valid fixed transcripts using the unchanged strategy corpus', () => {
+test('indirect fixtures remain valid fixed transcripts with the expanded strategy corpus', () => {
   assert.equal(comparisonCases.filter(item => item.group === 'FCI Direct Test').length, 6);
   const indirect = comparisonCases.filter(item => item.group === 'FCI Indirect Test');
   assert.equal(indirect.length, 6);
   assert.equal(new Set(comparisonCases.map(item => item.id)).size, comparisonCases.length);
-  assert.equal(strategies.length, 7);
+  assert.ok(strategies.some(strategy => strategy.id === 'conservation-accounting'));
   for (const input of indirect) {
     assert.doesNotThrow(() => validate(input));
     assert.deepEqual(input.messages.map(item => item.role), ['assistant', 'user', 'assistant', 'user']);
@@ -233,11 +288,11 @@ test('indirect fixtures are valid fixed transcripts using the unchanged strategy
   }
 });
 
-test('ECE folder contains four valid electrical fixtures without expanding the strategy corpus', () => {
+test('ECE folder retains four valid electrical fixtures with the expanded strategy corpus', () => {
   const ece = comparisonCases.filter(item => item.group.toLowerCase() === 'ece indirect test');
   assert.equal(ece.length, 4);
-  assert.equal(new Set(comparisonCases.map(item => item.id)).size, 16);
-  assert.equal(strategies.length, 7);
+  assert.equal(new Set(comparisonCases.map(item => item.id)).size, comparisonCases.length);
+  assert.ok(strategies.some(strategy => strategy.id === 'necessary-sufficient'));
   for (const input of ece) {
     assert.doesNotThrow(() => validate(input));
     assert.equal(input.level, 'understand');
@@ -314,7 +369,8 @@ test('every comparison uses its saved level-pipeline rubric without runtime rege
   assert.equal(Object.keys(saved.cases).length, comparisonCases.length);
   for (const fixture of comparisonCases) {
     const record = saved.cases[fixture.id];
-    assert.deepEqual(fixture.aspects, record.items);
+    assert.deepEqual(fixture.aspects, fixture.reviewedRubricItems || record.items);
+    if (fixture.reviewedRubricItems) assert.deepEqual(fixture.rubricGeneration.generatedItems, record.items);
     assert.deepEqual(record.input, { topic: fixture.topic, level: fixture.level, learningType: fixture.learningType });
     assert.equal(fixture.rubricGeneration.pipeline, 'generateLevelRubric');
     assert.equal(fixture.rubricGeneration.endpoint, '/api/developer/rubric');
@@ -322,6 +378,42 @@ test('every comparison uses its saved level-pipeline rubric without runtime rege
     assert.ok(Number.isFinite(Date.parse(fixture.rubricGeneration.generatedAt)));
     assert.doesNotThrow(() => validate(fixture));
   }
+});
+
+test('coverage fixtures exercise every eligible strategy-level pair and do not leak benchmark expectations', async () => {
+  const coverage = comparisonCases.filter(item => item.expectedStrategyId);
+  const expected = strategies.flatMap(strategy => strategy.levels.map(level => `${strategy.id}:${level}`)).sort();
+  assert.equal(coverage.length, 51);
+  assert.deepEqual(coverage.map(item => `${item.expectedStrategyId}:${item.level}`).sort(), expected);
+  for (const fixture of coverage) {
+    assert.doesNotThrow(() => validate(fixture));
+    const base = fakeQuery({ caseId: fixture.id });
+    const result = await compareQuestions(fixture.id, async (instructions, messages, response, options) => {
+      const value = await base(instructions, messages, response, options);
+      return response.name === 'select_strategy' ? { ...value, strategyId: fixture.expectedStrategyId } : value;
+    });
+    assert.equal(result.comparisonMode, 'targeted');
+    assert.equal(result.strategy.id, fixture.expectedStrategyId);
+    assert.deepEqual(result.candidates.map(({ strategy }) => strategy.id), [fixture.expectedStrategyId]);
+    for (const call of result.calls.filter(item => ['diagnose_understanding', 'select_strategy'].includes(item.name))) {
+      const { input } = JSON.parse(call.request.messages[0].content);
+      assert.equal(input.expectedStrategyId, undefined);
+      assert.equal(input.reviewGuide, undefined);
+      assert.equal(input.title, undefined);
+    }
+  }
+});
+
+test('targeted comparisons preserve abstention rather than forcing the expected strategy', async () => {
+  const fixture = comparisonCases.find(item => item.expectedStrategyId === 'recall-specific-element');
+  const base = fakeQuery({ caseId: fixture.id });
+  const result = await compareQuestions(fixture.id, (instructions, messages, response, options) => response.name === 'select_strategy'
+    ? { strategyId: 'none', rationale: 'The target cannot be safely instantiated.', plan: null }
+    : base(instructions, messages, response, options));
+  assert.equal(result.comparisonMode, 'targeted');
+  assert.equal(result.enhanced.fallback, true);
+  assert.equal(result.strategy, null);
+  assert.equal(result.coverageGap.stage, 'selection');
 });
 
 async function invoke(server, { method = 'GET', body, hosted = false } = {}) {
@@ -335,7 +427,7 @@ test('local comparison API lists fixed cases without a provider and returns vers
   t.after(() => server.close());
   const listed = await invoke(server);
   assert.equal(listed.status, 200);
-  assert.equal(listed.data.cases.length, 16);
+  assert.equal(listed.data.cases.length, 67);
   assert.deepEqual(listed.data.cases[0].messages, comparisonCases[0].messages);
   assert.equal((await invoke(server, { method: 'POST', body: { caseId: 'not-real' } })).status, 400);
   const generated = await invoke(server, { method: 'POST', body: { caseId: 'inertia', messages: [] } });
@@ -353,3 +445,27 @@ test('comparison generation requires configured provider and developer endpoint 
   assert.equal((await invoke(local, { method: 'POST', body: { caseId: 'inertia' } })).status, 503);
   assert.equal((await invoke(hosted, { hosted: true })).status, 403);
 });
+
+
+test('solution leaks and factive claims retry in both branches despite a permissive checker', async () => {
+  const fallback = fakeQuery();
+  let baselineAttempts = 0, enhancedAttempts = 0;
+  const result = await compareQuestions('inertia', async (instructions, messages, response, options) => {
+    if (response.name === 'select_strategy') assert.match(instructions, /Keep the scenario and construction free of solution scaffolding/);
+    if (response.name !== 'respond_to_student') return fallback(instructions, messages, response, options);
+    if (instructions.includes('Apply the following diagnostic strategy')) {
+      if (++enhancedAttempts === 1) return { message: 'The relationship is F = ma. What happens after contact ends?', expression: 'confused' };
+      return { message: 'On a frictionless surface, what happens to the puck after the push ends?', expression: 'confused' };
+    }
+    if (++baselineAttempts === 1) return { message: 'Why does contact ending establish that the puck must stop?', expression: 'confused' };
+    assert.match(instructions, /presupposes a disputed implication/);
+    return { message: 'What makes you think the puck must stop after contact ends?', expression: 'confused' };
+  });
+  assert.equal(baselineAttempts, 2);
+  assert.equal(enhancedAttempts, 2);
+  assert.equal(result.coverageGap, null);
+  assert.doesNotMatch(result.enhanced.message, /F = ma/);
+});
+
+// Preserve regression coverage for the original developer-comparison baseline.
+function chat(input, query, prompts) { return conversationChat(input, query, prompts, { evaluator: 'legacy', learner: 'default' }); }

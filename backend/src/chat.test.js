@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { chat, validate, rubrics, conceptsFromStudyTest, generateRubric, suggestConceptsFromFiles } from './chat.js';
+import { chat as conversationChat, validate, rubrics, conceptsFromStudyTest, generateRubric, suggestConceptsFromFiles } from './chat.js';
 
 const input = (overrides = {}) => ({ level: 'remember', topic: 'Capacitors', aspects: ['Stored energy'], messages: [{ role: 'assistant', content: 'Teach me about capacitors.' }, { role: 'user', content: 'They store energy in an electric field.' }], ...overrides });
 const evidence = (quote = 'They store energy in an electric field.', messageIndex = 1) => [{ quote, messageIndex }];
@@ -395,3 +395,6 @@ test('rubric generation passes additional instructions to the AI and validates t
     await assert.rejects(generateRubric({ concepts, additionalInstructions }, async () => { throw new Error('Should not call AI'); }), /additional rubric instructions/);
   }
 });
+
+// Preserve regression coverage for the original developer-comparison baseline.
+function chat(input, query, prompts) { return conversationChat(input, query, prompts, { evaluator: 'legacy', learner: 'default' }); }

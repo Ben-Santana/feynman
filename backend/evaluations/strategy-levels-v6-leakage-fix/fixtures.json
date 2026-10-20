@@ -1,0 +1,671 @@
+[
+  {
+    "id": "coverage-boundary-case-apply",
+    "title": "Boundary case — apply",
+    "group": "Strategy coverage · Apply",
+    "topic": "Applying resistance at zero potential difference",
+    "level": "apply",
+    "learningType": "quantitative",
+    "expectedStrategyId": "boundary-case",
+    "comparisonMode": "targeted",
+    "messages": [
+      {
+        "role": "assistant",
+        "content": "An ideal 10-ohm resistor has zero potential difference across it. Use the familiar resistor relationship to find its current."
+      },
+      {
+        "role": "user",
+        "content": "I use the relation between voltage, resistance, and current."
+      },
+      {
+        "role": "assistant",
+        "content": "Which part of your account are you least certain about?"
+      },
+      {
+        "role": "user",
+        "content": "I would divide resistance by voltage, but dividing by zero makes the current infinite."
+      }
+    ],
+    "reviewGuide": {
+      "target": "Apply the resistor relationship at the specified zero-voltage limit.",
+      "risks": [
+        "Do not supply the correct formula or result.",
+        "Keep the resistor finite and ideal."
+      ],
+      "scope": "One next-question design review; no learner response or learning-effect claim."
+    },
+    "reviewedRubricItems": [
+      "Uses the appropriate resistor relationship to calculate current for the stated finite resistance at zero voltage.",
+      "Explains why the chosen operation is valid at the stated zero-voltage limit."
+    ],
+    "rubricReview": {
+      "method": "authored_fixture_scope_review",
+      "reviewedAt": "2026-10-18T20:00:03.310Z",
+      "reason": "Narrowed the generated topic rubric to the supplied fixed task and its specific evidence target. This is benchmark-author review, not independent expert validation."
+    },
+    "aspects": [
+      "Uses the appropriate resistor relationship to calculate current for the stated finite resistance at zero voltage.",
+      "Explains why the chosen operation is valid at the stated zero-voltage limit."
+    ],
+    "rubricGeneration": {
+      "generatedAt": "2026-10-18T19:47:24.784Z",
+      "provider": "chatgpt",
+      "model": "gpt-6.1-sol",
+      "promptVersion": "1ed6b362365e1015fd4ce68ea57a48f664401c3ceee0009263c8d629323a1cde",
+      "pipeline": "generateLevelRubric",
+      "endpoint": "/api/developer/rubric",
+      "generatedItems": [
+        "Selects Ohm’s law to find current through a finite, nonzero resistor at zero potential difference.",
+        "Substitutes V = 0 and the given resistance into I = V/R.",
+        "Calculates the current as 0 A for the given finite, nonzero resistance.",
+        "Interprets zero current at zero potential difference as compatible with a nonzero resistance."
+      ]
+    }
+  },
+  {
+    "id": "coverage-recall-specific-element-remember",
+    "title": "Recall a specific element — remember",
+    "group": "Strategy coverage · Remember",
+    "topic": "Recalling a missing circuit component name",
+    "level": "remember",
+    "learningType": "theoretical",
+    "expectedStrategyId": "recall-specific-element",
+    "comparisonMode": "targeted",
+    "messages": [
+      {
+        "role": "assistant",
+        "content": "Name the three components in our simple circuit: a cell, a connecting wire, and the component that opposes current."
+      },
+      {
+        "role": "user",
+        "content": "I can name the cell and wire."
+      },
+      {
+        "role": "assistant",
+        "content": "Which part of your account are you least certain about?"
+      },
+      {
+        "role": "user",
+        "content": "I do not recall the name of the component that opposes current."
+      }
+    ],
+    "reviewGuide": {
+      "target": "Elicit the missing component name only.",
+      "risks": [
+        "Do not ask why it opposes current or give its name in the question."
+      ],
+      "scope": "One next-question design review; no learner response or learning-effect claim."
+    },
+    "reviewedRubricItems": [
+      "Names the resistor from its stated role of opposing current in the simple circuit."
+    ],
+    "rubricReview": {
+      "method": "authored_fixture_scope_review",
+      "reviewedAt": "2026-10-18T20:00:03.310Z",
+      "reason": "Narrowed the generated topic rubric to the supplied fixed task and its specific evidence target. This is benchmark-author review, not independent expert validation."
+    },
+    "aspects": [
+      "Names the resistor from its stated role of opposing current in the simple circuit."
+    ],
+    "rubricGeneration": {
+      "generatedAt": "2026-10-18T19:47:59.372Z",
+      "provider": "chatgpt",
+      "model": "gpt-6.1-sol",
+      "promptVersion": "1ed6b362365e1015fd4ce68ea57a48f664401c3ceee0009263c8d629323a1cde",
+      "pipeline": "generateLevelRubric",
+      "endpoint": "/api/developer/rubric",
+      "generatedItems": [
+        "Names a resistor, capacitor, cell, or switch from its standard circuit symbol.",
+        "Recalls a component's name from its stated function, such as storing charge or opening and closing a circuit."
+      ]
+    }
+  },
+  {
+    "id": "coverage-mechanism-tracing-analyze",
+    "title": "Trace a causal mechanism — analyze",
+    "group": "Strategy coverage · Analyze",
+    "topic": "Analyzing an incomplete infection explanation",
+    "level": "analyze",
+    "learningType": "theoretical",
+    "expectedStrategyId": "mechanism-tracing",
+    "comparisonMode": "targeted",
+    "messages": [
+      {
+        "role": "assistant",
+        "content": "An explanation says a virus enters a cell and the cell immediately releases many new viral particles, with no account of events between entry and release. Analyze the causal gap."
+      },
+      {
+        "role": "user",
+        "content": "We already discussed that copying viral genetic material supplies copies for new particles, producing viral proteins supplies their components, and assembly joins those components before release. I know what each of those stages does."
+      },
+      {
+        "role": "assistant",
+        "content": "Which part of your account are you least certain about?"
+      },
+      {
+        "role": "user",
+        "content": "Even with those stages in mind, I think entry itself fully explains the production of new particles; the replication, component-production, and assembly steps add nothing to the causal connection."
+      }
+    ],
+    "reviewGuide": {
+      "target": "Analyze how the already understood replication, component-production, and assembly stages connect entry to production and release, rather than treating entry alone as the causal explanation.",
+      "risks": [
+        "Do not supply a complete replication mechanism as a hint."
+      ],
+      "scope": "One next-question design review; no learner response or learning-effect claim."
+    },
+    "reviewedRubricItems": [
+      "Identifies and explains the missing causal production link between viral entry and release of newly made particles."
+    ],
+    "rubricReview": {
+      "method": "authored_fixture_scope_review",
+      "reviewedAt": "2026-10-18T20:00:03.310Z",
+      "reason": "Narrowed the generated topic rubric to the supplied fixed task and its specific evidence target. This is benchmark-author review, not independent expert validation.",
+      "revisionReason": "Established the prerequisite stages explicitly so the test probes causal-link analysis rather than missing biology knowledge."
+    },
+    "aspects": [
+      "Identifies and explains the missing causal production link between viral entry and release of newly made particles."
+    ],
+    "rubricGeneration": {
+      "generatedAt": "2026-10-18T19:48:12.512Z",
+      "provider": "chatgpt",
+      "model": "gpt-6.1-sol",
+      "promptVersion": "1ed6b362365e1015fd4ce68ea57a48f664401c3ceee0009263c8d629323a1cde",
+      "pipeline": "generateLevelRubric",
+      "endpoint": "/api/developer/rubric",
+      "generatedItems": [
+        "Explains how pathogen multiplication and immune responses interact in a discussed infection scenario.",
+        "Identifies a mechanism linking pathogen entry to symptoms left unexplained in the scenario.",
+        "Explains how weakened immune defenses could change the course of the infection.",
+        "Explains why exposure to a pathogen does not always result in infection."
+      ]
+    }
+  },
+  {
+    "id": "coverage-conservation-accounting-understand",
+    "title": "Account for transfers and conservation — understand",
+    "group": "Strategy coverage · Understand",
+    "topic": "Accounting for water in drying clothes",
+    "level": "understand",
+    "learningType": "theoretical",
+    "expectedStrategyId": "conservation-accounting",
+    "comparisonMode": "targeted",
+    "messages": [
+      {
+        "role": "assistant",
+        "content": "You said water disappears from drying clothes in a closed room; your stated system includes the clothes and all the room air over that drying interval. Explain where the water goes."
+      },
+      {
+        "role": "user",
+        "content": "The clothes contain less liquid water afterward."
+      },
+      {
+        "role": "assistant",
+        "content": "Which part of your account are you least certain about?"
+      },
+      {
+        "role": "user",
+        "content": "The water no longer exists anywhere in that closed room once the clothes dry."
+      }
+    ],
+    "reviewGuide": {
+      "target": "Track water across a state/location change within an explicit system.",
+      "risks": [
+        "Do not equate evaporation with destruction or introduce an unmentioned open window."
+      ],
+      "scope": "One next-question design review; no learner response or learning-effect claim."
+    },
+    "reviewedRubricItems": [
+      "Accounts for the water lost by the clothes within the explicitly closed clothes-plus-room-air system.",
+      "Distinguishes a change of location or state from destruction of water."
+    ],
+    "rubricReview": {
+      "method": "authored_fixture_scope_review",
+      "reviewedAt": "2026-10-18T20:00:03.310Z",
+      "reason": "Narrowed the generated topic rubric to the supplied fixed task and its specific evidence target. This is benchmark-author review, not independent expert validation."
+    },
+    "aspects": [
+      "Accounts for the water lost by the clothes within the explicitly closed clothes-plus-room-air system.",
+      "Distinguishes a change of location or state from destruction of water."
+    ],
+    "rubricGeneration": {
+      "generatedAt": "2026-10-18T19:48:12.288Z",
+      "provider": "chatgpt",
+      "model": "gpt-6.1-sol",
+      "promptVersion": "1ed6b362365e1015fd4ce68ea57a48f664401c3ceee0009263c8d629323a1cde",
+      "pipeline": "generateLevelRubric",
+      "endpoint": "/api/developer/rubric",
+      "generatedItems": [
+        "Explains how liquid water in wet clothes evaporates into water vapor in the surrounding air.",
+        "Explains why clothes losing water does not mean that water has been destroyed.",
+        "Explains how the decrease in clothes' mass relates to the mass of water transferred to the surroundings.",
+        "Explains why tracking water in both clothes and surroundings is needed to account for all the water."
+      ]
+    }
+  },
+  {
+    "id": "coverage-conservation-accounting-analyze",
+    "title": "Account for transfers and conservation — analyze",
+    "group": "Strategy coverage · Analyze",
+    "topic": "Analyzing energy accounting in a sealed device",
+    "level": "analyze",
+    "learningType": "theoretical",
+    "expectedStrategyId": "conservation-accounting",
+    "comparisonMode": "targeted",
+    "messages": [
+      {
+        "role": "assistant",
+        "content": "A sealed, thermally insulated device slows an internal rotor through friction. A report says total device energy fell because rotational energy was destroyed. Analyze its energy account over that slowing interval."
+      },
+      {
+        "role": "user",
+        "content": "The rotor’s organized motion decreases."
+      },
+      {
+        "role": "assistant",
+        "content": "Which part of your account are you least certain about?"
+      },
+      {
+        "role": "user",
+        "content": "Since the casing did not move and no energy crossed it, the lost rotational energy cannot exist inside afterward."
+      }
+    ],
+    "reviewGuide": {
+      "target": "Check internal transfers and storage under a defined closed boundary.",
+      "risks": [
+        "Do not supply the missing thermal destination in the question."
+      ],
+      "scope": "One next-question design review; no learner response or learning-effect claim."
+    },
+    "reviewedRubricItems": [
+      "Analyzes the energy account for a slowing rotor inside a sealed thermally insulated device.",
+      "Distinguishes loss of organized rotor motion from loss of total device energy."
+    ],
+    "rubricReview": {
+      "method": "authored_fixture_scope_review",
+      "reviewedAt": "2026-10-18T20:00:03.310Z",
+      "reason": "Narrowed the generated topic rubric to the supplied fixed task and its specific evidence target. This is benchmark-author review, not independent expert validation."
+    },
+    "aspects": [
+      "Analyzes the energy account for a slowing rotor inside a sealed thermally insulated device.",
+      "Distinguishes loss of organized rotor motion from loss of total device energy."
+    ],
+    "rubricGeneration": {
+      "generatedAt": "2026-10-18T19:48:16.888Z",
+      "provider": "chatgpt",
+      "model": "gpt-6.1-sol",
+      "promptVersion": "1ed6b362365e1015fd4ce68ea57a48f664401c3ceee0009263c8d629323a1cde",
+      "pipeline": "generateLevelRubric",
+      "endpoint": "/api/developer/rubric",
+      "generatedItems": [
+        "Explain how heat transfer, work, and internal energy changes balance in a sealed device.",
+        "Identify which energy transfer or conversion causes an observed temperature change in a sealed device.",
+        "Explain how adding thermal insulation changes energy transfer and the device's internal energy over time.",
+        "Explain why sealing a device prevents mass exchange but does not necessarily prevent energy exchange."
+      ]
+    }
+  },
+  {
+    "id": "coverage-necessary-sufficient-understand",
+    "title": "Separate necessary from sufficient conditions — understand",
+    "group": "Strategy coverage · Understand",
+    "topic": "Interpreting a divisibility condition",
+    "level": "understand",
+    "learningType": "theoretical",
+    "expectedStrategyId": "necessary-sufficient",
+    "comparisonMode": "targeted",
+    "messages": [
+      {
+        "role": "assistant",
+        "content": "You said that because every multiple of six is even, being even proves a number is a multiple of six. Explain that implication."
+      },
+      {
+        "role": "user",
+        "content": "Multiples of six are even."
+      },
+      {
+        "role": "assistant",
+        "content": "Which part of your account are you least certain about?"
+      },
+      {
+        "role": "user",
+        "content": "If a number is even, that alone is enough to establish it is a multiple of six."
+      }
+    ],
+    "reviewGuide": {
+      "target": "Probe the reversed conditional rather than an extreme case.",
+      "risks": [
+        "Do not supply a counterexample at Understand."
+      ],
+      "scope": "One next-question design review; no learner response or learning-effect claim."
+    },
+    "reviewedRubricItems": [
+      "Explains the difference between every multiple of six being even and being even establishing a multiple of six."
+    ],
+    "rubricReview": {
+      "method": "authored_fixture_scope_review",
+      "reviewedAt": "2026-10-18T20:00:03.310Z",
+      "reason": "Narrowed the generated topic rubric to the supplied fixed task and its specific evidence target. This is benchmark-author review, not independent expert validation."
+    },
+    "aspects": [
+      "Explains the difference between every multiple of six being even and being even establishing a multiple of six."
+    ],
+    "rubricGeneration": {
+      "generatedAt": "2026-10-18T19:48:26.226Z",
+      "provider": "chatgpt",
+      "model": "gpt-6.1-sol",
+      "promptVersion": "1ed6b362365e1015fd4ce68ea57a48f664401c3ceee0009263c8d629323a1cde",
+      "pipeline": "generateLevelRubric",
+      "endpoint": "/api/developer/rubric",
+      "generatedItems": [
+        "Explains in their own words why d | n means n is an integer multiple of the nonzero integer d.",
+        "Explains how divisibility by d relates to having remainder zero when dividing by d.",
+        "Explains how a condition such as 3 | (n + 1) restricts the possible integer values of n."
+      ]
+    }
+  },
+  {
+    "id": "coverage-necessary-sufficient-apply",
+    "title": "Separate necessary from sufficient conditions — apply",
+    "group": "Strategy coverage · Apply",
+    "topic": "Testing sufficiency with a concrete integer",
+    "level": "apply",
+    "learningType": "theoretical",
+    "expectedStrategyId": "necessary-sufficient",
+    "comparisonMode": "targeted",
+    "messages": [
+      {
+        "role": "assistant",
+        "content": "A proposed test says any positive even integer is divisible by six. Apply the meanings of even and divisible by six to the number 10."
+      },
+      {
+        "role": "user",
+        "content": "Ten passes the even-number test."
+      },
+      {
+        "role": "assistant",
+        "content": "Which part of your account are you least certain about?"
+      },
+      {
+        "role": "user",
+        "content": "Passing that test is sufficient, so 10 must also pass divisibility by six without a separate check."
+      }
+    ],
+    "reviewGuide": {
+      "target": "Use the supplied case to test the claimed sufficiency.",
+      "risks": [
+        "Do not give the divisibility result or substitute a generic definition request."
+      ],
+      "scope": "One next-question design review; no learner response or learning-effect claim."
+    },
+    "reviewedRubricItems": [
+      "Uses the supplied integer 10 to test whether being even suffices for divisibility by six."
+    ],
+    "rubricReview": {
+      "method": "authored_fixture_scope_review",
+      "reviewedAt": "2026-10-18T20:00:03.310Z",
+      "reason": "Narrowed the generated topic rubric to the supplied fixed task and its specific evidence target. This is benchmark-author review, not independent expert validation."
+    },
+    "aspects": [
+      "Uses the supplied integer 10 to test whether being even suffices for divisibility by six."
+    ],
+    "rubricGeneration": {
+      "generatedAt": "2026-10-18T19:48:27.545Z",
+      "provider": "chatgpt",
+      "model": "gpt-6.1-sol",
+      "promptVersion": "1ed6b362365e1015fd4ce68ea57a48f664401c3ceee0009263c8d629323a1cde",
+      "pipeline": "generateLevelRubric",
+      "endpoint": "/api/developer/rubric",
+      "generatedItems": [
+        "Selects a concrete integer satisfying all conditions in a new sufficiency question.",
+        "Uses two allowed integers with different answers to demonstrate that the conditions are insufficient.",
+        "Predicts whether an added constraint makes the answer identical for every allowed integer."
+      ]
+    }
+  },
+  {
+    "id": "coverage-stochastic-reasoning-understand",
+    "title": "Distinguish chance from certainty — understand",
+    "group": "Strategy coverage · Understand",
+    "topic": "Interpreting an expected count for a die",
+    "level": "understand",
+    "learningType": "theoretical",
+    "expectedStrategyId": "stochastic-reasoning",
+    "comparisonMode": "targeted",
+    "messages": [
+      {
+        "role": "assistant",
+        "content": "You say a fair six-sided die must show a six exactly once in every six independent rolls. Explain what fairness means in that account."
+      },
+      {
+        "role": "user",
+        "content": "Each face has the same probability on one roll."
+      },
+      {
+        "role": "assistant",
+        "content": "Which part of your account are you least certain about?"
+      },
+      {
+        "role": "user",
+        "content": "That probability guarantees one six in every block of six rolls, rather than allowing variation between blocks."
+      }
+    ],
+    "reviewGuide": {
+      "target": "Distinguish an expected count from a guarantee for a finite sequence.",
+      "risks": [
+        "Do not ask for a new probability calculation or state a counterexample."
+      ],
+      "scope": "One next-question design review; no learner response or learning-effect claim."
+    },
+    "reviewedRubricItems": [
+      "Explains how a fair die can have equal per-roll face probabilities without guaranteeing an exact count in each six-roll block."
+    ],
+    "rubricReview": {
+      "method": "authored_fixture_scope_review",
+      "reviewedAt": "2026-10-18T20:00:03.310Z",
+      "reason": "Narrowed the generated topic rubric to the supplied fixed task and its specific evidence target. This is benchmark-author review, not independent expert validation."
+    },
+    "aspects": [
+      "Explains how a fair die can have equal per-roll face probabilities without guaranteeing an exact count in each six-roll block."
+    ],
+    "rubricGeneration": {
+      "generatedAt": "2026-10-18T19:53:17.222Z",
+      "provider": "chatgpt",
+      "model": "gpt-6.1-sol",
+      "promptVersion": "1ed6b362365e1015fd4ce68ea57a48f664401c3ceee0009263c8d629323a1cde",
+      "pipeline": "generateLevelRubric",
+      "endpoint": "/api/developer/rubric",
+      "generatedItems": [
+        "Explains an expected count as the average number of times a face appears across repeated sets of rolls.",
+        "Explains why a face's expected count equals the number of rolls multiplied by its probability.",
+        "Explains how expected counts provide a baseline for comparing observed die-roll results.",
+        "Explains why an observed count can differ from its expected count even when a die is fair."
+      ]
+    }
+  },
+  {
+    "id": "coverage-stochastic-reasoning-apply",
+    "title": "Distinguish chance from certainty — apply",
+    "group": "Strategy coverage · Apply",
+    "topic": "Applying a sampling model to distinguish expected counts from guaranteed outcomes",
+    "level": "apply",
+    "learningType": "quantitative",
+    "expectedStrategyId": "stochastic-reasoning",
+    "comparisonMode": "targeted",
+    "messages": [
+      {
+        "role": "assistant",
+        "content": "In a model, each of ten independent draws is red with probability one fifth, with replacement. Use that model to assess the chance that a run has no red draws, rather than assuming its expected count is guaranteed."
+      },
+      {
+        "role": "user",
+        "content": "I know how to find a complementary event probability and how to multiply probabilities for a specified sequence of independent draws. The expected red count in ten draws is two."
+      },
+      {
+        "role": "assistant",
+        "content": "How would you use that model to assess your claim about what can happen in one run?"
+      },
+      {
+        "role": "user",
+        "content": "Because the expected count is two, a run with no reds is impossible and has probability zero. I would impose the expected count instead of using the stated model to check that outcome."
+      }
+    ],
+    "reviewGuide": {
+      "target": "Apply the specified independent-draw model to evaluate the chance of no reds, distinguishing an expected count from a guaranteed outcome.",
+      "risks": [
+        "Do not replace the process model with a deterministic exact-count rule.",
+        "Do not supply the event-probability calculation or its numerical answer."
+      ],
+      "scope": "One next-question design review; no learner response or learning-effect claim."
+    },
+    "reviewedRubricItems": [
+      "Uses the stated independent with-replacement model to calculate the probability of no red draws in ten trials.",
+      "Interprets the calculated event probability without treating the expected red count as a guarantee for each run."
+    ],
+    "rubricReview": {
+      "method": "authored_fixture_scope_review",
+      "reviewedAt": "2026-10-18T20:00:03.310Z",
+      "reason": "Narrowed the generated topic rubric to the supplied fixed task and its specific evidence target. This is benchmark-author review, not independent expert validation.",
+      "revisionReason": "Replaced a generic addition-versus-multiplication task with application of a probabilistic model to a claim that an expected count is guaranteed."
+    },
+    "aspects": [
+      "Uses the stated independent with-replacement model to calculate the probability of no red draws in ten trials.",
+      "Interprets the calculated event probability without treating the expected red count as a guarantee for each run."
+    ],
+    "rubricGeneration": {
+      "generatedAt": "2026-10-18T22:18:28.413Z",
+      "provider": "chatgpt",
+      "model": "gpt-6.1-sol",
+      "promptVersion": "1ed6b362365e1015fd4ce68ea57a48f664401c3ceee0009263c8d629323a1cde",
+      "pipeline": "generateLevelRubric",
+      "endpoint": "/api/developer/rubric",
+      "generatedItems": [
+        "Select a binomial or hypergeometric model based on whether sampling is independent or without replacement.",
+        "Use the sample size and success probability to calculate the expected count E[X] = np.",
+        "Calculate the probability of a specified count using the selected sampling model.",
+        "Interpret the expected count as a long-run average, not a count guaranteed in one sample.",
+        "Use the model's possible counts to determine whether a stated outcome is guaranteed."
+      ]
+    }
+  },
+  {
+    "id": "coverage-method-applicability-understand",
+    "title": "Match a method to its conditions — understand",
+    "group": "Strategy coverage · Understand",
+    "topic": "Explaining an assumption behind an average-speed shortcut",
+    "level": "understand",
+    "learningType": "theoretical",
+    "expectedStrategyId": "method-applicability",
+    "comparisonMode": "targeted",
+    "messages": [
+      {
+        "role": "assistant",
+        "content": "You said the arithmetic mean of two speeds always gives the average speed for a trip. We discussed that segment durations can differ. Explain when your shortcut is appropriate."
+      },
+      {
+        "role": "user",
+        "content": "The trip has two speed segments."
+      },
+      {
+        "role": "assistant",
+        "content": "Which part of your account are you least certain about?"
+      },
+      {
+        "role": "user",
+        "content": "The two speeds can always be weighted equally, even when the time spent at each speed differs."
+      }
+    ],
+    "reviewGuide": {
+      "target": "Probe the duration condition behind the shortcut without solving a new trip.",
+      "risks": [
+        "Do not provide the weighting formula or invent numerical givens."
+      ],
+      "scope": "One next-question design review; no learner response or learning-effect claim."
+    },
+    "reviewedRubricItems": [
+      "Explains the duration condition under which an unweighted mean of two speeds gives trip average speed."
+    ],
+    "rubricReview": {
+      "method": "authored_fixture_scope_review",
+      "reviewedAt": "2026-10-18T20:00:03.310Z",
+      "reason": "Narrowed the generated topic rubric to the supplied fixed task and its specific evidence target. This is benchmark-author review, not independent expert validation."
+    },
+    "aspects": [
+      "Explains the duration condition under which an unweighted mean of two speeds gives trip average speed."
+    ],
+    "rubricGeneration": {
+      "generatedAt": "2026-10-18T19:53:26.849Z",
+      "provider": "chatgpt",
+      "model": "gpt-6.1-sol",
+      "promptVersion": "1ed6b362365e1015fd4ce68ea57a48f664401c3ceee0009263c8d629323a1cde",
+      "pipeline": "generateLevelRubric",
+      "endpoint": "/api/developer/rubric",
+      "generatedItems": [
+        "Explains average speed as total distance divided by total elapsed time.",
+        "Explains why the arithmetic mean of two speeds gives average speed when travel times are equal.",
+        "Explains why checking the equal-time assumption prevents incorrect use of the arithmetic-mean shortcut.",
+        "Explains why equal distances at different speeds do not imply equal travel times."
+      ]
+    }
+  },
+  {
+    "id": "coverage-method-applicability-apply",
+    "title": "Match a method to its conditions — apply",
+    "group": "Strategy coverage · Apply",
+    "topic": "Selecting a method for unequal-time travel",
+    "level": "apply",
+    "learningType": "quantitative",
+    "expectedStrategyId": "method-applicability",
+    "comparisonMode": "targeted",
+    "messages": [
+      {
+        "role": "assistant",
+        "content": "A vehicle travels at 30 km/h for one hour and 60 km/h for two hours. Apply an appropriate method to find the whole-trip average speed."
+      },
+      {
+        "role": "user",
+        "content": "I can calculate distance from speed and time."
+      },
+      {
+        "role": "assistant",
+        "content": "Which part of your account are you least certain about?"
+      },
+      {
+        "role": "user",
+        "content": "I will use the simple arithmetic mean of 30 and 60 because every two-speed trip uses that shortcut."
+      }
+    ],
+    "reviewGuide": {
+      "target": "Select and use a method compatible with unequal segment durations.",
+      "risks": [
+        "Do not provide the correct weighting, total distance, or answer."
+      ],
+      "scope": "One next-question design review; no learner response or learning-effect claim."
+    },
+    "reviewedRubricItems": [
+      "Selects and uses a method accounting for unequal segment durations in the supplied trip-average-speed problem."
+    ],
+    "rubricReview": {
+      "method": "authored_fixture_scope_review",
+      "reviewedAt": "2026-10-18T20:00:03.310Z",
+      "reason": "Narrowed the generated topic rubric to the supplied fixed task and its specific evidence target. This is benchmark-author review, not independent expert validation."
+    },
+    "aspects": [
+      "Selects and uses a method accounting for unequal segment durations in the supplied trip-average-speed problem."
+    ],
+    "rubricGeneration": {
+      "generatedAt": "2026-10-18T19:53:33.946Z",
+      "provider": "chatgpt",
+      "model": "gpt-6.1-sol",
+      "promptVersion": "1ed6b362365e1015fd4ce68ea57a48f664401c3ceee0009263c8d629323a1cde",
+      "pipeline": "generateLevelRubric",
+      "endpoint": "/api/developer/rubric",
+      "generatedItems": [
+        "Selects speed–distance–time equations or a time-weighted average for the requested travel quantity.",
+        "Sets up equations for unequal travel intervals using each interval's own speed and duration.",
+        "Calculates the requested distance, time, or average speed using consistent units.",
+        "Interprets the calculated quantity in the trip's context, distinguishing average speed from individual interval speeds."
+      ]
+    }
+  }
+]

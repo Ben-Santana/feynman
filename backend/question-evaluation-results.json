@@ -1,0 +1,1210 @@
+{
+  "schemaVersion": 1,
+  "scope": "Affected leakage and leading-question regressions: latest result per case",
+  "coverageCases": 51,
+  "provider": "chatgpt",
+  "model": "gpt-6.1-sol",
+  "corpusVersion": "question-strategies-5",
+  "promptVersion": "1ed6b362365e1015fd4ce68ea57a48f664401c3ceee0009263c8d629323a1cde",
+  "caseIds": [
+    "coverage-boundary-case-apply",
+    "coverage-recall-specific-element-remember",
+    "coverage-mechanism-tracing-analyze",
+    "coverage-conservation-accounting-understand",
+    "coverage-conservation-accounting-analyze",
+    "coverage-necessary-sufficient-understand",
+    "coverage-necessary-sufficient-apply",
+    "coverage-stochastic-reasoning-understand",
+    "coverage-stochastic-reasoning-apply",
+    "coverage-method-applicability-understand",
+    "coverage-method-applicability-apply"
+  ],
+  "startedAt": "2026-10-19T01:09:05.017Z",
+  "totalCases": 11,
+  "results": [
+    {
+      "caseId": "coverage-boundary-case-apply",
+      "title": "Boundary case — apply",
+      "level": "apply",
+      "learningType": "quantitative",
+      "expectedStrategyId": "boundary-case",
+      "attempts": [
+        {
+          "finishedAt": "2026-10-19T01:10:29.310Z",
+          "durationMs": 84291,
+          "status": "applied",
+          "reviewError": null
+        }
+      ],
+      "status": "applied",
+      "runId": "b573978e-5c47-410b-b7bf-409fb89d81ff",
+      "generatedAt": "2026-10-19T01:10:12.830Z",
+      "selectedStrategyId": "boundary-case",
+      "baseline": "I'm unsure about dividing resistance by voltage. How do you rearrange the resistor relationship to isolate current for this resistor?",
+      "enhanced": "For this 10-ohm resistor at 0 volts, how would you write the resistor relationship and rearrange it to calculate current, showing which quantity you divide by?",
+      "coverageGap": null,
+      "traceFile": "../strategy-levels-v6-leakage-fix/cases/coverage-boundary-case-apply.json",
+      "callCount": 7,
+      "generationDurationMs": 67812,
+      "review": {
+        "version": "blind-question-review-1",
+        "mapping": {
+          "A": "enhanced",
+          "B": "baseline"
+        },
+        "questions": {
+          "enhanced": {
+            "label": "A",
+            "clarity": {
+              "score": 2,
+              "reason": "Clearly asks for a single connected calculation, including the relationship, rearrangement, and divisor."
+            },
+            "levelFit": {
+              "score": 2,
+              "reason": "Requires applying the resistor relationship to the stated 10-ohm, zero-voltage case."
+            },
+            "diagnosticValue": {
+              "score": 2,
+              "reason": "The calculation and explicit identification of the divisor distinguish the learner's proposed resistance-over-voltage operation from a valid application and reveal whether division by zero is actually involved."
+            },
+            "grounding": {
+              "score": 2,
+              "reason": "The ideal resistor's finite resistance and stated voltage provide sufficient information for the requested calculation."
+            },
+            "nonLeading": {
+              "score": 2,
+              "reason": "Does not supply the relationship, correct rearrangement, divisor, or current."
+            },
+            "strengths": [
+              "Explicitly retains the zero-voltage condition.",
+              "Requests observable mathematical work rather than an unsupported answer.",
+              "Targets the learner's uncertainty about which quantity is the divisor."
+            ],
+            "concerns": [],
+            "total": 10
+          },
+          "baseline": {
+            "label": "B",
+            "clarity": {
+              "score": 2,
+              "reason": "The request to rearrange the resistor relationship to isolate current is readily understandable and focused."
+            },
+            "levelFit": {
+              "score": 2,
+              "reason": "Applying algebra to the resistor relationship in the active task is consistent with Apply."
+            },
+            "diagnosticValue": {
+              "score": 1,
+              "reason": "Can reveal whether the learner can isolate current, but does not explicitly request using zero voltage or explaining why the operation remains valid there. A symbolic rearrangement alone could leave the specific limiting-case difficulty unresolved."
+            },
+            "grounding": {
+              "score": 2,
+              "reason": "Uses the existing resistor task and requires no additional conditions or unrelated knowledge."
+            },
+            "nonLeading": {
+              "score": 2,
+              "reason": "Expresses uncertainty about the learner's proposed operation without supplying a correction, formula, or answer."
+            },
+            "strengths": [
+              "Directly probes the rearrangement underlying the learner's proposed operation.",
+              "Leaves the algebraic result for the learner to produce."
+            ],
+            "concerns": [
+              {
+                "dimension": "diagnosticValue",
+                "severity": "minor",
+                "quote": "How do you rearrange the resistor relationship to isolate current for this resistor?",
+                "reason": "Requests isolation of current but not substitution or evaluation at zero voltage, allowing a response that does not demonstrate whether the learner can handle the specific zero-voltage case."
+              }
+            ],
+            "total": 9
+          }
+        },
+        "preference": "enhanced",
+        "reason": "A more directly elicits application at zero voltage and makes the divisor explicit, providing stronger evidence about the learner's division-by-zero reasoning. B usefully probes rearrangement but could be satisfied without addressing the zero-voltage calculation.",
+        "limitation": "Single blind model review of next-question design; not independent expert validation or a learner-outcome measurement.",
+        "provider": "chatgpt",
+        "model": "gpt-6.1-sol"
+      },
+      "baselineMeetsScreen": true,
+      "enhancedMeetsScreen": true,
+      "sourceRun": "backend/evaluations/strategy-levels-v6-leakage-fix/results.json"
+    },
+    {
+      "caseId": "coverage-recall-specific-element-remember",
+      "title": "Recall a specific element — remember",
+      "level": "remember",
+      "learningType": "theoretical",
+      "expectedStrategyId": "recall-specific-element",
+      "attempts": [
+        {
+          "finishedAt": "2026-10-19T01:10:17.573Z",
+          "durationMs": 72553,
+          "status": "applied",
+          "reviewError": null
+        }
+      ],
+      "status": "applied",
+      "runId": "97cf551d-ca6b-4578-979c-afdcc34b56f0",
+      "generatedAt": "2026-10-19T01:10:06.315Z",
+      "selectedStrategyId": "recall-specific-element",
+      "baseline": "What name do your notes give the component that opposes current?",
+      "enhanced": "What is the name of the component described as opposing current in our simple circuit?",
+      "coverageGap": null,
+      "traceFile": "../strategy-levels-v6-leakage-fix/cases/coverage-recall-specific-element-remember.json",
+      "callCount": 7,
+      "generationDurationMs": 61288,
+      "review": {
+        "version": "blind-question-review-1",
+        "mapping": {
+          "A": "enhanced",
+          "B": "baseline"
+        },
+        "questions": {
+          "enhanced": {
+            "label": "A",
+            "clarity": {
+              "score": 2,
+              "reason": "Directly asks for one component name in clear language."
+            },
+            "levelFit": {
+              "score": 2,
+              "reason": "Requires only recall of the name associated with a stated role."
+            },
+            "diagnosticValue": {
+              "score": 2,
+              "reason": "Directly elicits the specific missing name, resolving the narrow recall target."
+            },
+            "grounding": {
+              "score": 2,
+              "reason": "Uses the circuit and component role already established in the transcript; resistor is the expected sound answer."
+            },
+            "nonLeading": {
+              "score": 2,
+              "reason": "Restates the established identifying role without supplying the missing name or a new hint."
+            },
+            "strengths": [
+              "Precisely matches the objective of eliciting the missing component name only.",
+              "Requires no resources or context beyond the conversation."
+            ],
+            "concerns": [],
+            "total": 10
+          },
+          "baseline": {
+            "label": "B",
+            "clarity": {
+              "score": 2,
+              "reason": "Clearly asks for a single component name."
+            },
+            "levelFit": {
+              "score": 2,
+              "reason": "Targets identification of a name, consistent with Remember."
+            },
+            "diagnosticValue": {
+              "score": 2,
+              "reason": "A named response can directly address the unresolved component identification."
+            },
+            "grounding": {
+              "score": 1,
+              "reason": "The component description is sound, but the question presupposes notes and their contents despite neither being established."
+            },
+            "nonLeading": {
+              "score": 2,
+              "reason": "Does not supply the missing name or endorse an incorrect claim."
+            },
+            "strengths": [
+              "Keeps the requested response focused on the missing name.",
+              "Uses the component role already stated in the conversation."
+            ],
+            "concerns": [
+              {
+                "dimension": "grounding",
+                "severity": "minor",
+                "quote": "your notes",
+                "reason": "Introduces an unestablished source; the learner may have no notes or no relevant entry, whereas the target can be asked directly from the shared circuit context."
+              }
+            ],
+            "total": 9
+          }
+        },
+        "preference": "enhanced",
+        "reason": "Both target the required name without giving it away, but A is fully grounded in the shared transcript and avoids B's unsupported assumption about notes.",
+        "limitation": "Single blind model review of next-question design; not independent expert validation or a learner-outcome measurement.",
+        "provider": "chatgpt",
+        "model": "gpt-6.1-sol"
+      },
+      "baselineMeetsScreen": true,
+      "enhancedMeetsScreen": true,
+      "sourceRun": "backend/evaluations/strategy-levels-v6-leakage-fix/results.json"
+    },
+    {
+      "caseId": "coverage-mechanism-tracing-analyze",
+      "title": "Trace a causal mechanism — analyze",
+      "level": "analyze",
+      "learningType": "theoretical",
+      "expectedStrategyId": "mechanism-tracing",
+      "attempts": [
+        {
+          "finishedAt": "2026-10-19T01:10:15.600Z",
+          "durationMs": 70579,
+          "status": "applied",
+          "reviewError": null
+        }
+      ],
+      "status": "applied",
+      "runId": "504f1ec5-7646-476c-a529-4012b4fb312f",
+      "generatedAt": "2026-10-19T01:10:03.712Z",
+      "selectedStrategyId": "mechanism-tracing",
+      "baseline": "If entry occurred but those intervening stages could not occur, would entry alone still explain newly produced particles in your account?",
+      "enhanced": "In your account that entry alone fully explains production, what accounts for where the new particles’ components come from and how those components become complete particles?",
+      "coverageGap": null,
+      "traceFile": "../strategy-levels-v6-leakage-fix/cases/coverage-mechanism-tracing-analyze.json",
+      "callCount": 7,
+      "generationDurationMs": 58684,
+      "review": {
+        "version": "blind-question-review-1",
+        "mapping": {
+          "A": "enhanced",
+          "B": "baseline"
+        },
+        "questions": {
+          "enhanced": {
+            "label": "A",
+            "clarity": {
+              "score": 2,
+              "reason": "Clearly asks for the causal account of component origins and their formation into particles, two connected aspects of one production gap."
+            },
+            "levelFit": {
+              "score": 2,
+              "reason": "Examines the sufficiency of the learner's entry-only explanation rather than requesting isolated stage definitions."
+            },
+            "diagnosticValue": {
+              "score": 2,
+              "reason": "Requires the learner to account for production within their claimed explanation, revealing whether they connect the known stages to the origin and assembly of new particles."
+            },
+            "grounding": {
+              "score": 2,
+              "reason": "The transcript establishes the relevant stage functions, so the causal account is answerable without additional prerequisites."
+            },
+            "nonLeading": {
+              "score": 2,
+              "reason": "Probes component origins and formation without supplying the missing stages or asserting the correction."
+            },
+            "strengths": [
+              "Directly tests the explanatory gap in the learner's stated claim.",
+              "Requires substantive causal evidence rather than agreement or a stage-name list."
+            ],
+            "concerns": [],
+            "total": 10
+          },
+          "baseline": {
+            "label": "B",
+            "clarity": {
+              "score": 2,
+              "reason": "Presents a clear counterfactual about the sufficiency of entry when the previously discussed stages cannot occur."
+            },
+            "levelFit": {
+              "score": 2,
+              "reason": "Uses a counterfactual to examine a causal assumption in the active explanation, fitting theoretical Analyze."
+            },
+            "diagnosticValue": {
+              "score": 1,
+              "reason": "Targets whether the intervening stages are necessary, but an unsupported yes or no satisfies the question without revealing how the learner connects those stages to production."
+            },
+            "grounding": {
+              "score": 2,
+              "reason": "The counterfactual is meaningful and answerable using the stage functions already discussed."
+            },
+            "nonLeading": {
+              "score": 2,
+              "reason": "Does not state the outcome of the counterfactual or supply the causal correction; neutrally tests the learner's claim."
+            },
+            "strengths": [
+              "Tests the entry-only claim through a relevant causal counterfactual.",
+              "Needs no new scientific knowledge or calculation."
+            ],
+            "concerns": [
+              {
+                "dimension": "diagnosticValue",
+                "severity": "minor",
+                "quote": "would entry alone still explain newly produced particles in your account?",
+                "reason": "The yes/no format does not request justification, so a response need not expose the causal reasoning specified in the diagnostic objective."
+              }
+            ],
+            "total": 9
+          }
+        },
+        "preference": "enhanced",
+        "reason": "Both questions validly probe causal sufficiency, but A elicits an account of component production and particle formation, whereas B permits an unsupported yes/no with little evidence of the learner's reasoning.",
+        "limitation": "Single blind model review of next-question design; not independent expert validation or a learner-outcome measurement.",
+        "provider": "chatgpt",
+        "model": "gpt-6.1-sol"
+      },
+      "baselineMeetsScreen": true,
+      "enhancedMeetsScreen": true,
+      "sourceRun": "backend/evaluations/strategy-levels-v6-leakage-fix/results.json"
+    },
+    {
+      "caseId": "coverage-conservation-accounting-understand",
+      "title": "Account for transfers and conservation — understand",
+      "level": "understand",
+      "learningType": "theoretical",
+      "expectedStrategyId": "conservation-accounting",
+      "attempts": [
+        {
+          "finishedAt": "2026-10-19T01:11:26.606Z",
+          "durationMs": 71000,
+          "status": "applied",
+          "reviewError": null
+        }
+      ],
+      "status": "applied",
+      "runId": "686f1bc7-1afb-422a-8db0-b333aa7ccbc8",
+      "generatedAt": "2026-10-19T01:11:09.085Z",
+      "selectedStrategyId": "conservation-accounting",
+      "baseline": "What makes you think the water no longer exists anywhere in the closed room once the clothes dry?",
+      "enhanced": "What makes you think the water no longer exists anywhere in the closed room when the clothes contain less liquid water?",
+      "coverageGap": null,
+      "traceFile": "../strategy-levels-v6-leakage-fix/cases/coverage-conservation-accounting-understand.json",
+      "callCount": 7,
+      "generationDurationMs": 53481,
+      "review": {
+        "version": "blind-question-review-1",
+        "mapping": {
+          "A": "baseline",
+          "B": "enhanced"
+        },
+        "questions": {
+          "baseline": {
+            "label": "A",
+            "clarity": {
+              "score": 2,
+              "reason": "Clearly asks for the reasoning behind one specific claim: that the water ceases to exist in the closed room."
+            },
+            "levelFit": {
+              "score": 2,
+              "reason": "Invites an explanation of the learner's understanding of drying, without introducing a new exercise or calculation."
+            },
+            "diagnosticValue": {
+              "score": 2,
+              "reason": "Asking for the basis of the nonexistence claim can reveal whether the learner equates water leaving the clothes or becoming unobservable with water being destroyed."
+            },
+            "grounding": {
+              "score": 2,
+              "reason": "Uses the explicit closed-room system and the learner's actual claim; it is answerable using the discussion so far."
+            },
+            "nonLeading": {
+              "score": 2,
+              "reason": "Neutrally probes the learner's claim without endorsing it or supplying conservation, evaporation, or a destination for the water."
+            },
+            "strengths": [
+              "Directly probes the reasoning behind the unresolved claim.",
+              "Preserves the explicit system boundary without giving away the explanation."
+            ],
+            "concerns": [],
+            "total": 10
+          },
+          "enhanced": {
+            "label": "B",
+            "clarity": {
+              "score": 2,
+              "reason": "Clearly asks why reduced liquid water in the clothes is taken to mean that water no longer exists in the room."
+            },
+            "levelFit": {
+              "score": 2,
+              "reason": "Requests an explanation of the relationship between an observation and a conclusion already discussed, with no new task or computation."
+            },
+            "diagnosticValue": {
+              "score": 2,
+              "reason": "Explicitly connects the learner's observation to their nonexistence claim, allowing the response to expose whether they conflate less liquid water in clothes with destruction of water throughout the system."
+            },
+            "grounding": {
+              "score": 2,
+              "reason": "Both the reduced liquid-water content and the closed-room claim are supplied in the transcript; no additional prerequisites or conditions are needed."
+            },
+            "nonLeading": {
+              "score": 2,
+              "reason": "Does not provide the correct destination or state of the water, and refers to the learner's inference without endorsing it."
+            },
+            "strengths": [
+              "Connects the learner's stated observation to their stated conclusion.",
+              "Can elicit the reasoning behind the disappearance claim without supplying a correction."
+            ],
+            "concerns": [],
+            "total": 10
+          }
+        },
+        "preference": "tie",
+        "reason": "Both are clear, non-leading requests for the reasoning behind the same unresolved claim. B names the earlier observation more explicitly, while A mirrors the latest claim more directly; neither difference establishes a substantial diagnostic advantage.",
+        "limitation": "Single blind model review of next-question design; not independent expert validation or a learner-outcome measurement.",
+        "provider": "chatgpt",
+        "model": "gpt-6.1-sol"
+      },
+      "baselineMeetsScreen": true,
+      "enhancedMeetsScreen": true,
+      "sourceRun": "backend/evaluations/strategy-levels-v6-leakage-fix/results.json"
+    },
+    {
+      "caseId": "coverage-conservation-accounting-analyze",
+      "title": "Account for transfers and conservation — analyze",
+      "level": "analyze",
+      "learningType": "theoretical",
+      "expectedStrategyId": "conservation-accounting",
+      "attempts": [
+        {
+          "finishedAt": "2026-10-19T01:11:26.883Z",
+          "durationMs": 69308,
+          "status": "applied",
+          "reviewError": null
+        }
+      ],
+      "status": "applied",
+      "runId": "25e413a7-aab3-463c-bf2e-defd18cfda0e",
+      "generatedAt": "2026-10-19T01:11:11.012Z",
+      "selectedStrategyId": "conservation-accounting",
+      "baseline": "What makes you think the casing remaining stationary means the lost rotational energy cannot remain inside the device?",
+      "enhanced": "For the whole device—the rotor, casing, and everything inside—what makes you think the casing staying still means the lost rotational energy cannot remain inside, given that no energy crossed the boundary?",
+      "coverageGap": null,
+      "traceFile": "../strategy-levels-v6-leakage-fix/cases/coverage-conservation-accounting-analyze.json",
+      "callCount": 7,
+      "generationDurationMs": 53436,
+      "review": {
+        "version": "blind-question-review-1",
+        "mapping": {
+          "A": "enhanced",
+          "B": "baseline"
+        },
+        "questions": {
+          "enhanced": {
+            "label": "A",
+            "clarity": {
+              "score": 2,
+              "reason": "Clearly asks the learner to justify one inference: why a stationary casing would prevent internal retention of the rotor's lost organized-motion energy."
+            },
+            "levelFit": {
+              "score": 2,
+              "reason": "Examines the learner's stated inference in the active energy-accounting task, rather than requesting recall or a new calculation."
+            },
+            "diagnosticValue": {
+              "score": 2,
+              "reason": "The requested justification can reveal whether the learner equates energy storage with bulk motion or recognizes other internal storage and transfer possibilities. Explicitly defining the whole-device boundary supports interpretation of the response."
+            },
+            "grounding": {
+              "score": 2,
+              "reason": "The whole-device boundary and absence of energy crossing it are established conditions. The question neutrally probes the learner's claim without endorsing it."
+            },
+            "nonLeading": {
+              "score": 2,
+              "reason": "Restates relevant boundary conditions but supplies neither the conservation conclusion nor an internal energy-storage mechanism."
+            },
+            "strengths": [
+              "Defines the system explicitly as the rotor, casing, and contents.",
+              "Targets the unsupported connection between stationary casing and inability to retain energy.",
+              "Requests reasoning rather than an unsupported yes/no answer."
+            ],
+            "concerns": [],
+            "total": 10
+          },
+          "baseline": {
+            "label": "B",
+            "clarity": {
+              "score": 2,
+              "reason": "A concise, readily understood question focused on the learner's inference from casing stationarity to absence of retained energy."
+            },
+            "levelFit": {
+              "score": 2,
+              "reason": "Asks the learner to examine an assumption underlying their account of the existing task."
+            },
+            "diagnosticValue": {
+              "score": 2,
+              "reason": "Asking for the basis of the inference can distinguish a bulk-motion-only conception of energy from an account allowing internal transfers and storage."
+            },
+            "grounding": {
+              "score": 2,
+              "reason": "Directly references the learner's statement and is answerable using the device and boundary conditions already established in the transcript."
+            },
+            "nonLeading": {
+              "score": 2,
+              "reason": "Does not provide a correction, energy-storage mechanism, or conservation conclusion; the learner's claim is referenced neutrally."
+            },
+            "strengths": [
+              "Directly probes the unresolved assumption in the learner's explanation.",
+              "Elicits reasoning without suggesting the desired storage mechanism.",
+              "Uses the established device context without introducing new prerequisites."
+            ],
+            "concerns": [],
+            "total": 10
+          }
+        },
+        "preference": "tie",
+        "reason": "Both questions directly examine the same unsupported inference and can elicit useful evidence about internal energy storage. A explicitly restates the whole-device boundary and no-crossing condition; B relies on that already-established context. Neither difference materially changes their diagnostic quality.",
+        "limitation": "Single blind model review of next-question design; not independent expert validation or a learner-outcome measurement.",
+        "provider": "chatgpt",
+        "model": "gpt-6.1-sol"
+      },
+      "baselineMeetsScreen": true,
+      "enhancedMeetsScreen": true,
+      "sourceRun": "backend/evaluations/strategy-levels-v6-leakage-fix/results.json"
+    },
+    {
+      "caseId": "coverage-necessary-sufficient-understand",
+      "title": "Separate necessary from sufficient conditions — understand",
+      "level": "understand",
+      "learningType": "theoretical",
+      "expectedStrategyId": "necessary-sufficient",
+      "attempts": [
+        {
+          "finishedAt": "2026-10-19T01:11:41.956Z",
+          "durationMs": 72641,
+          "status": "applied",
+          "reviewError": null
+        }
+      ],
+      "status": "applied",
+      "runId": "15b983af-a785-4313-b183-05eafc5875eb",
+      "generatedAt": "2026-10-19T01:11:30.074Z",
+      "selectedStrategyId": "necessary-sufficient",
+      "baseline": "What supports your claim that being even alone establishes that a number is a multiple of six?",
+      "enhanced": "What makes you think that “multiples of six are even” establishes that every even number is a multiple of six?",
+      "coverageGap": null,
+      "traceFile": "../strategy-levels-v6-leakage-fix/cases/coverage-necessary-sufficient-understand.json",
+      "callCount": 8,
+      "generationDurationMs": 60763,
+      "review": {
+        "version": "blind-question-review-1",
+        "mapping": {
+          "A": "baseline",
+          "B": "enhanced"
+        },
+        "questions": {
+          "baseline": {
+            "label": "A",
+            "clarity": {
+              "score": 2,
+              "reason": "Clearly asks for the justification of one specific claim: evenness alone establishes divisibility by six."
+            },
+            "levelFit": {
+              "score": 2,
+              "reason": "Requests explanation of an already discussed implication, without introducing an exercise or calculation."
+            },
+            "diagnosticValue": {
+              "score": 2,
+              "reason": "Invites the learner to reveal why they regard evenness as sufficient, providing evidence about the unresolved reversed conditional."
+            },
+            "grounding": {
+              "score": 2,
+              "reason": "Directly grounded in the learner's stated uncertainty and requires only the divisibility relationship already discussed."
+            },
+            "nonLeading": {
+              "score": 2,
+              "reason": "Neutrally attributes the claim to the learner without endorsing it or supplying a correction."
+            },
+            "strengths": [
+              "Directly targets the learner's sufficiency claim.",
+              "Open request for justification allows the learner's reasoning to emerge."
+            ],
+            "concerns": [],
+            "total": 10
+          },
+          "enhanced": {
+            "label": "B",
+            "clarity": {
+              "score": 2,
+              "reason": "Clearly asks how the stated implication is taken to establish its converse, with a single focused target."
+            },
+            "levelFit": {
+              "score": 2,
+              "reason": "Asks for explanation of the relationship between two already discussed claims, appropriate to Understand."
+            },
+            "diagnosticValue": {
+              "score": 2,
+              "reason": "Explicitly connects the original statement with the learner's converse, eliciting reasoning about the precise unresolved reversal rather than merely a verdict."
+            },
+            "grounding": {
+              "score": 2,
+              "reason": "Uses the original premise and the learner's stated conclusion without adding prerequisites or extraneous cases."
+            },
+            "nonLeading": {
+              "score": 2,
+              "reason": "Questions the learner's inference without providing the correct relationship, a counterexample, or a suggested method."
+            },
+            "strengths": [
+              "Makes the inferential link between the original conditional and its converse explicit.",
+              "Elicits an explanation without supplying the correction."
+            ],
+            "concerns": [],
+            "total": 10
+          }
+        },
+        "preference": "enhanced",
+        "reason": "Both are sound, non-leading requests for explanation. B has a slight diagnostic advantage because it explicitly asks how the original conditional supports its converse, while A asks more generally for support of the converse claim.",
+        "limitation": "Single blind model review of next-question design; not independent expert validation or a learner-outcome measurement.",
+        "provider": "chatgpt",
+        "model": "gpt-6.1-sol"
+      },
+      "baselineMeetsScreen": true,
+      "enhancedMeetsScreen": true,
+      "sourceRun": "backend/evaluations/strategy-levels-v6-leakage-fix/results.json"
+    },
+    {
+      "caseId": "coverage-necessary-sufficient-apply",
+      "title": "Separate necessary from sufficient conditions — apply",
+      "level": "apply",
+      "learningType": "theoretical",
+      "expectedStrategyId": "necessary-sufficient",
+      "attempts": [
+        {
+          "finishedAt": "2026-10-19T01:15:29.173Z",
+          "durationMs": 75112,
+          "status": "applied",
+          "reviewError": null
+        }
+      ],
+      "status": "applied",
+      "runId": "c9c00c68-567f-4f98-a4a4-388b3909d716",
+      "generatedAt": "2026-10-19T01:15:17.073Z",
+      "selectedStrategyId": "necessary-sufficient",
+      "baseline": "How would you check your claim that $10$ is divisible by six against the meaning of divisibility by six?",
+      "enhanced": "If you check 10 directly for divisibility by six, what do you find, and what does that result tell you about the proposed even-number test?",
+      "coverageGap": null,
+      "traceFile": "../strategy-levels-v6-plan-fix/cases/coverage-necessary-sufficient-apply.json",
+      "callCount": 7,
+      "generationDurationMs": 63018,
+      "review": {
+        "version": "blind-question-review-1",
+        "mapping": {
+          "A": "enhanced",
+          "B": "baseline"
+        },
+        "questions": {
+          "enhanced": {
+            "label": "A",
+            "clarity": {
+              "score": 2,
+              "reason": "Clearly asks for a direct check of 10 and the implication of that same check for the proposed test; these form one focused target."
+            },
+            "levelFit": {
+              "score": 2,
+              "reason": "Requires applying divisibility to the supplied integer to test sufficiency, rather than merely recalling a definition."
+            },
+            "diagnosticValue": {
+              "score": 2,
+              "reason": "Elicits both whether 10 is divisible by six and whether the even-number condition suffices, directly probing the unresolved inference."
+            },
+            "grounding": {
+              "score": 2,
+              "reason": "The supplied integer and the meanings already introduced suffice to answer the question correctly."
+            },
+            "nonLeading": {
+              "score": 2,
+              "reason": "Requests a check and its interpretation without supplying the result or asserting that the test fails."
+            },
+            "strengths": [
+              "Connects the concrete check explicitly to the sufficiency claim.",
+              "Allows the learner to produce the result and draw the implication independently."
+            ],
+            "concerns": [],
+            "total": 10
+          },
+          "baseline": {
+            "label": "B",
+            "clarity": {
+              "score": 2,
+              "reason": "Clearly asks how the learner would check the specific divisibility claim using its meaning."
+            },
+            "levelFit": {
+              "score": 2,
+              "reason": "Calls for a checking method applied to 10, which is appropriate theoretical application."
+            },
+            "diagnosticValue": {
+              "score": 1,
+              "reason": "Can elicit a meaningful checking procedure, but does not explicitly require carrying it out or relating its result to the claimed sufficiency of evenness."
+            },
+            "grounding": {
+              "score": 2,
+              "reason": "Checking 10 against the meaning of divisibility by six is sound and requires only available prerequisites."
+            },
+            "nonLeading": {
+              "score": 2,
+              "reason": "Neutrally refers to the learner's claim and supplies neither the answer nor a corrective principle."
+            },
+            "strengths": [
+              "Invites an independent, definition-based check of the learner's claim.",
+              "Does not endorse the claim that 10 is divisible by six."
+            ],
+            "concerns": [
+              {
+                "dimension": "diagnosticValue",
+                "severity": "minor",
+                "quote": "How would you check your claim",
+                "reason": "A learner could describe a procedure without executing it or reconsidering whether evenness suffices, leaving the specific sufficiency inference unresolved."
+              }
+            ],
+            "total": 9
+          }
+        },
+        "preference": "enhanced",
+        "reason": "Both are clear, grounded, and non-leading applications to 10. A more directly elicits the actual check and its implication for sufficiency, whereas B can be answered with only a proposed checking procedure.",
+        "limitation": "Single blind model review of next-question design; not independent expert validation or a learner-outcome measurement.",
+        "provider": "chatgpt",
+        "model": "gpt-6.1-sol"
+      },
+      "baselineMeetsScreen": true,
+      "enhancedMeetsScreen": true,
+      "sourceRun": "backend/evaluations/strategy-levels-v6-plan-fix/results.json"
+    },
+    {
+      "caseId": "coverage-stochastic-reasoning-understand",
+      "title": "Distinguish chance from certainty — understand",
+      "level": "understand",
+      "learningType": "theoretical",
+      "expectedStrategyId": "stochastic-reasoning",
+      "attempts": [
+        {
+          "finishedAt": "2026-10-19T01:12:36.354Z",
+          "durationMs": 69466,
+          "status": "applied",
+          "reviewError": null
+        }
+      ],
+      "status": "applied",
+      "runId": "733314e8-9ebc-4da9-bc61-311ab9662c3e",
+      "generatedAt": "2026-10-19T01:12:23.111Z",
+      "selectedStrategyId": "stochastic-reasoning",
+      "baseline": "What makes you think equal probabilities on each roll guarantee exactly one six in each block?",
+      "enhanced": "How do you think each face having the same probability on one roll relates to the number of sixes in a block of six independent rolls?",
+      "coverageGap": null,
+      "traceFile": "../strategy-levels-v6-leakage-fix/cases/coverage-stochastic-reasoning-understand.json",
+      "callCount": 7,
+      "generationDurationMs": 56230,
+      "review": {
+        "version": "blind-question-review-1",
+        "mapping": {
+          "A": "enhanced",
+          "B": "baseline"
+        },
+        "questions": {
+          "enhanced": {
+            "label": "A",
+            "clarity": {
+              "score": 2,
+              "reason": "Clearly asks for one relationship: equal single-roll probabilities and the count of sixes across six rolls."
+            },
+            "levelFit": {
+              "score": 2,
+              "reason": "Requests an explanation of an already-discussed relationship, without requiring calculation or a new exercise."
+            },
+            "diagnosticValue": {
+              "score": 2,
+              "reason": "Allows the learner to distinguish an expected count from a guaranteed count and explain whether block-to-block variation is compatible with fairness."
+            },
+            "grounding": {
+              "score": 2,
+              "reason": "Uses the fair-die setting and independence already supplied in the transcript; no additional prerequisites are needed."
+            },
+            "nonLeading": {
+              "score": 2,
+              "reason": "Does not state whether the count is guaranteed or supply the expected-count interpretation."
+            },
+            "strengths": [
+              "Directly probes the unresolved relationship between per-roll fairness and finite-sequence counts.",
+              "Leaves room for the learner to articulate either interpretation and explain it."
+            ],
+            "concerns": [],
+            "total": 10
+          },
+          "baseline": {
+            "label": "B",
+            "clarity": {
+              "score": 2,
+              "reason": "Clearly asks for the reasoning behind the learner's previously stated guarantee claim."
+            },
+            "levelFit": {
+              "score": 2,
+              "reason": "Asks the learner to explain an existing inference, with no calculation or new task."
+            },
+            "diagnosticValue": {
+              "score": 2,
+              "reason": "Can expose why the learner connects equal probabilities to an exact count, or prompt them to reject that connection and explain their revised interpretation."
+            },
+            "grounding": {
+              "score": 2,
+              "reason": "Accurately refers to a claim in the transcript and is answerable from the existing discussion."
+            },
+            "nonLeading": {
+              "score": 2,
+              "reason": "Questioning the rationale for the learner's claim neither endorses it nor supplies the correction."
+            },
+            "strengths": [
+              "Targets the specific guarantee inference rather than requesting a definition of fairness.",
+              "Requests reasoning rather than a bare yes/no answer."
+            ],
+            "concerns": [],
+            "total": 10
+          }
+        },
+        "preference": "enhanced",
+        "reason": "Both are sound, but A more openly elicits the learner's current interpretation after they expressed uncertainty; B concentrates on defending or reconsidering the earlier guarantee claim.",
+        "limitation": "Single blind model review of next-question design; not independent expert validation or a learner-outcome measurement.",
+        "provider": "chatgpt",
+        "model": "gpt-6.1-sol"
+      },
+      "baselineMeetsScreen": true,
+      "enhancedMeetsScreen": true,
+      "sourceRun": "backend/evaluations/strategy-levels-v6-leakage-fix/results.json"
+    },
+    {
+      "caseId": "coverage-stochastic-reasoning-apply",
+      "title": "Distinguish chance from certainty — apply",
+      "level": "apply",
+      "learningType": "quantitative",
+      "expectedStrategyId": "stochastic-reasoning",
+      "attempts": [
+        {
+          "finishedAt": "2026-10-19T01:13:00.486Z",
+          "durationMs": 78525,
+          "status": "applied",
+          "reviewError": null
+        }
+      ],
+      "status": "applied",
+      "runId": "2daa2e5d-6e63-4209-b978-ce2f1c3fd9c4",
+      "generatedAt": "2026-10-19T01:12:43.840Z",
+      "selectedStrategyId": "stochastic-reasoning",
+      "baseline": "I'm unsure about that zero probability. What probability do you get for no reds in ten draws when you apply your method for a specified sequence of independent draws?",
+      "enhanced": "For ten independent draws with replacement, each with a one-fifth chance of red, what probability do you calculate for getting no reds, and what does that value mean for your claim that no reds is impossible?",
+      "coverageGap": null,
+      "traceFile": "../strategy-levels-v6-leakage-fix/cases/coverage-stochastic-reasoning-apply.json",
+      "callCount": 7,
+      "generationDurationMs": 61891,
+      "review": {
+        "version": "blind-question-review-1",
+        "mapping": {
+          "A": "enhanced",
+          "B": "baseline"
+        },
+        "questions": {
+          "enhanced": {
+            "label": "A",
+            "clarity": {
+              "score": 2,
+              "reason": "Clearly asks for one event probability and its interpretation in relation to the learner's claim; these are connected parts of a single target."
+            },
+            "levelFit": {
+              "score": 2,
+              "reason": "Requires applying the supplied independent-draw model to a specific ten-draw event, rather than recalling a definition."
+            },
+            "diagnosticValue": {
+              "score": 2,
+              "reason": "Elicits both the calculated probability and an explicit interpretation, allowing assessment of whether the learner distinguishes an expected count from a guaranteed outcome."
+            },
+            "grounding": {
+              "score": 2,
+              "reason": "The model is fully specified, and the learner has stated the prerequisite knowledge needed to calculate the probability."
+            },
+            "nonLeading": {
+              "score": 2,
+              "reason": "Provides the model's givens without supplying the calculation, result, or correction; referencing the learner's impossibility claim does not endorse it."
+            },
+            "strengths": [
+              "Directly assesses both rubric components.",
+              "Requests interpretation as well as calculation, making a correct numerical response alone insufficient.",
+              "Restates all necessary model conditions."
+            ],
+            "concerns": [],
+            "total": 10
+          },
+          "baseline": {
+            "label": "B",
+            "clarity": {
+              "score": 2,
+              "reason": "Asks a readily comprehensible, focused question about the probability of no reds in ten independent draws."
+            },
+            "levelFit": {
+              "score": 2,
+              "reason": "Asks the learner to use a known probability method on the active task."
+            },
+            "diagnosticValue": {
+              "score": 1,
+              "reason": "The calculation can reveal whether the learner uses the independent-draw model instead of imposing the expected count, but the question does not request interpretation of the result or its relationship to the expected count."
+            },
+            "grounding": {
+              "score": 2,
+              "reason": "The transcript supplies the red probability and replacement conditions, and the learner has explicitly reported knowing the specified-sequence method."
+            },
+            "nonLeading": {
+              "score": 2,
+              "reason": "The opening expresses doubt but supplies neither a corrected probability nor a worked step or assessed principle. Referring to the learner's stated method does not give away its application."
+            },
+            "strengths": [
+              "Elicits an actual application rather than a yes/no judgment.",
+              "Uses a prerequisite method the learner has already identified as familiar.",
+              "Does not provide the event probability or calculation."
+            ],
+            "concerns": [
+              {
+                "dimension": "diagnosticValue",
+                "severity": "minor",
+                "quote": "What probability do you get for no reds in ten draws when you apply your method for a specified sequence of independent draws?",
+                "reason": "A numerical answer alone satisfies this request, leaving the learner's interpretation of the expected count and the possibility of a zero-red run less directly assessed."
+              }
+            ],
+            "total": 9
+          }
+        },
+        "preference": "enhanced",
+        "reason": "Both questions validly elicit application of the sampling model, but A also explicitly asks what the result means for the impossibility claim, providing more complete evidence for the diagnostic objective.",
+        "limitation": "Single blind model review of next-question design; not independent expert validation or a learner-outcome measurement.",
+        "provider": "chatgpt",
+        "model": "gpt-6.1-sol"
+      },
+      "baselineMeetsScreen": true,
+      "enhancedMeetsScreen": true,
+      "sourceRun": "backend/evaluations/strategy-levels-v6-leakage-fix/results.json"
+    },
+    {
+      "caseId": "coverage-method-applicability-understand",
+      "title": "Match a method to its conditions — understand",
+      "level": "understand",
+      "learningType": "theoretical",
+      "expectedStrategyId": "method-applicability",
+      "attempts": [
+        {
+          "finishedAt": "2026-10-19T01:13:23.947Z",
+          "durationMs": 62298,
+          "status": "applied",
+          "reviewError": null
+        }
+      ],
+      "status": "applied",
+      "runId": "28d8bffe-cff7-401d-9e26-78a5521a64ec",
+      "generatedAt": "2026-10-19T01:13:08.861Z",
+      "selectedStrategyId": "method-applicability",
+      "baseline": "What makes you think the two speeds can be weighted equally when the time spent at each speed differs?",
+      "enhanced": "What makes you think the two speeds should have equal weight in the trip’s average speed when the time spent at each speed differs?",
+      "coverageGap": null,
+      "traceFile": "../strategy-levels-v6-leakage-fix/cases/coverage-method-applicability-understand.json",
+      "callCount": 7,
+      "generationDurationMs": 47221,
+      "review": {
+        "version": "blind-question-review-1",
+        "mapping": {
+          "A": "enhanced",
+          "B": "baseline"
+        },
+        "questions": {
+          "enhanced": {
+            "label": "A",
+            "clarity": {
+              "score": 2,
+              "reason": "Clearly asks for the learner's reasoning behind equal weighting despite differing segment durations, with one focused target."
+            },
+            "levelFit": {
+              "score": 2,
+              "reason": "Requests an explanation of a relationship already discussed, without a new trip, computation, or execution."
+            },
+            "diagnosticValue": {
+              "score": 2,
+              "reason": "Asking for the basis of the learner's stated belief can reveal how they connect segment duration to weighting, distinguishing a two-segment justification from a duration-based account."
+            },
+            "grounding": {
+              "score": 2,
+              "reason": "Uses the trip-average context and differing durations already present in the transcript. It asks about the learner's claim without treating that claim as scientifically correct."
+            },
+            "nonLeading": {
+              "score": 2,
+              "reason": "Neutrally revisits the learner's equal-weight claim without supplying the equal-duration condition, a correction, or a worked step."
+            },
+            "strengths": [
+              "Explicitly connects weighting to trip average speed.",
+              "Invites an explanation rather than a keyword or yes/no response.",
+              "Directly probes the learner's latest claim without introducing a new exercise."
+            ],
+            "concerns": [],
+            "total": 10
+          },
+          "baseline": {
+            "label": "B",
+            "clarity": {
+              "score": 2,
+              "reason": "Clearly asks why the learner believes equal weighting is possible when segment durations differ; the transcript makes the average-speed context clear."
+            },
+            "levelFit": {
+              "score": 2,
+              "reason": "Elicits an explanation of the already-discussed relationship between durations and weighting, with no new application task."
+            },
+            "diagnosticValue": {
+              "score": 2,
+              "reason": "The requested justification can expose the learner's reasoning about the duration condition and whether merely having two segments is their basis for equal weighting."
+            },
+            "grounding": {
+              "score": 2,
+              "reason": "Closely follows the learner's stated belief and uses only conditions already supplied in the conversation."
+            },
+            "nonLeading": {
+              "score": 2,
+              "reason": "Refers neutrally to the learner's claim and leaves the relevant duration condition for the learner to articulate."
+            },
+            "strengths": [
+              "Closely targets the learner's most recent assertion.",
+              "Requests reasoning rather than unsupported agreement.",
+              "Avoids supplying the assessed condition or solving another trip."
+            ],
+            "concerns": [],
+            "total": 10
+          }
+        },
+        "preference": "tie",
+        "reason": "Both ask essentially the same focused, non-leading question about the learner's justification for equal weighting despite different durations. A makes the trip-average context explicit, while B relies on the clear transcript context; this does not meaningfully change their diagnostic value.",
+        "limitation": "Single blind model review of next-question design; not independent expert validation or a learner-outcome measurement.",
+        "provider": "chatgpt",
+        "model": "gpt-6.1-sol"
+      },
+      "baselineMeetsScreen": true,
+      "enhancedMeetsScreen": true,
+      "sourceRun": "backend/evaluations/strategy-levels-v6-leakage-fix/results.json"
+    },
+    {
+      "caseId": "coverage-method-applicability-apply",
+      "title": "Match a method to its conditions — apply",
+      "level": "apply",
+      "learningType": "quantitative",
+      "expectedStrategyId": "method-applicability",
+      "attempts": [
+        {
+          "finishedAt": "2026-10-19T01:13:37.634Z",
+          "durationMs": 61272,
+          "status": "applied",
+          "reviewError": null
+        }
+      ],
+      "status": "applied",
+      "runId": "bb2444de-1219-4c33-8230-3e0588b2cf6b",
+      "generatedAt": "2026-10-19T01:13:24.988Z",
+      "selectedStrategyId": "method-applicability",
+      "baseline": "What supports your claim that the simple arithmetic mean applies to this trip with one hour at the first speed and two hours at the second?",
+      "enhanced": "For this trip—30 km/h for one hour, then 60 km/h for two hours, with no other travel time—what whole-trip average speed do you calculate, and what calculations support your result?",
+      "coverageGap": null,
+      "traceFile": "../strategy-levels-v6-leakage-fix/cases/coverage-method-applicability-apply.json",
+      "callCount": 8,
+      "generationDurationMs": 48623,
+      "review": {
+        "version": "blind-question-review-1",
+        "mapping": {
+          "A": "baseline",
+          "B": "enhanced"
+        },
+        "questions": {
+          "baseline": {
+            "label": "A",
+            "clarity": {
+              "score": 2,
+              "reason": "Clearly asks for justification of the learner's stated method in the specific trip."
+            },
+            "levelFit": {
+              "score": 1,
+              "reason": "Asks the learner to examine support for a claim, closer to Analyze than selecting and using a method to solve the supplied Apply task."
+            },
+            "diagnosticValue": {
+              "score": 1,
+              "reason": "May reveal the basis of the shortcut, but does not require using a duration-compatible method or calculating a trip average; repeating the original generalization could suffice."
+            },
+            "grounding": {
+              "score": 2,
+              "reason": "Accurately references the stated unequal durations and neutrally refers to the learner's claim."
+            },
+            "nonLeading": {
+              "score": 2,
+              "reason": "Does not supply a correction, a method, or an answer."
+            },
+            "strengths": [
+              "Directly engages the learner's expressed reasoning.",
+              "Keeps the unequal durations visible without supplying a solution."
+            ],
+            "concerns": [
+              {
+                "dimension": "levelFit",
+                "severity": "minor",
+                "quote": "What supports your claim",
+                "reason": "Elicits evaluation or justification rather than execution of a method in the Apply task."
+              },
+              {
+                "dimension": "diagnosticValue",
+                "severity": "major",
+                "quote": "What supports your claim that the simple arithmetic mean applies",
+                "reason": "Does not require selecting and using a suitable method, leaving the authored diagnostic objective only indirectly tested."
+              }
+            ],
+            "total": 8
+          },
+          "enhanced": {
+            "label": "B",
+            "clarity": {
+              "score": 2,
+              "reason": "Requests a single trip-average result with supporting calculations, with all conditions clearly stated."
+            },
+            "levelFit": {
+              "score": 2,
+              "reason": "Requires applying a chosen method to the supplied quantitative trip problem."
+            },
+            "diagnosticValue": {
+              "score": 2,
+              "reason": "The result and calculations distinguish an unweighted speed mean from methods accounting for segment durations."
+            },
+            "grounding": {
+              "score": 2,
+              "reason": "Uses the given speeds and durations; the explicit absence of additional travel time makes the trip conditions sufficient."
+            },
+            "nonLeading": {
+              "score": 2,
+              "reason": "Requests calculations without specifying the assessed method, correcting the learner, or supplying any worked step."
+            },
+            "strengths": [
+              "Directly elicits method use and a numerical result.",
+              "Supporting calculations expose whether unequal durations are accounted for.",
+              "Leaves the method choice to the learner."
+            ],
+            "concerns": [],
+            "total": 10
+          }
+        },
+        "preference": "enhanced",
+        "reason": "B directly tests selection and use of a method through the calculated average and supporting work. A can reveal justification for the existing claim but does not require carrying out the targeted application.",
+        "limitation": "Single blind model review of next-question design; not independent expert validation or a learner-outcome measurement.",
+        "provider": "chatgpt",
+        "model": "gpt-6.1-sol"
+      },
+      "baselineMeetsScreen": false,
+      "enhancedMeetsScreen": true,
+      "sourceRun": "backend/evaluations/strategy-levels-v6-leakage-fix/results.json"
+    }
+  ],
+  "updatedAt": "2026-10-19T01:15:29.178Z",
+  "summary": {
+    "attempted": 11,
+    "total": 11,
+    "applied": 11,
+    "fallback": 0,
+    "errors": 0,
+    "reviewErrors": 0,
+    "reviewedApplications": 11,
+    "baselineMean": 9.36,
+    "enhancedMean": 10,
+    "baselineMeetsScreen": 10,
+    "enhancedMeetsScreen": 11,
+    "preferences": {
+      "baseline": 0,
+      "enhanced": 8,
+      "tie": 3,
+      "neither": 0
+    }
+  },
+  "screenRule": "All five dimensions >= 1, total >= 8/10, no major concern. Applied pairs only; fallbacks, no-question runs and errors excluded from quality means.",
+  "limitations": "One retained complete pair per authored strategy-level case, with recorded operational retries and a blind same-model design review. Targeted candidates can abstain. This is not open-selector coverage, independent expert validation, or evidence of learning gains.",
+  "constituentRuns": [
+    "backend/evaluations/strategy-levels-v6-leakage-fix/results.json",
+    "backend/evaluations/strategy-levels-v6-plan-fix/results.json"
+  ],
+  "methodNotes": "First rerun: ten accepted applications and one plan rejected for solution scaffolding. Planning instructions were then tightened; only that rejected case was rerun. This combines latest case outcomes from two implementation revisions; the original outcomes remain preserved.",
+  "runStatus": "complete"
+}

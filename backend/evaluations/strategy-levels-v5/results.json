@@ -1,0 +1,868 @@
+{
+  "schemaVersion": 1,
+  "provider": "chatgpt",
+  "model": "gpt-6.1-sol",
+  "corpusVersion": "question-strategies-5",
+  "promptVersion": "1ed6b362365e1015fd4ce68ea57a48f664401c3ceee0009263c8d629323a1cde",
+  "caseIds": [
+    "coverage-controlled-comparison-understand",
+    "coverage-controlled-comparison-apply",
+    "coverage-controlled-comparison-analyze",
+    "coverage-boundary-case-understand",
+    "coverage-boundary-case-apply",
+    "coverage-boundary-case-analyze",
+    "coverage-remove-condition-understand",
+    "coverage-remove-condition-apply",
+    "coverage-remove-condition-analyze",
+    "coverage-quantity-versus-change-understand",
+    "coverage-quantity-versus-change-apply",
+    "coverage-quantity-versus-change-analyze",
+    "coverage-reconcile-claims-understand",
+    "coverage-reconcile-claims-apply",
+    "coverage-reconcile-claims-analyze",
+    "coverage-representation-change-understand",
+    "coverage-representation-change-apply",
+    "coverage-representation-change-analyze",
+    "coverage-clarify-specific-term-remember",
+    "coverage-clarify-specific-term-understand",
+    "coverage-recall-specific-element-remember",
+    "coverage-answer-reason-consistency-understand",
+    "coverage-answer-reason-consistency-apply",
+    "coverage-answer-reason-consistency-analyze",
+    "coverage-mechanism-tracing-understand",
+    "coverage-mechanism-tracing-apply",
+    "coverage-mechanism-tracing-analyze",
+    "coverage-conservation-accounting-understand",
+    "coverage-conservation-accounting-apply",
+    "coverage-conservation-accounting-analyze",
+    "coverage-classify-by-features-understand",
+    "coverage-classify-by-features-apply",
+    "coverage-classify-by-features-analyze",
+    "coverage-necessary-sufficient-understand",
+    "coverage-necessary-sufficient-apply",
+    "coverage-necessary-sufficient-analyze",
+    "coverage-scale-level-distinction-understand",
+    "coverage-scale-level-distinction-apply",
+    "coverage-scale-level-distinction-analyze",
+    "coverage-evidence-inference-understand",
+    "coverage-evidence-inference-apply",
+    "coverage-evidence-inference-analyze",
+    "coverage-stochastic-reasoning-understand",
+    "coverage-stochastic-reasoning-apply",
+    "coverage-stochastic-reasoning-analyze",
+    "coverage-method-applicability-understand",
+    "coverage-method-applicability-apply",
+    "coverage-method-applicability-analyze",
+    "coverage-scope-and-reference-understand",
+    "coverage-scope-and-reference-apply",
+    "coverage-scope-and-reference-analyze"
+  ],
+  "sourceHashes": {
+    "backend/src/strategyComparison.js": "740046f2b5220a58e65fa804012c2cc5e5fb8f7518a3fc822e7465c79a858be9",
+    "backend/src/strategyPlanning.js": "bec8411116b299201c715ad80c57e39989c55ef5d154f5b847daae137fae30dc",
+    "backend/src/questionEvaluation.js": "85b3f99c9ffde3d6ea7858933a3d93931b33a82f2c4ba5ae6b6d443f1914472b",
+    "backend/src/chat.js": "8efb51cb278f2f9e57580635c0fd6b529af75a8c251949479739cc87c7f22d44",
+    "backend/question-strategies.json": "f4a3b7d81681f5776237bd5c5259ddbc175973aeb09871f6bd76168c2067f320",
+    "backend/strategy-comparison-cases.json": "3623646cb0ac1a105859dd14cc07edd640051567ac43294edadf6867921393c7",
+    "backend/comparison-rubrics.json": "aa264eacfc93f5441e77afda535fe4245986086ee79dd1410fafe0ebf7f81562"
+  },
+  "fingerprint": "063bba92f20cbea40784a30991022e44a56e5c19d4144726de904ef6fe5b2464",
+  "startedAt": "2026-10-18T19:55:48.104Z",
+  "totalCases": 51,
+  "results": [
+    {
+      "caseId": "coverage-controlled-comparison-understand",
+      "title": "Controlled comparison — understand",
+      "level": "understand",
+      "learningType": "experimental",
+      "expectedStrategyId": "controlled-comparison",
+      "attempts": [
+        {
+          "finishedAt": "2026-10-18T19:57:04.865Z",
+          "durationMs": 76760,
+          "status": "applied",
+          "reviewError": null
+        }
+      ],
+      "status": "applied",
+      "runId": "bf831459-f308-4d0b-a6a3-272afd03c83b",
+      "generatedAt": "2026-10-18T19:56:52.292Z",
+      "selectedStrategyId": "controlled-comparison",
+      "baseline": "I'm unsure how the warm-water cup could have more water if the volumes were matched. What do you mean by “more water” here?",
+      "enhanced": "How does having matched water volumes fit with your suggestion that the salt dissolved sooner because the warm-water cup had more water?",
+      "coverageGap": null,
+      "traceFile": "cases/coverage-controlled-comparison-understand.json",
+      "callCount": 9,
+      "generationDurationMs": 64186,
+      "review": {
+        "version": "blind-question-review-1",
+        "mapping": {
+          "A": "baseline",
+          "B": "enhanced"
+        },
+        "questions": {
+          "baseline": {
+            "label": "A",
+            "clarity": {
+              "score": 2,
+              "reason": "Clearly asks for clarification of the learner's phrase 'more water' in light of matched volumes."
+            },
+            "levelFit": {
+              "score": 2,
+              "reason": "Elicits an explanation of the existing comparison, with no new task or calculation."
+            },
+            "diagnosticValue": {
+              "score": 2,
+              "reason": "Clarifying 'more water' can distinguish a different intended meaning from a failure to reconcile equal volumes with the proposed explanation."
+            },
+            "grounding": {
+              "score": 2,
+              "reason": "Accurately refers to the matched volumes and the learner's stated uncertainty; all needed context is available."
+            },
+            "nonLeading": {
+              "score": 2,
+              "reason": "Flags the tension without supplying its resolution or the role of temperature; the learner must explain their meaning."
+            },
+            "strengths": [
+              "Directly investigates the learner's uncertain wording rather than presuming a misconception.",
+              "Keeps the explanation grounded in the existing matched-volume comparison."
+            ],
+            "concerns": [],
+            "total": 10
+          },
+          "enhanced": {
+            "label": "B",
+            "clarity": {
+              "score": 2,
+              "reason": "Asks one clear question about the relationship between equal volumes and the learner's proposed cause."
+            },
+            "levelFit": {
+              "score": 2,
+              "reason": "Requests an explanation of a relationship already present in the discussed experiment rather than a new analysis task or exercise."
+            },
+            "diagnosticValue": {
+              "score": 2,
+              "reason": "Directly elicits whether the learner can reconcile the fixed water volume with their proposed explanation for the shorter dissolving time."
+            },
+            "grounding": {
+              "score": 2,
+              "reason": "Uses only the experimental conditions and learner claim supplied in the transcript."
+            },
+            "nonLeading": {
+              "score": 2,
+              "reason": "Neutrally juxtaposes the given matched volumes and the learner's suggestion without stating the correct causal interpretation."
+            },
+            "strengths": [
+              "Directly targets the unresolved meaning of the fixed-volume control.",
+              "Invites an explanatory reconciliation rather than a yes/no response."
+            ],
+            "concerns": [],
+            "total": 10
+          }
+        },
+        "preference": "enhanced",
+        "reason": "Both are sound diagnostic questions. B more directly asks the learner to connect the fixed-volume condition to their explanation of dissolving time, while A primarily clarifies what they mean by 'more water'.",
+        "limitation": "Single blind model review of next-question design; not independent expert validation or a learner-outcome measurement.",
+        "provider": "chatgpt",
+        "model": "gpt-6.1-sol"
+      },
+      "baselineMeetsScreen": true,
+      "enhancedMeetsScreen": true
+    },
+    {
+      "caseId": "coverage-controlled-comparison-apply",
+      "title": "Controlled comparison — apply",
+      "level": "apply",
+      "learningType": "experimental",
+      "expectedStrategyId": "controlled-comparison",
+      "attempts": [
+        {
+          "finishedAt": "2026-10-18T19:56:56.934Z",
+          "durationMs": 68828,
+          "status": "applied",
+          "reviewError": null
+        }
+      ],
+      "status": "applied",
+      "runId": "2c128be1-c54d-4050-b174-306784d20c30",
+      "generatedAt": "2026-10-18T19:56:40.629Z",
+      "selectedStrategyId": "controlled-comparison",
+      "baseline": "I'm unsure why the unsleeved cup is irrelevant. What would comparing only the foam cup's starting and ending temperatures tell us about the sleeve's effect?",
+      "enhanced": "In this simulation, both covered cups started at 80°C in the same room; after ten minutes, the sleeved cup was at 70°C and the unsleeved cup at 60°C, with all other conditions matched. How much less cooling would you attribute to the foam sleeve from these results?",
+      "coverageGap": null,
+      "traceFile": "cases/coverage-controlled-comparison-apply.json",
+      "callCount": 7,
+      "generationDurationMs": 52541,
+      "review": {
+        "version": "blind-question-review-1",
+        "mapping": {
+          "A": "baseline",
+          "B": "enhanced"
+        },
+        "questions": {
+          "baseline": {
+            "label": "A",
+            "clarity": {
+              "score": 2,
+              "reason": "The question is understandable and focuses on what a within-cup temperature comparison can establish."
+            },
+            "levelFit": {
+              "score": 1,
+              "reason": "It primarily asks the learner to examine the limits of an inference in the active task, an Analyze demand, rather than apply a comparison method to both trial results."
+            },
+            "diagnosticValue": {
+              "score": 1,
+              "reason": "An explanation could reveal whether the learner recognizes the limitation of the foam-only comparison, but the question does not require using the unsleeved result to isolate the sleeve-associated difference."
+            },
+            "grounding": {
+              "score": 2,
+              "reason": "The question is scientifically sound and answerable from the supplied controlled comparison; it does not endorse the learner's claim."
+            },
+            "nonLeading": {
+              "score": 2,
+              "reason": "It probes the learner's stated reasoning without supplying the control-comparison principle or the resulting difference."
+            },
+            "strengths": [
+              "Directly engages the learner's unresolved claim.",
+              "Invites an explanation rather than an unsupported yes/no response."
+            ],
+            "concerns": [
+              {
+                "dimension": "levelFit",
+                "severity": "minor",
+                "quote": "What would comparing only the foam cup's starting and ending temperatures tell us about the sleeve's effect?",
+                "reason": "The requested evidence concerns evaluating an inference's scope rather than applying the experimental comparison to both measurements."
+              },
+              {
+                "dimension": "diagnosticValue",
+                "severity": "minor",
+                "quote": "What would comparing only the foam cup's starting and ending temperatures tell us about the sleeve's effect?",
+                "reason": "The learner could describe the foam cup's temperature drop without demonstrating how both groups isolate the sleeve-associated difference."
+              }
+            ],
+            "total": 8
+          },
+          "enhanced": {
+            "label": "B",
+            "clarity": {
+              "score": 2,
+              "reason": "The matched conditions and measurements are explicit, and the question asks for one interpretable quantity: the reduction in cooling associated with the sleeve."
+            },
+            "levelFit": {
+              "score": 2,
+              "reason": "The learner must apply a controlled-comparison method to the supplied experimental measurements."
+            },
+            "diagnosticValue": {
+              "score": 2,
+              "reason": "The requested difference tests whether the learner uses the unsleeved comparison rather than treating the foam cup's own temperature change as the sleeve effect."
+            },
+            "grounding": {
+              "score": 2,
+              "reason": "Equal starting temperatures, equal elapsed times, and otherwise matched conditions support attributing the observed difference in cooling to the sleeve within this simulation."
+            },
+            "nonLeading": {
+              "score": 2,
+              "reason": "It supplies observational conditions and results, but neither the comparison calculation nor its answer."
+            },
+            "strengths": [
+              "Directly elicits use of both experimental groups.",
+              "Connects measured cooling differences to the sleeve-associated effect.",
+              "Uses the existing simulation without introducing new prerequisites."
+            ],
+            "concerns": [],
+            "total": 10
+          }
+        },
+        "preference": "enhanced",
+        "reason": "B directly asks the learner to apply the matched-group comparison and identify the sleeve-associated cooling difference. A can expose reasoning about the foam-only inference, but does not require demonstrating the objective's use of both groups.",
+        "limitation": "Single blind model review of next-question design; not independent expert validation or a learner-outcome measurement.",
+        "provider": "chatgpt",
+        "model": "gpt-6.1-sol"
+      },
+      "baselineMeetsScreen": true,
+      "enhancedMeetsScreen": true
+    },
+    {
+      "caseId": "coverage-controlled-comparison-analyze",
+      "title": "Controlled comparison — analyze",
+      "level": "analyze",
+      "learningType": "experimental",
+      "expectedStrategyId": "controlled-comparison",
+      "attempts": [
+        {
+          "finishedAt": "2026-10-18T19:57:08.709Z",
+          "durationMs": 80603,
+          "status": "applied",
+          "reviewError": null
+        }
+      ],
+      "status": "applied",
+      "runId": "48a9ef90-c8bb-411e-9c69-c0923057d168",
+      "generatedAt": "2026-10-18T19:56:50.852Z",
+      "selectedStrategyId": "controlled-comparison",
+      "baseline": "I’m unsure how the comparison supports the report’s temperature claim if both trials had the same temperature. What evidence in these trials supports that attribution?",
+      "enhanced": "With water temperature, water volume, and sugar-cube size held fixed while stirring speed changed, does the comparison support or challenge the report’s claim that warmer water caused faster dissolving, and what evidence from the trials supports your judgment?",
+      "coverageGap": null,
+      "traceFile": "cases/coverage-controlled-comparison-analyze.json",
+      "callCount": 9,
+      "generationDurationMs": 62752,
+      "review": {
+        "version": "blind-question-review-1",
+        "mapping": {
+          "A": "enhanced",
+          "B": "baseline"
+        },
+        "questions": {
+          "enhanced": {
+            "label": "A",
+            "clarity": {
+              "score": 2,
+              "reason": "Poses a clear judgment about the report's causal attribution and asks for the trial evidence underlying that judgment."
+            },
+            "levelFit": {
+              "score": 2,
+              "reason": "Requires analysis of a causal inference in the active controlled study, not merely recall of factors affecting dissolving."
+            },
+            "diagnosticValue": {
+              "score": 2,
+              "reason": "The judgment plus evidence can reveal whether the learner distinguishes temperature's general relevance from its inability to explain a between-trial difference when fixed, and relates the inference to changed stirring speed."
+            },
+            "grounding": {
+              "score": 2,
+              "reason": "Restates the supplied controls and varied factor accurately; evaluating the temperature attribution does not require numerical trial data."
+            },
+            "nonLeading": {
+              "score": 2,
+              "reason": "Offers support and challenge symmetrically and supplies only the experimental conditions, without giving the causal conclusion."
+            },
+            "strengths": [
+              "Directly targets the unresolved causal attribution.",
+              "Requests evidence rather than an unsupported yes/no.",
+              "Keeps the varied factor and controls available without stating the assessed inference."
+            ],
+            "concerns": [],
+            "total": 10
+          },
+          "baseline": {
+            "label": "B",
+            "clarity": {
+              "score": 2,
+              "reason": "Clearly asks what trial evidence supports the temperature attribution, with the opening sentence establishing the context."
+            },
+            "levelFit": {
+              "score": 2,
+              "reason": "Asks the learner to examine the evidential basis of a causal claim in the study."
+            },
+            "diagnosticValue": {
+              "score": 1,
+              "reason": "Can elicit recognition that the attribution lacks evidence, but the opening skepticism cues that response and the question does not directly probe the relationship to varied stirring speed."
+            },
+            "grounding": {
+              "score": 2,
+              "reason": "The equal-temperature premise is supplied by the transcript, and the attribution can be assessed from the study design without numerical results."
+            },
+            "nonLeading": {
+              "score": 1,
+              "reason": "The expressed uncertainty specifically links equal temperature to doubt about the report, cueing the inference the learner is being asked to make rather than neutrally inviting an evaluation."
+            },
+            "strengths": [
+              "Focuses on evidence for the contested attribution.",
+              "Remains anchored to the controlled-temperature study."
+            ],
+            "concerns": [
+              {
+                "dimension": "nonLeading",
+                "severity": "minor",
+                "quote": "I’m unsure how the comparison supports the report’s temperature claim if both trials had the same temperature.",
+                "reason": "Models skepticism and highlights its rationale, suggesting the desired judgment before the learner evaluates the inference."
+              },
+              {
+                "dimension": "diagnosticValue",
+                "severity": "minor",
+                "quote": "What evidence in these trials supports that attribution?",
+                "reason": "The support-only framing after a skeptical opening makes a brief 'none' response easy without showing how the varied factor and fixed temperature constrain the causal interpretation."
+              }
+            ],
+            "total": 8
+          }
+        },
+        "preference": "enhanced",
+        "reason": "A neutrally asks for an evidence-backed evaluation and explicitly includes the varied factor, making it better able to elicit the targeted causal reasoning. B is grounded and relevant but cues skepticism and more readily permits an unelaborated denial of supporting evidence.",
+        "limitation": "Single blind model review of next-question design; not independent expert validation or a learner-outcome measurement.",
+        "provider": "chatgpt",
+        "model": "gpt-6.1-sol"
+      },
+      "baselineMeetsScreen": true,
+      "enhancedMeetsScreen": true
+    },
+    {
+      "caseId": "coverage-boundary-case-understand",
+      "title": "Boundary case — understand",
+      "level": "understand",
+      "learningType": "theoretical",
+      "expectedStrategyId": "boundary-case",
+      "attempts": [
+        {
+          "finishedAt": "2026-10-18T19:58:15.307Z",
+          "durationMs": 78372,
+          "status": "applied",
+          "reviewError": null
+        }
+      ],
+      "status": "applied",
+      "runId": "55879519-9aef-4e70-a1aa-b495ffe98bd4",
+      "generatedAt": "2026-10-18T19:58:03.484Z",
+      "selectedStrategyId": "boundary-case",
+      "baseline": "I'm unsure how the crate's lack of movement fits your claim that a large push means large mechanical work. What role does its zero travel distance play in that claim?",
+      "enhanced": "Why do you think a large push means large mechanical work on the crate even when the crate never moves?",
+      "coverageGap": null,
+      "traceFile": "cases/coverage-boundary-case-understand.json",
+      "callCount": 9,
+      "generationDurationMs": 66567,
+      "review": {
+        "version": "blind-question-review-1",
+        "mapping": {
+          "A": "baseline",
+          "B": "enhanced"
+        },
+        "questions": {
+          "baseline": {
+            "label": "A",
+            "clarity": {
+              "score": 2,
+              "reason": "Clearly asks how zero travel distance relates to the learner's claim about work on the crate, with one focused target."
+            },
+            "levelFit": {
+              "score": 2,
+              "reason": "Requests an explanation of the force–movement–work relationship in the existing situation, without a new exercise or calculation."
+            },
+            "diagnosticValue": {
+              "score": 2,
+              "reason": "Directly probes whether the learner treats lack of movement as relevant to mechanical work or continues to regard force magnitude alone as sufficient."
+            },
+            "grounding": {
+              "score": 2,
+              "reason": "Uses the established stationary-crate conditions and asks about a scientifically meaningful relationship without introducing extra prerequisites."
+            },
+            "nonLeading": {
+              "score": 2,
+              "reason": "Neutrally highlights the tension in the learner's claim without supplying the work principle or the correct conclusion."
+            },
+            "strengths": [
+              "Explicitly targets the unresolved role of zero travel distance.",
+              "Invites an explanation rather than a keyword or yes/no response.",
+              "Keeps the assessed work on the crate distinct from the person's effort."
+            ],
+            "concerns": [],
+            "total": 10
+          },
+          "enhanced": {
+            "label": "B",
+            "clarity": {
+              "score": 2,
+              "reason": "The request to explain the learner's stated reasoning is readily understandable and focused."
+            },
+            "levelFit": {
+              "score": 2,
+              "reason": "Asks for conceptual reasoning about the already discussed stationary crate rather than computation or a new task."
+            },
+            "diagnosticValue": {
+              "score": 2,
+              "reason": "Elicits the rationale for equating a large force with large work despite no movement, allowing the response to reveal how the learner interprets the stationary condition."
+            },
+            "grounding": {
+              "score": 2,
+              "reason": "Accurately refers to the learner's claim and the established lack of crate movement."
+            },
+            "nonLeading": {
+              "score": 2,
+              "reason": "Attributes the claim to the learner rather than endorsing it and supplies neither a correction nor an assessed principle."
+            },
+            "strengths": [
+              "Directly probes the reasoning underlying the learner's explicit claim.",
+              "Includes the no-movement condition without stating what follows from it.",
+              "Allows the learner to articulate or reconsider the force-only interpretation."
+            ],
+            "concerns": [],
+            "total": 10
+          }
+        },
+        "preference": "baseline",
+        "reason": "Both are sound conceptual probes, but A more directly asks what role zero travel distance plays, making it slightly better aligned with the specific diagnostic objective; B more broadly asks for the rationale behind the claim.",
+        "limitation": "Single blind model review of next-question design; not independent expert validation or a learner-outcome measurement.",
+        "provider": "chatgpt",
+        "model": "gpt-6.1-sol"
+      },
+      "baselineMeetsScreen": true,
+      "enhancedMeetsScreen": true
+    },
+    {
+      "caseId": "coverage-boundary-case-apply",
+      "title": "Boundary case — apply",
+      "level": "apply",
+      "learningType": "quantitative",
+      "expectedStrategyId": "boundary-case",
+      "attempts": [
+        {
+          "finishedAt": "2026-10-18T19:58:19.822Z",
+          "durationMs": 74953,
+          "status": "applied",
+          "reviewError": null
+        }
+      ],
+      "status": "applied",
+      "runId": "2083d908-42eb-4518-b44f-db3568d3deff",
+      "generatedAt": "2026-10-18T19:58:03.473Z",
+      "selectedStrategyId": "boundary-case",
+      "baseline": "I'm unsure about the division step. How do you rearrange the voltage, current, and resistance relationship to isolate current?",
+      "enhanced": "For this resistor, V = IR, with V = 0 V and R = 10 ohms. What current do you calculate when you rearrange this relationship to find I and substitute those values?",
+      "coverageGap": null,
+      "traceFile": "cases/coverage-boundary-case-apply.json",
+      "callCount": 7,
+      "generationDurationMs": 58614,
+      "review": {
+        "version": "blind-question-review-1",
+        "mapping": {
+          "A": "enhanced",
+          "B": "baseline"
+        },
+        "questions": {
+          "enhanced": {
+            "label": "A",
+            "clarity": {
+              "score": 2,
+              "reason": "Clearly requests one current calculation by rearranging and substituting the stated values."
+            },
+            "levelFit": {
+              "score": 2,
+              "reason": "Requires applying the resistor relationship to the supplied zero-voltage, finite-resistance case."
+            },
+            "diagnosticValue": {
+              "score": 2,
+              "reason": "The rearrangement and resulting current can distinguish the learner's inverted ratio and infinite-current claim from correct application at zero voltage."
+            },
+            "grounding": {
+              "score": 2,
+              "reason": "The equation and values are scientifically correct and sufficient for calculating the current."
+            },
+            "nonLeading": {
+              "score": 0,
+              "reason": "Explicitly supplies the assessed resistor relationship rather than eliciting the learner's selection of it."
+            },
+            "strengths": [
+              "Directly targets the zero-voltage calculation.",
+              "Requests a rearrangement and numerical result, allowing evidence about the learner's division error."
+            ],
+            "concerns": [
+              {
+                "dimension": "nonLeading",
+                "severity": "major",
+                "quote": "V = IR",
+                "reason": "Provides the assessed principle and its correct variable relationship, scaffolding the very relationship the learner has misapplied."
+              }
+            ],
+            "total": 8
+          },
+          "baseline": {
+            "label": "B",
+            "clarity": {
+              "score": 2,
+              "reason": "Asks a clear, focused question about isolating current in the familiar resistor relationship."
+            },
+            "levelFit": {
+              "score": 1,
+              "reason": "Elicits algebraic rearrangement but does not require using the specified voltage and resistance to calculate current."
+            },
+            "diagnosticValue": {
+              "score": 1,
+              "reason": "Can reveal whether the learner still inverts voltage and resistance, but a correct symbolic formula alone does not establish application at zero voltage or resolution of the infinite-current claim."
+            },
+            "grounding": {
+              "score": 2,
+              "reason": "The familiar resistor relationship is available from the task, and isolating current is a valid next step."
+            },
+            "nonLeading": {
+              "score": 2,
+              "reason": "Does not supply the equation, correct ratio, or numerical answer."
+            },
+            "strengths": [
+              "Directly probes the learner's stated uncertainty about division.",
+              "Leaves the equation and rearrangement for the learner to produce."
+            ],
+            "concerns": [
+              {
+                "dimension": "levelFit",
+                "severity": "minor",
+                "quote": "How do you rearrange the voltage, current, and resistance relationship to isolate current?",
+                "reason": "Stops at symbolic rearrangement rather than requesting application to the supplied zero-voltage case."
+              },
+              {
+                "dimension": "diagnosticValue",
+                "severity": "minor",
+                "quote": "How do you rearrange the voltage, current, and resistance relationship to isolate current?",
+                "reason": "Does not ask the learner to evaluate the expression at zero voltage, leaving the diagnostic objective only partly tested."
+              }
+            ],
+            "total": 8
+          }
+        },
+        "preference": "baseline",
+        "reason": "B more cleanly elicits the learner's own relationship and rearrangement at the exact point of the stated error. It is narrower than the full zero-voltage objective, but A supplies the assessed relationship before eliciting a response.",
+        "limitation": "Single blind model review of next-question design; not independent expert validation or a learner-outcome measurement.",
+        "provider": "chatgpt",
+        "model": "gpt-6.1-sol"
+      },
+      "baselineMeetsScreen": true,
+      "enhancedMeetsScreen": false
+    },
+    {
+      "caseId": "coverage-boundary-case-analyze",
+      "title": "Boundary case — analyze",
+      "level": "analyze",
+      "learningType": "theoretical",
+      "expectedStrategyId": "boundary-case",
+      "attempts": [
+        {
+          "finishedAt": "2026-10-18T19:57:46.925Z",
+          "durationMs": 38212,
+          "status": "fallback",
+          "reviewError": null
+        }
+      ],
+      "status": "fallback",
+      "runId": "4929cbff-480d-48bc-8fc9-5d4d4e678854",
+      "generatedAt": "2026-10-18T19:57:34.157Z",
+      "selectedStrategyId": null,
+      "baseline": "Why do you consider the event containing the whole sample space uncertain?",
+      "enhanced": "Why do you consider the event containing the whole sample space uncertain?",
+      "coverageGap": {
+        "caseId": "coverage-boundary-case-analyze",
+        "stage": "selection",
+        "diagnosticObjective": "Analyze the learner’s justification for calling the whole-sample-space event uncertain, distinguishing uncertainty about the realized individual outcome from certainty of membership in the sample space, and assess how that distinction bears on the proposed strict-between-zero-and-one rule.",
+        "reason": "A whole-sample-space boundary case could probe the learner's stated confusion between uncertainty about an individual outcome and certainty of event membership. However, that diagnostic target does not match any active rubric item, which concern nested event sequences, countable additivity, failure without nesting, or probability-zero limiting events. The transcript provides no existing limiting-event argument or sequence relationship to analyze. Introducing one would invent prerequisites or shift the task rather than probe the evidenced claim under the active rubric. Thus no candidate safely satisfies both the Analyze task and an active rubric item.",
+        "recordedAt": "2026-10-18T19:57:34.157Z"
+      },
+      "traceFile": "cases/coverage-boundary-case-analyze.json",
+      "callCount": 5,
+      "generationDurationMs": 26165,
+      "review": {
+        "version": "blind-question-review-1",
+        "mapping": {
+          "A": "baseline",
+          "B": "enhanced"
+        },
+        "questions": {
+          "baseline": {
+            "label": "A",
+            "clarity": {
+              "score": 2,
+              "reason": "A short, clear question focuses on the learner's stated uncertainty about the all-outcomes event."
+            },
+            "levelFit": {
+              "score": 2,
+              "reason": "Asks the learner to examine the reasoning underlying an assumption in the active probability-rule analysis."
+            },
+            "diagnosticValue": {
+              "score": 2,
+              "reason": "The requested justification can distinguish confusion about which outcome occurs from uncertainty about whether the all-outcomes event occurs, directly addressing the unresolved boundary case."
+            },
+            "grounding": {
+              "score": 2,
+              "reason": "Grounded in the learner's explicit claim and answerable from the sample-space scenario without additional prerequisites. The fixed objective concerns this boundary rather than nested limiting events."
+            },
+            "nonLeading": {
+              "score": 2,
+              "reason": "Neutrally probes the learner's claim without endorsing it or supplying the probability-one correction."
+            },
+            "strengths": [
+              "Directly addresses the learner's expressed reasoning about the whole sample space.",
+              "Elicits justification rather than a bare probability value or yes/no answer.",
+              "Leaves the learner's reasoning open without giving away the assessed principle."
+            ],
+            "concerns": [],
+            "total": 10
+          },
+          "enhanced": {
+            "label": "B",
+            "clarity": {
+              "score": 2,
+              "reason": "A short, clear question focuses on the learner's stated uncertainty about the all-outcomes event."
+            },
+            "levelFit": {
+              "score": 2,
+              "reason": "Asks the learner to examine the reasoning underlying an assumption in the active probability-rule analysis."
+            },
+            "diagnosticValue": {
+              "score": 2,
+              "reason": "The requested justification can distinguish confusion about which outcome occurs from uncertainty about whether the all-outcomes event occurs, directly addressing the unresolved boundary case."
+            },
+            "grounding": {
+              "score": 2,
+              "reason": "Grounded in the learner's explicit claim and answerable from the sample-space scenario without additional prerequisites. The fixed objective concerns this boundary rather than nested limiting events."
+            },
+            "nonLeading": {
+              "score": 2,
+              "reason": "Neutrally probes the learner's claim without endorsing it or supplying the probability-one correction."
+            },
+            "strengths": [
+              "Directly addresses the learner's expressed reasoning about the whole sample space.",
+              "Elicits justification rather than a bare probability value or yes/no answer.",
+              "Leaves the learner's reasoning open without giving away the assessed principle."
+            ],
+            "concerns": [],
+            "total": 10
+          }
+        },
+        "preference": "tie",
+        "reason": "The candidates are identical and both provide a focused, non-leading probe of the reasoning behind the learner's all-outcomes boundary claim.",
+        "limitation": "Single blind model review of next-question design; not independent expert validation or a learner-outcome measurement.",
+        "provider": "chatgpt",
+        "model": "gpt-6.1-sol"
+      },
+      "baselineMeetsScreen": true,
+      "enhancedMeetsScreen": true
+    },
+    {
+      "caseId": "coverage-remove-condition-understand",
+      "title": "Remove a condition — understand",
+      "level": "understand",
+      "learningType": "theoretical",
+      "expectedStrategyId": "remove-condition",
+      "attempts": [
+        {
+          "finishedAt": "2026-10-18T19:59:03.962Z",
+          "durationMs": 77033,
+          "status": "applied",
+          "reviewError": null
+        }
+      ],
+      "status": "applied",
+      "runId": "184a0960-188c-4f72-8fc4-22b25b31ce18",
+      "generatedAt": "2026-10-18T19:58:47.209Z",
+      "selectedStrategyId": "remove-condition",
+      "baseline": "I'm confused: how does your claim that the heat disappears fit with the unplugged metal still being hot?",
+      "enhanced": "When the kettle is unplugged and the current stops, what do you think happens to the energy the electricity has already given the metal?",
+      "coverageGap": null,
+      "traceFile": "cases/coverage-remove-condition-understand.json",
+      "callCount": 7,
+      "generationDurationMs": 60285,
+      "review": {
+        "version": "blind-question-review-1",
+        "mapping": {
+          "A": "enhanced",
+          "B": "baseline"
+        },
+        "questions": {
+          "enhanced": {
+            "label": "A",
+            "clarity": {
+              "score": 2,
+              "reason": "Asks one clear question about what happens to the metal's energy after electrical input stops."
+            },
+            "levelFit": {
+              "score": 2,
+              "reason": "Requests a conceptual explanation of an already discussed situation, without a new exercise or calculation."
+            },
+            "diagnosticValue": {
+              "score": 2,
+              "reason": "Directly probes whether the learner distinguishes cessation of electrical input from persistence of energy in the metal. Different accounts of what happens to that energy would reveal the unresolved understanding."
+            },
+            "grounding": {
+              "score": 2,
+              "reason": "Electrical input has supplied energy to the metal; asking its subsequent fate is scientifically sound and answerable from the situation."
+            },
+            "nonLeading": {
+              "score": 2,
+              "reason": "Identifies the energy whose fate is at issue without stating that it remains stored or explaining its subsequent transfer."
+            },
+            "strengths": [
+              "Directly targets the distinction between stopped input and the metal's continuing thermal state.",
+              "Invites an explanatory response without giving the persistence or cooling mechanism."
+            ],
+            "concerns": [],
+            "total": 10
+          },
+          "baseline": {
+            "label": "B",
+            "clarity": {
+              "score": 2,
+              "reason": "Clearly asks the learner to explain how their disappearance claim can coexist with the observation that the metal remains hot."
+            },
+            "levelFit": {
+              "score": 2,
+              "reason": "Invites a conceptual explanation connecting a claim and an observation already discussed; it requires no new task or calculation."
+            },
+            "diagnosticValue": {
+              "score": 2,
+              "reason": "Makes the learner's unresolved tension explicit and invites an account that could reveal whether they distinguish electrical input, stored energy, and thermal transfer."
+            },
+            "grounding": {
+              "score": 2,
+              "reason": "Accurately refers to the learner's claim and the supplied observation without endorsing the claim or introducing unsupported conditions."
+            },
+            "nonLeading": {
+              "score": 2,
+              "reason": "Does not supply the correction or an energy-storage explanation; referring to the learner's claim is neutral."
+            },
+            "strengths": [
+              "Uses the learner's own uncertainty as the focus.",
+              "Requests reconciliation rather than a yes/no response or terminology alone."
+            ],
+            "concerns": [],
+            "total": 10
+          }
+        },
+        "preference": "enhanced",
+        "reason": "Both are sound conceptual questions. A is preferable because it focuses directly on the fate of previously supplied energy, making it more likely to distinguish stopped electrical input from the persisting thermal state; B leaves the explanatory focus somewhat more open.",
+        "limitation": "Single blind model review of next-question design; not independent expert validation or a learner-outcome measurement.",
+        "provider": "chatgpt",
+        "model": "gpt-6.1-sol"
+      },
+      "baselineMeetsScreen": true,
+      "enhancedMeetsScreen": true
+    },
+    {
+      "caseId": "coverage-remove-condition-apply",
+      "title": "Remove a condition — apply",
+      "level": "apply",
+      "learningType": "theoretical",
+      "expectedStrategyId": "remove-condition",
+      "attempts": [],
+      "status": "interrupted"
+    },
+    {
+      "caseId": "coverage-remove-condition-analyze",
+      "title": "Remove a condition — analyze",
+      "level": "analyze",
+      "learningType": "theoretical",
+      "expectedStrategyId": "remove-condition",
+      "attempts": [],
+      "status": "interrupted"
+    }
+  ],
+  "updatedAt": "2026-10-18T19:59:03.962Z",
+  "summary": {
+    "attempted": 9,
+    "total": 51,
+    "applied": 6,
+    "fallback": 1,
+    "noQuestion": 0,
+    "errors": 0,
+    "reviewErrors": 0,
+    "reviewedApplications": 6,
+    "baselineMean": 9,
+    "enhancedMean": 9.67,
+    "baselineMeetsScreen": 6,
+    "enhancedMeetsScreen": 5,
+    "preferences": {
+      "baseline": 2,
+      "enhanced": 4,
+      "tie": 0,
+      "neither": 0
+    }
+  },
+  "screenRule": "All five dimensions >= 1, total >= 8/10, no major concern. Applied pairs only; fallbacks, no-question runs and errors excluded from quality means.",
+  "limitations": "One live run per authored strategy-level case with a blind same-model design review. Targeted candidates can abstain. This is not open-selector coverage, independent expert validation, or evidence of learning gains.",
+  "runStatus": "pilot_stopped_for_rubric_scope_review",
+  "interruptionNote": "Stopped after the boundary Analyze case exposed scope drift in generated topic rubrics. Cases lacking a final status were interrupted, not successfully evaluated."
+}

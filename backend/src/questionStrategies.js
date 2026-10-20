@@ -42,6 +42,25 @@ comparisonCases.push(...[
   fixture('ece-capacitor-energy', 'No capacitor current means no stored energy', 'Capacitor voltage, stored charge, and stored energy', 'An ideal capacitor is charged by a DC source through a resistor. What happens after it has settled?', 'The capacitor has a voltage across its terminals, and the charging current has fallen to zero.', 'Now the charged capacitor is disconnected from the source and left isolated, with no leakage. What can you say about its energy?', 'With no current flowing, it has no stored energy anymore, even though the voltage remains. Electrical energy can only exist while current flows.'),
 ].map(item => ({ ...item, group: 'ECE Indirect Test' })));
 
+// Authored coverage transcripts are independent of the illustrative questions
+// sent to the generator. Expected IDs and review guides are evaluation metadata.
+const coverageDefinitions = JSON.parse(readFileSync(new URL('../strategy-comparison-cases.json', import.meta.url), 'utf8')).cases;
+const requiredPairs = new Set(strategies.flatMap(strategy => strategy.levels.map(level => `${strategy.id}:${level}`)));
+const coveredPairs = new Set();
+for (const definition of coverageDefinitions) {
+  const pair = `${definition.expectedStrategyId}:${definition.level}`;
+  if (!requiredPairs.has(pair) || coveredPairs.has(pair) || definition.comparisonMode !== 'targeted') throw new Error(`Invalid or duplicate strategy coverage pair ${pair}.`);
+  const record = savedRubrics.cases?.[definition.id];
+  if (record?.input?.topic !== definition.topic || record.input.level !== definition.level || record.input.learningType !== definition.learningType || !Array.isArray(record.items) || !record.items.length || record.items.length > 8 || record.items.some(item => typeof item !== 'string' || !item.trim() || /[\r\n]/.test(item)) || checklistText(record.items).length > 1000) throw new Error(`Missing or stale generated rubric for comparison case ${definition.id}. Run scripts/generate-comparison-rubrics.mjs --suite coverage.`);
+  const { items, input: _input, ...rubricGeneration } = record;
+  const reviewed = definition.reviewedRubricItems;
+  if (!Array.isArray(reviewed) || !reviewed.length || reviewed.some(item => typeof item !== 'string' || !item.trim()) || checklistText(reviewed).length > 1000 || definition.rubricReview?.method !== 'authored_fixture_scope_review') throw new Error(`Missing scope review for ${definition.id}.`);
+  comparisonCases.push({ ...definition, aspects: [...reviewed], rubricGeneration: { ...rubricGeneration, generatedItems: items }, rubricReview: definition.rubricReview });
+  coveredPairs.add(pair);
+}
+if (coveredPairs.size !== requiredPairs.size) throw new Error('The strategy coverage suite must cover every supported strategy-level pair.');
+if (new Set(comparisonCases.map(item => item.id)).size !== comparisonCases.length) throw new Error('Comparison case IDs must be unique.');
+
 // The small catalog is retrieved by review status and level compatibility.
 // Topic-word overlap is not evidence that a diagnostic strategy applies.
 export function retrieveStrategies(_state, input, catalog = strategies) {

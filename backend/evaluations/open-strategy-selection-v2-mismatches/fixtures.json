@@ -1,0 +1,1042 @@
+[
+  {
+    "id": "coverage-controlled-comparison-understand",
+    "title": "Controlled comparison — understand",
+    "group": "Strategy coverage · Understand",
+    "topic": "Interpreting a controlled salt-dissolving comparison",
+    "level": "understand",
+    "learningType": "experimental",
+    "expectedStrategyId": "controlled-comparison",
+    "comparisonMode": "targeted",
+    "messages": [
+      {
+        "role": "assistant",
+        "content": "In our simulated comparison, equal salt masses are stirred at the same rate in equal volumes of water at two temperatures. What does this comparison tell you?"
+      },
+      {
+        "role": "user",
+        "content": "The salt dissolves sooner in the warmer water."
+      },
+      {
+        "role": "assistant",
+        "content": "Which part of your account are you least certain about?"
+      },
+      {
+        "role": "user",
+        "content": "I think it could be because the warm-water cup had more water, even though the volumes were matched."
+      }
+    ],
+    "reviewGuide": {
+      "target": "Interpret the varied temperature and fixed volume in the existing comparison.",
+      "risks": [
+        "Do not introduce a new experiment or numerical prediction at Understand.",
+        "Do not attribute a difference to a condition explicitly held fixed."
+      ],
+      "scope": "One next-question design review; no learner response or learning-effect claim."
+    },
+    "reviewedRubricItems": [
+      "Explains why matched water volumes cannot account for the observed dissolving-time difference.",
+      "Explains the role of varying water temperature while holding the other stated conditions fixed."
+    ],
+    "rubricReview": {
+      "method": "authored_fixture_scope_review",
+      "reviewedAt": "2026-10-18T20:00:03.310Z",
+      "reason": "Narrowed the generated topic rubric to the supplied fixed task and its specific evidence target. This is benchmark-author review, not independent expert validation."
+    },
+    "aspects": [
+      "Explains why matched water volumes cannot account for the observed dissolving-time difference.",
+      "Explains the role of varying water temperature while holding the other stated conditions fixed."
+    ],
+    "rubricGeneration": {
+      "generatedAt": "2026-10-18T19:47:21.949Z",
+      "provider": "chatgpt",
+      "model": "gpt-6.1-sol",
+      "promptVersion": "1ed6b362365e1015fd4ce68ea57a48f664401c3ceee0009263c8d629323a1cde",
+      "pipeline": "generateLevelRubric",
+      "endpoint": "/api/developer/rubric",
+      "generatedItems": [
+        "Explains that a controlled comparison tests how one changed factor affects salt's dissolving time.",
+        "Explains why salt mass, water volume, and stirring are kept constant when testing water temperature.",
+        "Explains why timing ends when no visible salt crystals remain.",
+        "Explains that dissolving time measures how long a fixed amount of salt takes to dissolve, not how much can dissolve."
+      ]
+    }
+  },
+  {
+    "id": "coverage-boundary-case-understand",
+    "title": "Boundary case — understand",
+    "group": "Strategy coverage · Understand",
+    "topic": "Interpreting zero travel distance in a work claim",
+    "level": "understand",
+    "learningType": "theoretical",
+    "expectedStrategyId": "boundary-case",
+    "comparisonMode": "targeted",
+    "messages": [
+      {
+        "role": "assistant",
+        "content": "You described work by a constant force on a crate that remains against an immovable wall. How does your explanation handle its zero travel distance?"
+      },
+      {
+        "role": "user",
+        "content": "The person is pushing and getting tired."
+      },
+      {
+        "role": "assistant",
+        "content": "Which part of your account are you least certain about?"
+      },
+      {
+        "role": "user",
+        "content": "Because the push is large, mechanical work on the stationary crate is large even though it does not move."
+      }
+    ],
+    "reviewGuide": {
+      "target": "Interpret the zero-displacement limit for work on the crate.",
+      "risks": [
+        "Keep human effort distinct from work on the crate.",
+        "No new numerical work calculation."
+      ],
+      "scope": "One next-question design review; no learner response or learning-effect claim."
+    },
+    "reviewedRubricItems": [
+      "Explains how zero displacement affects mechanical work on the stationary crate.",
+      "Distinguishes effort by the person from mechanical work on the specified crate."
+    ],
+    "rubricReview": {
+      "method": "authored_fixture_scope_review",
+      "reviewedAt": "2026-10-18T20:00:03.310Z",
+      "reason": "Narrowed the generated topic rubric to the supplied fixed task and its specific evidence target. This is benchmark-author review, not independent expert validation."
+    },
+    "aspects": [
+      "Explains how zero displacement affects mechanical work on the stationary crate.",
+      "Distinguishes effort by the person from mechanical work on the specified crate."
+    ],
+    "rubricGeneration": {
+      "generatedAt": "2026-10-18T19:47:26.786Z",
+      "provider": "chatgpt",
+      "model": "gpt-6.1-sol",
+      "promptVersion": "1ed6b362365e1015fd4ce68ea57a48f664401c3ceee0009263c8d629323a1cde",
+      "pipeline": "generateLevelRubric",
+      "endpoint": "/api/developer/rubric",
+      "generatedItems": [
+        "Explains why a force does no mechanical work on an object that does not move.",
+        "Explains why holding a stationary load can require bodily effort despite zero mechanical work on the load.",
+        "Explains why zero net displacement on a round trip does not by itself establish zero work."
+      ]
+    }
+  },
+  {
+    "id": "coverage-boundary-case-apply",
+    "title": "Boundary case — apply",
+    "group": "Strategy coverage · Apply",
+    "topic": "Applying resistance at zero potential difference",
+    "level": "apply",
+    "learningType": "quantitative",
+    "expectedStrategyId": "boundary-case",
+    "comparisonMode": "targeted",
+    "messages": [
+      {
+        "role": "assistant",
+        "content": "An ideal 10-ohm resistor has zero potential difference across it. Use the familiar resistor relationship to find its current."
+      },
+      {
+        "role": "user",
+        "content": "I use the relation between voltage, resistance, and current."
+      },
+      {
+        "role": "assistant",
+        "content": "Which part of your account are you least certain about?"
+      },
+      {
+        "role": "user",
+        "content": "I would divide resistance by voltage, but dividing by zero makes the current infinite."
+      }
+    ],
+    "reviewGuide": {
+      "target": "Apply the resistor relationship at the specified zero-voltage limit.",
+      "risks": [
+        "Do not supply the correct formula or result.",
+        "Keep the resistor finite and ideal."
+      ],
+      "scope": "One next-question design review; no learner response or learning-effect claim."
+    },
+    "reviewedRubricItems": [
+      "Uses the appropriate resistor relationship to calculate current for the stated finite resistance at zero voltage.",
+      "Explains why the chosen operation is valid at the stated zero-voltage limit."
+    ],
+    "rubricReview": {
+      "method": "authored_fixture_scope_review",
+      "reviewedAt": "2026-10-18T20:00:03.310Z",
+      "reason": "Narrowed the generated topic rubric to the supplied fixed task and its specific evidence target. This is benchmark-author review, not independent expert validation."
+    },
+    "aspects": [
+      "Uses the appropriate resistor relationship to calculate current for the stated finite resistance at zero voltage.",
+      "Explains why the chosen operation is valid at the stated zero-voltage limit."
+    ],
+    "rubricGeneration": {
+      "generatedAt": "2026-10-18T19:47:24.784Z",
+      "provider": "chatgpt",
+      "model": "gpt-6.1-sol",
+      "promptVersion": "1ed6b362365e1015fd4ce68ea57a48f664401c3ceee0009263c8d629323a1cde",
+      "pipeline": "generateLevelRubric",
+      "endpoint": "/api/developer/rubric",
+      "generatedItems": [
+        "Selects Ohm’s law to find current through a finite, nonzero resistor at zero potential difference.",
+        "Substitutes V = 0 and the given resistance into I = V/R.",
+        "Calculates the current as 0 A for the given finite, nonzero resistance.",
+        "Interprets zero current at zero potential difference as compatible with a nonzero resistance."
+      ]
+    }
+  },
+  {
+    "id": "coverage-remove-condition-analyze",
+    "title": "Remove a condition — analyze",
+    "group": "Strategy coverage · Analyze",
+    "topic": "Analyzing motion after propulsion stops",
+    "level": "analyze",
+    "learningType": "theoretical",
+    "expectedStrategyId": "remove-condition",
+    "comparisonMode": "targeted",
+    "messages": [
+      {
+        "role": "assistant",
+        "content": "A spacecraft coasts far from significant external forces after its engine shuts down. A report says removing thrust removes its motion. Analyze the reasoning."
+      },
+      {
+        "role": "user",
+        "content": "The engine accelerates it while firing."
+      },
+      {
+        "role": "assistant",
+        "content": "Which part of your account are you least certain about?"
+      },
+      {
+        "role": "user",
+        "content": "Its speed must steadily decrease after shutdown because continuing speed requires continuing thrust."
+      }
+    ],
+    "reviewGuide": {
+      "target": "Separate the initiating acceleration from the state after thrust removal.",
+      "risks": [
+        "No atmospheric drag may be silently introduced."
+      ],
+      "scope": "One next-question design review; no learner response or learning-effect claim."
+    },
+    "reviewedRubricItems": [
+      "Analyzes whether removing thrust alone implies decreasing velocity in the stated force-free spacecraft situation.",
+      "Distinguishes the role of thrust in changing velocity from the continuing motion after shutdown."
+    ],
+    "rubricReview": {
+      "method": "authored_fixture_scope_review",
+      "reviewedAt": "2026-10-18T20:00:03.310Z",
+      "reason": "Narrowed the generated topic rubric to the supplied fixed task and its specific evidence target. This is benchmark-author review, not independent expert validation."
+    },
+    "aspects": [
+      "Analyzes whether removing thrust alone implies decreasing velocity in the stated force-free spacecraft situation.",
+      "Distinguishes the role of thrust in changing velocity from the continuing motion after shutdown."
+    ],
+    "rubricGeneration": {
+      "generatedAt": "2026-10-18T19:47:34.943Z",
+      "provider": "chatgpt",
+      "model": "gpt-6.1-sol",
+      "promptVersion": "1ed6b362365e1015fd4ce68ea57a48f664401c3ceee0009263c8d629323a1cde",
+      "pipeline": "generateLevelRubric",
+      "endpoint": "/api/developer/rubric",
+      "generatedItems": [
+        "Relates net force after propulsion stops to changes in velocity using Newton’s second law.",
+        "Explains why an object maintains constant velocity after propulsion stops if no net force acts.",
+        "Explains how friction or drag causes slowing after propulsion stops.",
+        "Predicts how gravity changes an object's velocity after propulsion stops in a given scenario.",
+        "Explains why stopping propulsion does not necessarily stop motion, correcting the force-keeps-motion misconception."
+      ]
+    }
+  },
+  {
+    "id": "coverage-quantity-versus-change-understand",
+    "title": "Separate a quantity from its change — understand",
+    "group": "Strategy coverage · Understand",
+    "topic": "Separating reservoir level from change in level",
+    "level": "understand",
+    "learningType": "theoretical",
+    "expectedStrategyId": "quantity-versus-change",
+    "comparisonMode": "targeted",
+    "messages": [
+      {
+        "role": "assistant",
+        "content": "You described a reservoir with a high water level that is staying constant because inflow matches outflow. What do its level and change in level mean?"
+      },
+      {
+        "role": "user",
+        "content": "It contains a lot of water."
+      },
+      {
+        "role": "assistant",
+        "content": "Which part of your account are you least certain about?"
+      },
+      {
+        "role": "user",
+        "content": "A high level means it must be filling rapidly, even though I also said the level stays constant."
+      }
+    ],
+    "reviewGuide": {
+      "target": "Distinguish a stored quantity from its net rate of change.",
+      "risks": [
+        "Use the existing account, not a new tank calculation."
+      ],
+      "scope": "One next-question design review; no learner response or learning-effect claim."
+    },
+    "reviewedRubricItems": [
+      "Distinguishes the current reservoir level from its net rate of change.",
+      "Explains how matched inflow and outflow can coexist with a high constant level."
+    ],
+    "rubricReview": {
+      "method": "authored_fixture_scope_review",
+      "reviewedAt": "2026-10-18T20:00:03.310Z",
+      "reason": "Narrowed the generated topic rubric to the supplied fixed task and its specific evidence target. This is benchmark-author review, not independent expert validation."
+    },
+    "aspects": [
+      "Distinguishes the current reservoir level from its net rate of change.",
+      "Explains how matched inflow and outflow can coexist with a high constant level."
+    ],
+    "rubricGeneration": {
+      "generatedAt": "2026-10-18T19:47:37.032Z",
+      "provider": "chatgpt",
+      "model": "gpt-6.1-sol",
+      "promptVersion": "1ed6b362365e1015fd4ce68ea57a48f664401c3ceee0009263c8d629323a1cde",
+      "pipeline": "generateLevelRubric",
+      "endpoint": "/api/developer/rubric",
+      "generatedItems": [
+        "Explains the difference between a reservoir's current level and how much its level changes over an interval.",
+        "Explains how the balance of inflow and outflow determines whether the reservoir level rises, falls, or stays steady.",
+        "Explains why a high reservoir level can be falling and a low reservoir level can be rising."
+      ]
+    }
+  },
+  {
+    "id": "coverage-quantity-versus-change-analyze",
+    "title": "Separate a quantity from its change — analyze",
+    "group": "Strategy coverage · Analyze",
+    "topic": "Analyzing constant bank balance with ongoing flows",
+    "level": "analyze",
+    "learningType": "theoretical",
+    "expectedStrategyId": "quantity-versus-change",
+    "comparisonMode": "targeted",
+    "messages": [
+      {
+        "role": "assistant",
+        "content": "A bank balance stays constant over a month while deposits and withdrawals both occur. A report says a constant balance proves no transactions occurred. Analyze that claim."
+      },
+      {
+        "role": "user",
+        "content": "The starting and ending balances match."
+      },
+      {
+        "role": "assistant",
+        "content": "Which part of your account are you least certain about?"
+      },
+      {
+        "role": "user",
+        "content": "Matching balances prove the account had no activity; separate incoming and outgoing amounts cannot matter."
+      }
+    ],
+    "reviewGuide": {
+      "target": "Distinguish net balance change from gross transactions.",
+      "risks": [
+        "Do not conflate a net change with each constituent flow."
+      ],
+      "scope": "One next-question design review; no learner response or learning-effect claim."
+    },
+    "reviewedRubricItems": [
+      "Analyzes why equal starting and ending balances do not establish an absence of transactions.",
+      "Relates net balance change to deposits and withdrawals rather than treating each flow as zero."
+    ],
+    "rubricReview": {
+      "method": "authored_fixture_scope_review",
+      "reviewedAt": "2026-10-18T20:00:03.310Z",
+      "reason": "Narrowed the generated topic rubric to the supplied fixed task and its specific evidence target. This is benchmark-author review, not independent expert validation."
+    },
+    "aspects": [
+      "Analyzes why equal starting and ending balances do not establish an absence of transactions.",
+      "Relates net balance change to deposits and withdrawals rather than treating each flow as zero."
+    ],
+    "rubricGeneration": {
+      "generatedAt": "2026-10-18T19:47:39.961Z",
+      "provider": "chatgpt",
+      "model": "gpt-6.1-sol",
+      "promptVersion": "1ed6b362365e1015fd4ce68ea57a48f664401c3ceee0009263c8d629323a1cde",
+      "pipeline": "generateLevelRubric",
+      "endpoint": "/api/developer/rubric",
+      "generatedItems": [
+        "Relates the bank balance to cumulative deposits and withdrawals in a given scenario.",
+        "Explains how equal total inflows and outflows produce no net balance change over an interval.",
+        "Predicts how the balance changes if withdrawals increase while deposits stay fixed.",
+        "Explains why an unchanged balance between two dates does not imply no transactions occurred."
+      ]
+    }
+  },
+  {
+    "id": "coverage-reconcile-claims-apply",
+    "title": "Reconcile specific claims — apply",
+    "group": "Strategy coverage · Apply",
+    "topic": "Checking two claims about resistance and current",
+    "level": "apply",
+    "learningType": "quantitative",
+    "expectedStrategyId": "reconcile-claims",
+    "comparisonMode": "targeted",
+    "messages": [
+      {
+        "role": "assistant",
+        "content": "You claim a resistor has 6 V across it and carries 3 A, while also claiming its resistance is 4 ohms. Use the familiar resistor relationship to check your claims."
+      },
+      {
+        "role": "user",
+        "content": "I claim that this resistor has 6 V across it and carries 3 A. I also claim that its resistance is 4 ohms."
+      },
+      {
+        "role": "assistant",
+        "content": "Which part of your account are you least certain about?"
+      },
+      {
+        "role": "user",
+        "content": "My claims of 6 V, 3 A, and 4 ohms all agree; I do not need to check one against the others."
+      }
+    ],
+    "reviewGuide": {
+      "target": "Use a relationship to check the consistency of the stated values.",
+      "risks": [
+        "Do not supply the correct resistance or formula."
+      ],
+      "scope": "One next-question design review; no learner response or learning-effect claim."
+    },
+    "reviewedRubricItems": [
+      "Uses the voltage-current-resistance relationship to test the consistency of the three supplied values."
+    ],
+    "rubricReview": {
+      "method": "authored_fixture_scope_review",
+      "reviewedAt": "2026-10-18T20:00:03.310Z",
+      "reason": "Narrowed the generated topic rubric to the supplied fixed task and its specific evidence target. This is benchmark-author review, not independent expert validation.",
+      "revisionReason": "Repaired the fixture so both numerical claims are explicitly made by the student, not merely attributed by the assistant."
+    },
+    "aspects": [
+      "Uses the voltage-current-resistance relationship to test the consistency of the three supplied values."
+    ],
+    "rubricGeneration": {
+      "generatedAt": "2026-10-18T19:47:44.976Z",
+      "provider": "chatgpt",
+      "model": "gpt-6.1-sol",
+      "promptVersion": "1ed6b362365e1015fd4ce68ea57a48f664401c3ceee0009263c8d629323a1cde",
+      "pipeline": "generateLevelRubric",
+      "endpoint": "/api/developer/rubric",
+      "generatedItems": [
+        "Select Ohm’s law, V = IR, to test each claim about resistance and current.",
+        "Set up an equation for each claim using the stated circuit conditions.",
+        "Calculate the current or resistance needed to check each claim, with correct units.",
+        "Decide whether each claim is supported by the calculated results."
+      ]
+    }
+  },
+  {
+    "id": "coverage-representation-change-understand",
+    "title": "Change representation — understand",
+    "group": "Strategy coverage · Understand",
+    "topic": "Reading an existing distance table and graph",
+    "level": "understand",
+    "learningType": "theoretical",
+    "expectedStrategyId": "representation-change",
+    "comparisonMode": "targeted",
+    "messages": [
+      {
+        "role": "assistant",
+        "content": "The table and graph already discussed describe the same trip: time 0, 1, 2 seconds and distance from the start 3, 3, 3 meters. The graph is horizontal at 3 meters. Explain the match."
+      },
+      {
+        "role": "user",
+        "content": "The graph looks flat."
+      },
+      {
+        "role": "assistant",
+        "content": "Which part of your account are you least certain about?"
+      },
+      {
+        "role": "user",
+        "content": "A flat line means the object has no distance from the start; the three-meter table entries must mean movement each second."
+      }
+    ],
+    "reviewGuide": {
+      "target": "Relate graph height and repeated table values without changing the situation.",
+      "risks": [
+        "Keep distance and time labels explicit.",
+        "No new graph or calculation at Understand."
+      ],
+      "scope": "One next-question design review; no learner response or learning-effect claim."
+    },
+    "reviewedRubricItems": [
+      "Connects the repeated three-meter table values to the height of the existing horizontal graph.",
+      "Distinguishes constant distance from zero distance without introducing a new trip."
+    ],
+    "rubricReview": {
+      "method": "authored_fixture_scope_review",
+      "reviewedAt": "2026-10-18T20:00:03.310Z",
+      "reason": "Narrowed the generated topic rubric to the supplied fixed task and its specific evidence target. This is benchmark-author review, not independent expert validation."
+    },
+    "aspects": [
+      "Connects the repeated three-meter table values to the height of the existing horizontal graph.",
+      "Distinguishes constant distance from zero distance without introducing a new trip."
+    ],
+    "rubricGeneration": {
+      "generatedAt": "2026-10-18T19:47:51.511Z",
+      "provider": "chatgpt",
+      "model": "gpt-6.1-sol",
+      "promptVersion": "1ed6b362365e1015fd4ce68ea57a48f664401c3ceee0009263c8d629323a1cde",
+      "pipeline": "generateLevelRubric",
+      "endpoint": "/api/developer/rubric",
+      "generatedItems": [
+        "Explains how table headings, axis labels, and units give meaning to distance values.",
+        "Explains how a distance recorded in the table corresponds to a point on the graph.",
+        "Explains how the graph makes patterns in the table's distance values easier to see."
+      ]
+    }
+  },
+  {
+    "id": "coverage-representation-change-analyze",
+    "title": "Change representation — analyze",
+    "group": "Strategy coverage · Analyze",
+    "topic": "Analyzing equivalent circuit drawings",
+    "level": "analyze",
+    "learningType": "theoretical",
+    "expectedStrategyId": "representation-change",
+    "comparisonMode": "targeted",
+    "messages": [
+      {
+        "role": "assistant",
+        "content": "Two circuit drawings show the same two resistors attached across the same two labeled nodes, but one drawing places them side by side and the other places them above each other. Analyze the claim that their connections differ."
+      },
+      {
+        "role": "user",
+        "content": "The drawings look different."
+      },
+      {
+        "role": "assistant",
+        "content": "Which part of your account are you least certain about?"
+      },
+      {
+        "role": "user",
+        "content": "The vertical drawing must put them in series because one resistor is visually above the other, regardless of the node labels."
+      }
+    ],
+    "reviewGuide": {
+      "target": "Analyze connectivity invariant under a drawing rearrangement.",
+      "risks": [
+        "Do not change actual circuit topology or require a numeric voltage result."
+      ],
+      "scope": "One next-question design review; no learner response or learning-effect claim."
+    },
+    "reviewedRubricItems": [
+      "Analyzes circuit equivalence using shared labeled nodes rather than visual placement of components."
+    ],
+    "rubricReview": {
+      "method": "authored_fixture_scope_review",
+      "reviewedAt": "2026-10-18T20:00:03.310Z",
+      "reason": "Narrowed the generated topic rubric to the supplied fixed task and its specific evidence target. This is benchmark-author review, not independent expert validation."
+    },
+    "aspects": [
+      "Analyzes circuit equivalence using shared labeled nodes rather than visual placement of components."
+    ],
+    "rubricGeneration": {
+      "generatedAt": "2026-10-18T19:47:52.208Z",
+      "provider": "chatgpt",
+      "model": "gpt-6.1-sol",
+      "promptVersion": "1ed6b362365e1015fd4ce68ea57a48f664401c3ceee0009263c8d629323a1cde",
+      "pipeline": "generateLevelRubric",
+      "endpoint": "/api/developer/rubric",
+      "generatedItems": [
+        "Explain how shared nodes determine series and parallel connections in differently drawn circuits.",
+        "Identify node connections that make two circuit drawings electrically equivalent or different.",
+        "Explain how moving a wire to a different node changes current paths in a given circuit.",
+        "Explain why matching component positions or shapes does not establish circuit equivalence."
+      ]
+    }
+  },
+  {
+    "id": "coverage-answer-reason-consistency-apply",
+    "title": "Check the reason behind an answer — apply",
+    "group": "Strategy coverage · Apply",
+    "topic": "Checking the procedure behind an arithmetic answer",
+    "level": "apply",
+    "learningType": "quantitative",
+    "expectedStrategyId": "answer-reason-consistency",
+    "comparisonMode": "targeted",
+    "messages": [
+      {
+        "role": "assistant",
+        "content": "For readings 4, 6, and 8, use an arithmetic mean and explain the operation you used."
+      },
+      {
+        "role": "user",
+        "content": "My answer is 6."
+      },
+      {
+        "role": "assistant",
+        "content": "Which part of your account are you least certain about?"
+      },
+      {
+        "role": "user",
+        "content": "I got 6 by picking the middle entry; I would use that same procedure for any list when asked for its mean."
+      }
+    ],
+    "reviewGuide": {
+      "target": "Elicit actual mean procedure behind a coincidentally correct answer.",
+      "risks": [
+        "Do not affirm the result as proof of method mastery."
+      ],
+      "scope": "One next-question design review; no learner response or learning-effect claim."
+    },
+    "reviewedRubricItems": [
+      "Uses an arithmetic-mean procedure on the supplied readings rather than assuming that selecting the middle entry is a general mean procedure."
+    ],
+    "rubricReview": {
+      "method": "authored_fixture_scope_review",
+      "reviewedAt": "2026-10-18T20:00:03.310Z",
+      "reason": "Narrowed the generated topic rubric to the supplied fixed task and its specific evidence target. This is benchmark-author review, not independent expert validation."
+    },
+    "aspects": [
+      "Uses an arithmetic-mean procedure on the supplied readings rather than assuming that selecting the middle entry is a general mean procedure."
+    ],
+    "rubricGeneration": {
+      "generatedAt": "2026-10-18T19:48:05.982Z",
+      "provider": "chatgpt",
+      "model": "gpt-6.1-sol",
+      "promptVersion": "1ed6b362365e1015fd4ce68ea57a48f664401c3ceee0009263c8d629323a1cde",
+      "pipeline": "generateLevelRubric",
+      "endpoint": "/api/developer/rubric",
+      "generatedItems": [
+        "Selects inverse operations, independent recalculation, or estimation to check an arithmetic answer.",
+        "Sets up the chosen check using the original numbers and appropriate operations.",
+        "Correctly performs the arithmetic required by the check.",
+        "States whether the check supports the answer's accuracy or only its approximate size."
+      ]
+    }
+  },
+  {
+    "id": "coverage-conservation-accounting-understand",
+    "title": "Account for transfers and conservation — understand",
+    "group": "Strategy coverage · Understand",
+    "topic": "Accounting for water in drying clothes",
+    "level": "understand",
+    "learningType": "theoretical",
+    "expectedStrategyId": "conservation-accounting",
+    "comparisonMode": "targeted",
+    "messages": [
+      {
+        "role": "assistant",
+        "content": "You said water disappears from drying clothes in a closed room; your stated system includes the clothes and all the room air over that drying interval. Explain where the water goes."
+      },
+      {
+        "role": "user",
+        "content": "The clothes contain less liquid water afterward."
+      },
+      {
+        "role": "assistant",
+        "content": "Which part of your account are you least certain about?"
+      },
+      {
+        "role": "user",
+        "content": "The water no longer exists anywhere in that closed room once the clothes dry."
+      }
+    ],
+    "reviewGuide": {
+      "target": "Track water across a state/location change within an explicit system.",
+      "risks": [
+        "Do not equate evaporation with destruction or introduce an unmentioned open window."
+      ],
+      "scope": "One next-question design review; no learner response or learning-effect claim."
+    },
+    "reviewedRubricItems": [
+      "Accounts for the water lost by the clothes within the explicitly closed clothes-plus-room-air system.",
+      "Distinguishes a change of location or state from destruction of water."
+    ],
+    "rubricReview": {
+      "method": "authored_fixture_scope_review",
+      "reviewedAt": "2026-10-18T20:00:03.310Z",
+      "reason": "Narrowed the generated topic rubric to the supplied fixed task and its specific evidence target. This is benchmark-author review, not independent expert validation."
+    },
+    "aspects": [
+      "Accounts for the water lost by the clothes within the explicitly closed clothes-plus-room-air system.",
+      "Distinguishes a change of location or state from destruction of water."
+    ],
+    "rubricGeneration": {
+      "generatedAt": "2026-10-18T19:48:12.288Z",
+      "provider": "chatgpt",
+      "model": "gpt-6.1-sol",
+      "promptVersion": "1ed6b362365e1015fd4ce68ea57a48f664401c3ceee0009263c8d629323a1cde",
+      "pipeline": "generateLevelRubric",
+      "endpoint": "/api/developer/rubric",
+      "generatedItems": [
+        "Explains how liquid water in wet clothes evaporates into water vapor in the surrounding air.",
+        "Explains why clothes losing water does not mean that water has been destroyed.",
+        "Explains how the decrease in clothes' mass relates to the mass of water transferred to the surroundings.",
+        "Explains why tracking water in both clothes and surroundings is needed to account for all the water."
+      ]
+    }
+  },
+  {
+    "id": "coverage-classify-by-features-understand",
+    "title": "Classify using defining features — understand",
+    "group": "Strategy coverage · Understand",
+    "topic": "Classifying a chemical change by relevant features",
+    "level": "understand",
+    "learningType": "theoretical",
+    "expectedStrategyId": "classify-by-features",
+    "comparisonMode": "targeted",
+    "messages": [
+      {
+        "role": "assistant",
+        "content": "You called melting ice a chemical reaction because its appearance changed. We already discussed that the substance remains water. Explain your classification."
+      },
+      {
+        "role": "user",
+        "content": "Its shape and appearance change."
+      },
+      {
+        "role": "assistant",
+        "content": "Which part of your account are you least certain about?"
+      },
+      {
+        "role": "user",
+        "content": "An appearance change is enough to call it a chemical reaction even if the substance is still water."
+      }
+    ],
+    "reviewGuide": {
+      "target": "Probe which defining feature distinguishes chemical from physical change.",
+      "risks": [
+        "Do not give the correct category or definition."
+      ],
+      "scope": "One next-question design review; no learner response or learning-effect claim."
+    },
+    "reviewedRubricItems": [
+      "Explains whether appearance change alone justifies classifying melting water as a chemical reaction."
+    ],
+    "rubricReview": {
+      "method": "authored_fixture_scope_review",
+      "reviewedAt": "2026-10-18T20:00:03.310Z",
+      "reason": "Narrowed the generated topic rubric to the supplied fixed task and its specific evidence target. This is benchmark-author review, not independent expert validation."
+    },
+    "aspects": [
+      "Explains whether appearance change alone justifies classifying melting water as a chemical reaction."
+    ],
+    "rubricGeneration": {
+      "generatedAt": "2026-10-18T19:48:18.627Z",
+      "provider": "chatgpt",
+      "model": "gpt-6.1-sol",
+      "promptVersion": "1ed6b362365e1015fd4ce68ea57a48f664401c3ceee0009263c8d629323a1cde",
+      "pipeline": "generateLevelRubric",
+      "endpoint": "/api/developer/rubric",
+      "generatedItems": [
+        "Explains why forming new substances distinguishes a chemical change from a physical change.",
+        "Explains why color change, gas formation, or temperature change alone cannot prove a chemical change.",
+        "Explains how reactant and product patterns distinguish synthesis, decomposition, and replacement reactions.",
+        "Explains how classifying reactions helps reveal shared patterns despite differences in the substances involved."
+      ]
+    }
+  },
+  {
+    "id": "coverage-classify-by-features-analyze",
+    "title": "Classify using defining features — analyze",
+    "group": "Strategy coverage · Analyze",
+    "topic": "Analyzing an invalid grouping of functions",
+    "level": "analyze",
+    "learningType": "theoretical",
+    "expectedStrategyId": "classify-by-features",
+    "comparisonMode": "targeted",
+    "messages": [
+      {
+        "role": "assistant",
+        "content": "A proposed grouping calls every function with a smooth-looking graph linear, including curved graphs with changing slope. Analyze the grouping criterion."
+      },
+      {
+        "role": "user",
+        "content": "All these graphs look smooth."
+      },
+      {
+        "role": "assistant",
+        "content": "Which part of your account are you least certain about?"
+      },
+      {
+        "role": "user",
+        "content": "Smooth appearance establishes linearity; constant slope and additivity cannot matter."
+      }
+    ],
+    "reviewGuide": {
+      "target": "Examine whether the grouping feature matches the defining concept.",
+      "risks": [
+        "Do not merely request the word linear or draw a new example."
+      ],
+      "scope": "One next-question design review; no learner response or learning-effect claim."
+    },
+    "reviewedRubricItems": [
+      "Analyzes whether smooth visual appearance is a valid defining feature for the proposed grouping of linear functions."
+    ],
+    "rubricReview": {
+      "method": "authored_fixture_scope_review",
+      "reviewedAt": "2026-10-18T20:00:03.310Z",
+      "reason": "Narrowed the generated topic rubric to the supplied fixed task and its specific evidence target. This is benchmark-author review, not independent expert validation."
+    },
+    "aspects": [
+      "Analyzes whether smooth visual appearance is a valid defining feature for the proposed grouping of linear functions."
+    ],
+    "rubricGeneration": {
+      "generatedAt": "2026-10-18T19:48:24.484Z",
+      "provider": "chatgpt",
+      "model": "gpt-6.1-sol",
+      "promptVersion": "1ed6b362365e1015fd4ce68ea57a48f664401c3ceee0009263c8d629323a1cde",
+      "pipeline": "generateLevelRubric",
+      "endpoint": "/api/developer/rubric",
+      "generatedItems": [
+        "Explains how domains and input-output rules affect membership in a proposed group of functions.",
+        "Identifies the defining property violated by a function in an invalid grouping.",
+        "Explains how changing a function's domain or rule would affect the validity of its placement.",
+        "Explains why similar-looking formulas need not satisfy the same grouping criterion."
+      ]
+    }
+  },
+  {
+    "id": "coverage-scale-level-distinction-understand",
+    "title": "Separate levels of organization — understand",
+    "group": "Strategy coverage · Understand",
+    "topic": "Interpreting an average from a group",
+    "level": "understand",
+    "learningType": "theoretical",
+    "expectedStrategyId": "scale-level-distinction",
+    "comparisonMode": "targeted",
+    "messages": [
+      {
+        "role": "assistant",
+        "content": "You said the mean height of a group is 170 cm, so every member is exactly 170 cm tall. Explain what the mean refers to."
+      },
+      {
+        "role": "user",
+        "content": "The group has one reported mean."
+      },
+      {
+        "role": "assistant",
+        "content": "Which part of your account are you least certain about?"
+      },
+      {
+        "role": "user",
+        "content": "That group number must be the height of each person, not a summary across differing people."
+      }
+    ],
+    "reviewGuide": {
+      "target": "Distinguish an aggregate summary from every individual value.",
+      "risks": [
+        "Do not turn it into a mean calculation at Understand."
+      ],
+      "scope": "One next-question design review; no learner response or learning-effect claim."
+    },
+    "reviewedRubricItems": [
+      "Explains why a group mean need not be the value for every member."
+    ],
+    "rubricReview": {
+      "method": "authored_fixture_scope_review",
+      "reviewedAt": "2026-10-18T20:00:03.310Z",
+      "reason": "Narrowed the generated topic rubric to the supplied fixed task and its specific evidence target. This is benchmark-author review, not independent expert validation."
+    },
+    "aspects": [
+      "Explains why a group mean need not be the value for every member."
+    ],
+    "rubricGeneration": {
+      "generatedAt": "2026-10-18T19:48:31.479Z",
+      "provider": "chatgpt",
+      "model": "gpt-6.1-sol",
+      "promptVersion": "1ed6b362365e1015fd4ce68ea57a48f664401c3ceee0009263c8d629323a1cde",
+      "pipeline": "generateLevelRubric",
+      "endpoint": "/api/developer/rubric",
+      "generatedItems": [
+        "Explains the mean as the amount each member would have if the group's total were shared equally.",
+        "Explains how an average summarizes a group without describing every member.",
+        "Explains why a group's average need not equal any individual member's value.",
+        "Explains how groups with the same average can differ in how spread out their values are."
+      ]
+    }
+  },
+  {
+    "id": "coverage-method-applicability-understand",
+    "title": "Match a method to its conditions — understand",
+    "group": "Strategy coverage · Understand",
+    "topic": "Explaining an assumption behind an average-speed shortcut",
+    "level": "understand",
+    "learningType": "theoretical",
+    "expectedStrategyId": "method-applicability",
+    "comparisonMode": "targeted",
+    "messages": [
+      {
+        "role": "assistant",
+        "content": "You said the arithmetic mean of two speeds always gives the average speed for a trip. We discussed that segment durations can differ. Explain when your shortcut is appropriate."
+      },
+      {
+        "role": "user",
+        "content": "The trip has two speed segments."
+      },
+      {
+        "role": "assistant",
+        "content": "Which part of your account are you least certain about?"
+      },
+      {
+        "role": "user",
+        "content": "The two speeds can always be weighted equally, even when the time spent at each speed differs."
+      }
+    ],
+    "reviewGuide": {
+      "target": "Probe the duration condition behind the shortcut without solving a new trip.",
+      "risks": [
+        "Do not provide the weighting formula or invent numerical givens."
+      ],
+      "scope": "One next-question design review; no learner response or learning-effect claim."
+    },
+    "reviewedRubricItems": [
+      "Explains the duration condition under which an unweighted mean of two speeds gives trip average speed."
+    ],
+    "rubricReview": {
+      "method": "authored_fixture_scope_review",
+      "reviewedAt": "2026-10-18T20:00:03.310Z",
+      "reason": "Narrowed the generated topic rubric to the supplied fixed task and its specific evidence target. This is benchmark-author review, not independent expert validation."
+    },
+    "aspects": [
+      "Explains the duration condition under which an unweighted mean of two speeds gives trip average speed."
+    ],
+    "rubricGeneration": {
+      "generatedAt": "2026-10-18T19:53:26.849Z",
+      "provider": "chatgpt",
+      "model": "gpt-6.1-sol",
+      "promptVersion": "1ed6b362365e1015fd4ce68ea57a48f664401c3ceee0009263c8d629323a1cde",
+      "pipeline": "generateLevelRubric",
+      "endpoint": "/api/developer/rubric",
+      "generatedItems": [
+        "Explains average speed as total distance divided by total elapsed time.",
+        "Explains why the arithmetic mean of two speeds gives average speed when travel times are equal.",
+        "Explains why checking the equal-time assumption prevents incorrect use of the arithmetic-mean shortcut.",
+        "Explains why equal distances at different speeds do not imply equal travel times."
+      ]
+    }
+  },
+  {
+    "id": "coverage-scope-and-reference-apply",
+    "title": "Specify the system or reference — apply",
+    "group": "Strategy coverage · Apply",
+    "topic": "Using classical relative velocity for a moving walkway",
+    "level": "apply",
+    "learningType": "quantitative",
+    "expectedStrategyId": "scope-and-reference",
+    "comparisonMode": "targeted",
+    "messages": [
+      {
+        "role": "assistant",
+        "content": "A walkway moves east at 2 meters per second relative to the terminal. A person walks west at 1 meter per second relative to the walkway. Apply classical relative velocity to find the person’s terminal velocity."
+      },
+      {
+        "role": "user",
+        "content": "The two velocities use different references."
+      },
+      {
+        "role": "assistant",
+        "content": "Which part of your account are you least certain about?"
+      },
+      {
+        "role": "user",
+        "content": "I would subtract the directions without checking which frame each speed belongs to, and say the person is going west in the terminal."
+      }
+    ],
+    "reviewGuide": {
+      "target": "Apply an explicit reference transformation with opposite directions.",
+      "risks": [
+        "Keep the physical event fixed; do not imply all observers measure the same velocity."
+      ],
+      "scope": "One next-question design review; no learner response or learning-effect claim."
+    },
+    "reviewedRubricItems": [
+      "Uses the stated walkway-relative and terminal-relative velocities with consistent east-west signs to find terminal velocity."
+    ],
+    "rubricReview": {
+      "method": "authored_fixture_scope_review",
+      "reviewedAt": "2026-10-18T20:00:03.310Z",
+      "reason": "Narrowed the generated topic rubric to the supplied fixed task and its specific evidence target. This is benchmark-author review, not independent expert validation."
+    },
+    "aspects": [
+      "Uses the stated walkway-relative and terminal-relative velocities with consistent east-west signs to find terminal velocity."
+    ],
+    "rubricGeneration": {
+      "generatedAt": "2026-10-18T19:53:35.010Z",
+      "provider": "chatgpt",
+      "model": "gpt-6.1-sol",
+      "promptVersion": "1ed6b362365e1015fd4ce68ea57a48f664401c3ceee0009263c8d629323a1cde",
+      "pipeline": "generateLevelRubric",
+      "endpoint": "/api/developer/rubric",
+      "generatedItems": [
+        "Select v_person,ground = v_person,walkway + v_walkway,ground for a moving-walkway problem.",
+        "Assign velocity signs consistently for walking with or against the walkway.",
+        "Calculate the person's ground velocity from the given relative velocities.",
+        "Use the ground velocity to calculate travel time or distance when requested.",
+        "Interpret the calculated velocity's sign as the person's direction relative to the ground."
+      ]
+    }
+  },
+  {
+    "id": "coverage-scope-and-reference-analyze",
+    "title": "Specify the system or reference — analyze",
+    "group": "Strategy coverage · Analyze",
+    "topic": "Analyzing interaction classification under a system boundary",
+    "level": "analyze",
+    "learningType": "theoretical",
+    "expectedStrategyId": "scope-and-reference",
+    "comparisonMode": "targeted",
+    "messages": [
+      {
+        "role": "assistant",
+        "content": "A proposed energy account defines its system as a falling ball plus Earth, but calls their mutual gravitational interaction external to that system. Analyze the classification."
+      },
+      {
+        "role": "user",
+        "content": "The stated system includes both the ball and Earth."
+      },
+      {
+        "role": "assistant",
+        "content": "Which part of your account are you least certain about?"
+      },
+      {
+        "role": "user",
+        "content": "Gravity between them is external just because Earth is much bigger; the stated boundary cannot matter."
+      }
+    ],
+    "reviewGuide": {
+      "target": "Analyze interaction classification against the explicitly chosen boundary.",
+      "risks": [
+        "Do not conflate reference clarification with performing a conservation balance."
+      ],
+      "scope": "One next-question design review; no learner response or learning-effect claim."
+    },
+    "reviewedRubricItems": [
+      "Analyzes whether the mutual gravitational interaction is internal or external to the explicitly ball-plus-Earth system."
+    ],
+    "rubricReview": {
+      "method": "authored_fixture_scope_review",
+      "reviewedAt": "2026-10-18T20:00:03.310Z",
+      "reason": "Narrowed the generated topic rubric to the supplied fixed task and its specific evidence target. This is benchmark-author review, not independent expert validation."
+    },
+    "aspects": [
+      "Analyzes whether the mutual gravitational interaction is internal or external to the explicitly ball-plus-Earth system."
+    ],
+    "rubricGeneration": {
+      "generatedAt": "2026-10-18T19:53:40.677Z",
+      "provider": "chatgpt",
+      "model": "gpt-6.1-sol",
+      "promptVersion": "1ed6b362365e1015fd4ce68ea57a48f664401c3ceee0009263c8d629323a1cde",
+      "pipeline": "generateLevelRubric",
+      "endpoint": "/api/developer/rubric",
+      "generatedItems": [
+        "Explains how the interacting objects’ positions relative to a system boundary determine internal or external status.",
+        "Explains why internal force pairs cannot change the system’s total momentum.",
+        "Explains how excluding one interacting object changes an interaction from internal to external.",
+        "Corrects the claim that a force’s type alone determines whether it is internal or external."
+      ]
+    }
+  }
+]

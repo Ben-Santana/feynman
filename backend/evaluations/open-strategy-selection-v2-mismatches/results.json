@@ -1,0 +1,400 @@
+{
+  "version": 2,
+  "scope": "selected prior mismatches only",
+  "selectedCaseIds": [
+    "coverage-controlled-comparison-understand",
+    "coverage-boundary-case-understand",
+    "coverage-boundary-case-apply",
+    "coverage-remove-condition-analyze",
+    "coverage-quantity-versus-change-understand",
+    "coverage-quantity-versus-change-analyze",
+    "coverage-reconcile-claims-apply",
+    "coverage-representation-change-understand",
+    "coverage-representation-change-analyze",
+    "coverage-answer-reason-consistency-apply",
+    "coverage-conservation-accounting-understand",
+    "coverage-classify-by-features-understand",
+    "coverage-classify-by-features-analyze",
+    "coverage-scale-level-distinction-understand",
+    "coverage-method-applicability-understand",
+    "coverage-scope-and-reference-apply",
+    "coverage-scope-and-reference-analyze"
+  ],
+  "mismatchSourceHash": "8151ad727ddb494ddf156783ed02a14fde0b5e5d665034a4ebd3a8351739d00e",
+  "adjudicationHash": "b1ac558875e06066999df744981599245b859b2e07a08d71de7bda4399cbde0b",
+  "mode": "open-selection-only",
+  "model": "gpt-6.1-sol",
+  "provider": "chatgpt",
+  "corpusVersion": "question-strategies-5",
+  "sourceDiagnosticRun": "../strategy-levels-v5-final/results.json",
+  "sourceDiagnosticHash": "b0613bbdee8db5b19227c15eceb5ad0b04d75a0ad26f55a647f12cae5efadd20",
+  "fixturesHash": "259aa4f117d9cc577561a35f5024f87d672c8e496667a309f1ba438c6d8a4ca3",
+  "sourceHashes": {
+    "backend/src/strategyPlanning.js": "b795328c6fc1e997727a31101fba51057436c48974724bda588c1737dbcb3eba",
+    "backend/src/questionTargeting.js": "30877660e805761da341ce9e7d413fdad64bce9955d194a1cda28bc7ea71d764",
+    "backend/src/questionStrategies.js": "a64ae26c8ed8d9c0c02d20315341bb7e61d5f565f9dccb46e791524f28526156",
+    "backend/question-strategies.json": "f4a3b7d81681f5776237bd5c5259ddbc175973aeb09871f6bd76168c2067f320",
+    "scripts/evaluate-open-strategy-selection.mjs": "5087618d78389eec8598d41148bf8c5a259ec078cf6e4d3f0db84649051bd641"
+  },
+  "fingerprint": "42d2eb27e9220ffa0f8bb2a052621b48da35be369252b60461945b8cfaa2343c",
+  "total": 17,
+  "startedAt": "2026-10-19T03:01:00.039Z",
+  "results": [
+    {
+      "caseId": "coverage-controlled-comparison-understand",
+      "expectedStrategyId": "controlled-comparison",
+      "level": "understand",
+      "topic": "Interpreting a controlled salt-dissolving comparison",
+      "attempts": [
+        {
+          "status": "selected",
+          "finishedAt": "2026-10-19T03:01:18.984Z",
+          "durationMs": 18930
+        }
+      ],
+      "callCount": 1,
+      "status": "selected",
+      "selectedStrategyId": "reconcile-claims",
+      "exactMatch": false,
+      "rationale": "The unresolved evidence target is how the learner relates acknowledged matched water volumes to the tentative greater-water explanation of the time difference. The needed operation is to connect those two actual statements in the existing comparison. Reconcile-claims directly performs this operation at Understand without introducing a new prediction task. Controlled-comparison is a genuine alternative for probing the role of temperature, but this probe does not construct an isolating contrast; it investigates the learner's two statements. No specific word has a demonstrated ambiguity requiring term clarification first.",
+      "traceFile": "cases/coverage-controlled-comparison-understand.json"
+    },
+    {
+      "caseId": "coverage-boundary-case-understand",
+      "expectedStrategyId": "boundary-case",
+      "level": "understand",
+      "topic": "Interpreting zero travel distance in a work claim",
+      "attempts": [
+        {
+          "status": "selected",
+          "finishedAt": "2026-10-19T03:01:19.281Z",
+          "durationMs": 19218
+        }
+      ],
+      "callCount": 1,
+      "status": "selected",
+      "selectedStrategyId": "boundary-case",
+      "exactMatch": true,
+      "rationale": "The unresolved rubric-linked evidence is how the learner relates the crate's zero travel distance to mechanical work while maintaining that the push is large. The needed operation is to elicit that relationship at the already established zero-motion limit, not introduce a new prediction or calculation. Boundary-case directly retains this limit at Understand. Necessary-sufficient is a plausible alternative for investigating the claimed sufficiency of a large push, but the present target is specifically the role of the existing zero-distance condition. The crate is already explicitly identified as the object receiving the claimed work, so scope clarification is not needed first.",
+      "traceFile": "cases/coverage-boundary-case-understand.json"
+    },
+    {
+      "caseId": "coverage-boundary-case-apply",
+      "expectedStrategyId": "boundary-case",
+      "level": "apply",
+      "topic": "Applying resistance at zero potential difference",
+      "attempts": [
+        {
+          "status": "selected",
+          "finishedAt": "2026-10-19T03:01:19.331Z",
+          "durationMs": 19266
+        }
+      ],
+      "callCount": 1,
+      "status": "selected",
+      "selectedStrategyId": "boundary-case",
+      "exactMatch": true,
+      "rationale": "The unresolved evidence is whether the learner can select and use the resistor relationship for current at the stated zero-voltage limit. Elicit a numerical calculation and its justification in that same limiting case. Boundary-case is more specific than answer-reason-consistency here because the operation tests the learner's proposed quotient at a physically valid zero condition, not merely its general supporting warrant. A controlled comparison would add a second voltage condition unnecessarily; method-applicability would shift attention toward conditions of a method rather than executing the current calculation.",
+      "traceFile": "cases/coverage-boundary-case-apply.json"
+    },
+    {
+      "caseId": "coverage-remove-condition-analyze",
+      "expectedStrategyId": "remove-condition",
+      "level": "analyze",
+      "topic": "Analyzing motion after propulsion stops",
+      "attempts": [
+        {
+          "status": "selected",
+          "finishedAt": "2026-10-19T03:01:35.261Z",
+          "durationMs": 16268
+        }
+      ],
+      "callCount": 1,
+      "status": "selected",
+      "selectedStrategyId": "remove-condition",
+      "exactMatch": true,
+      "rationale": "The unresolved evidence is whether the learner can justify the predicted decrease in speed using the conditions remaining after thrust ends. The needed operation is to examine persistence of motion after that named influence is removed, checking the explanation against the stated absence of significant external forces. Remove-condition directly preserves that structure at Analyze. Mechanism-tracing is a nearby alternative, but would emphasize an intermediate causal step rather than the explicit shutdown and remaining conditions; a generic answer-reason check is less specific.",
+      "traceFile": "cases/coverage-remove-condition-analyze.json"
+    },
+    {
+      "caseId": "coverage-quantity-versus-change-understand",
+      "expectedStrategyId": "quantity-versus-change",
+      "level": "understand",
+      "topic": "Separating reservoir level from change in level",
+      "attempts": [
+        {
+          "status": "selected",
+          "finishedAt": "2026-10-19T03:01:35.962Z",
+          "durationMs": 16667
+        }
+      ],
+      "callCount": 1,
+      "status": "selected",
+      "selectedStrategyId": "clarify-specific-term",
+      "exactMatch": false,
+      "rationale": "The unresolved evidence target is whether the learner's claim about rapid filling refers to change in the stored amount or to water entering the reservoir. Clarifying that phrase in the existing constant-level setting is needed before assessing the first rubric item: the two meanings support different interpretations. Clarify-specific-term takes priority because this concrete ambiguity blocks assessment. Quantity-versus-change would be a suitable subsequent operation once the meaning is known; reconciling the claims now could incorrectly presume that the learner asserted rapid accumulation.",
+      "traceFile": "cases/coverage-quantity-versus-change-understand.json"
+    },
+    {
+      "caseId": "coverage-quantity-versus-change-analyze",
+      "expectedStrategyId": "quantity-versus-change",
+      "level": "analyze",
+      "topic": "Analyzing constant bank balance with ongoing flows",
+      "attempts": [
+        {
+          "status": "selected",
+          "finishedAt": "2026-10-19T03:01:36.852Z",
+          "durationMs": 17506
+        }
+      ],
+      "callCount": 1,
+      "status": "selected",
+      "selectedStrategyId": "conservation-accounting",
+      "exactMatch": false,
+      "rationale": "The unresolved evidence target is how the learner accounts for both incoming and outgoing money over the month when the endpoint balances match. Eliciting the relationship among starting balance, ending balance, total deposits, and total withdrawals directly probes the active balance-accounting rubric at Analyze. Conservation-accounting is more specific than a generic answer–reason probe because it requires an account of storage and both transfers within one account and interval. Necessary-sufficient or evidence-inference could examine the no-activity inference, but would not necessarily expose the omitted flow relationship. Reconcile-claims is not appropriate: the learner's two statements are not themselves conflicting claims.",
+      "traceFile": "cases/coverage-quantity-versus-change-analyze.json"
+    },
+    {
+      "caseId": "coverage-reconcile-claims-apply",
+      "expectedStrategyId": "reconcile-claims",
+      "level": "apply",
+      "topic": "Checking two claims about resistance and current",
+      "attempts": [
+        {
+          "status": "selected",
+          "finishedAt": "2026-10-19T03:01:56.713Z",
+          "durationMs": 21438
+        }
+      ],
+      "callCount": 1,
+      "status": "selected",
+      "selectedStrategyId": "reconcile-claims",
+      "exactMatch": true,
+      "rationale": "The unresolved evidence target is whether the learner can quantitatively connect the claimed 6 V and 3 A to the claimed 4 ohms. The required operation is a numerical consistency check linking these actual claims, not simply a justification of the assertion that they agree. Reconcile-claims fits more specifically than answer-reason-consistency because the transcript supplies both the voltage/current claim and the resistance claim. No single-factor contrast, limiting condition, or uncertainty about a method's applicability is established or needed.",
+      "traceFile": "cases/coverage-reconcile-claims-apply.json"
+    },
+    {
+      "caseId": "coverage-representation-change-understand",
+      "expectedStrategyId": "representation-change",
+      "level": "understand",
+      "topic": "Reading an existing distance table and graph",
+      "attempts": [
+        {
+          "status": "selected",
+          "finishedAt": "2026-10-19T03:01:53.969Z",
+          "durationMs": 17995
+        }
+      ],
+      "callCount": 1,
+      "status": "selected",
+      "selectedStrategyId": "representation-change",
+      "exactMatch": true,
+      "rationale": "The unresolved evidence target is the correspondence between the repeated table entries and the height of the existing graph. Eliciting the meaning of that correspondence directly tests the first rubric item at Understand, without a new trip or calculation. Representation-change is more specific than a generic answer–reason check because the operation links two existing equivalent displays. Quantity-versus-change is a viable alternative only if it retains this correspondence; a graph-only question would drop required evidence. The learner's wording is sufficiently specific to probe this relationship rather than first requesting a definition, although representation-reading difficulty remains possible.",
+      "traceFile": "cases/coverage-representation-change-understand.json"
+    },
+    {
+      "caseId": "coverage-representation-change-analyze",
+      "expectedStrategyId": "representation-change",
+      "level": "analyze",
+      "topic": "Analyzing equivalent circuit drawings",
+      "attempts": [
+        {
+          "status": "selected",
+          "finishedAt": "2026-10-19T03:02:04.321Z",
+          "durationMs": 27460
+        }
+      ],
+      "callCount": 1,
+      "status": "selected",
+      "selectedStrategyId": "representation-change",
+      "exactMatch": true,
+      "rationale": "The unresolved evidence is whether the learner can map both terminals of each resistor to labeled nodes in each drawing and use the correspondence to evaluate the layout-based claim. Comparing those mappings across equivalent drawings directly performs representation-change at Analyze. A controlled comparison is a plausible alternative because layout changes while connections are held fixed, but the required evidence is specifically the correspondence across the two displays, not merely a predicted effect of changing layout. A generic answer–reason probe would not ensure that correspondence.",
+      "traceFile": "cases/coverage-representation-change-analyze.json"
+    },
+    {
+      "caseId": "coverage-answer-reason-consistency-apply",
+      "expectedStrategyId": "answer-reason-consistency",
+      "level": "apply",
+      "topic": "Checking the procedure behind an arithmetic answer",
+      "attempts": [
+        {
+          "status": "selected",
+          "finishedAt": "2026-10-19T03:02:13.719Z",
+          "durationMs": 19732
+        }
+      ],
+      "callCount": 1,
+      "status": "selected",
+      "selectedStrategyId": "controlled-comparison",
+      "exactMatch": false,
+      "rationale": "The unresolved evidence target is whether the learner can apply an arithmetic-mean procedure when the middle entry no longer coincides with the mean. Change only the last reading while retaining the list length, order, and first two readings, and elicit a calculation. This isolating contrast distinguishes the competing procedures more directly than asking again for the reason behind the original answer. Method-applicability is a possible alternative for investigating conditions of use, but the present target is procedural execution, not a discussion of when a shortcut works.",
+      "traceFile": "cases/coverage-answer-reason-consistency-apply.json"
+    },
+    {
+      "caseId": "coverage-conservation-accounting-understand",
+      "expectedStrategyId": "conservation-accounting",
+      "level": "understand",
+      "topic": "Accounting for water in drying clothes",
+      "attempts": [
+        {
+          "status": "selected",
+          "finishedAt": "2026-10-19T03:02:14.969Z",
+          "durationMs": 18242
+        }
+      ],
+      "callCount": 1,
+      "status": "selected",
+      "selectedStrategyId": "conservation-accounting",
+      "exactMatch": true,
+      "rationale": "The unresolved evidence target is an account of the water lost by the clothes across the stated drying interval within the closed clothes-plus-room-air system. Eliciting what happens to that water performs quantity accounting at Understand without introducing a new exercise. This is more specific than asking for the reason behind the disappearance answer: the boundary is already explicit, so scope-and-reference is not needed, and the two learner statements do not themselves contradict one another. The explicit nonexistence claim does not present a concrete wording ambiguity requiring clarification first.",
+      "traceFile": "cases/coverage-conservation-accounting-understand.json"
+    },
+    {
+      "caseId": "coverage-classify-by-features-understand",
+      "expectedStrategyId": "classify-by-features",
+      "level": "understand",
+      "topic": "Classifying a chemical change by relevant features",
+      "attempts": [
+        {
+          "status": "selected",
+          "finishedAt": "2026-10-19T03:02:27.481Z",
+          "durationMs": 23145
+        }
+      ],
+      "callCount": 1,
+      "status": "selected",
+      "selectedStrategyId": "necessary-sufficient",
+      "exactMatch": false,
+      "rationale": "The unresolved evidence target is the learner's justification for treating changed appearance as sufficient for chemical classification despite acknowledging that the substance remains water. The needed operation is to probe the completeness of that explicit implication within the existing melting account. Necessary-sufficient fits more precisely than a generic answer–reason check. Classify-by-features is a viable alternative, but asking merely which feature the learner uses would repeat evidence already available; this probe asks why that feature is enough. No new comparison, counterexample, or application task is needed.",
+      "traceFile": "cases/coverage-classify-by-features-understand.json"
+    },
+    {
+      "caseId": "coverage-classify-by-features-analyze",
+      "expectedStrategyId": "classify-by-features",
+      "level": "analyze",
+      "topic": "Analyzing an invalid grouping of functions",
+      "attempts": [
+        {
+          "status": "selected",
+          "finishedAt": "2026-10-19T03:02:34.440Z",
+          "durationMs": 20707
+        }
+      ],
+      "callCount": 1,
+      "status": "selected",
+      "selectedStrategyId": "necessary-sufficient",
+      "exactMatch": false,
+      "rationale": "The unresolved evidence target is whether the learner can analyze the claimed implication from smooth appearance to linearity using the changing-slope case already in the task. The required operation is to assess whether that condition is enough, with supporting reasoning about the existing case. Necessary-sufficient directly captures this operation. Classify-by-features is a plausible alternative, but the explicit sufficiency claim makes implication completeness the more specific target; no new counterexample or definition is supplied. The ambiguity about the meaning of smooth does not block this probe because the case retains the task's smooth-looking description.",
+      "traceFile": "cases/coverage-classify-by-features-analyze.json"
+    },
+    {
+      "caseId": "coverage-scale-level-distinction-understand",
+      "expectedStrategyId": "scale-level-distinction",
+      "level": "understand",
+      "topic": "Interpreting an average from a group",
+      "attempts": [
+        {
+          "status": "selected",
+          "finishedAt": "2026-10-19T03:02:33.259Z",
+          "durationMs": 18276
+        }
+      ],
+      "callCount": 1,
+      "status": "selected",
+      "selectedStrategyId": "scale-level-distinction",
+      "exactMatch": true,
+      "rationale": "The unresolved rubric-linked evidence is the learner's relationship between a single mean reported for the group and the height attributed to each member. Elicit that group-to-individual link within the existing explanation, without a calculation or new case. Scale-level-distinction specifically probes this mapping. Answer-reason-consistency could elicit a warrant, but is less specific than the supported aggregate-to-member operation; reconcile-claims is not needed because the two statements are not inherently contradictory. The wording is sufficiently explicit that clarification of an ambiguous term is not the blocking issue.",
+      "traceFile": "cases/coverage-scale-level-distinction-understand.json"
+    },
+    {
+      "caseId": "coverage-method-applicability-understand",
+      "expectedStrategyId": "method-applicability",
+      "level": "understand",
+      "topic": "Explaining an assumption behind an average-speed shortcut",
+      "attempts": [
+        {
+          "status": "selected",
+          "finishedAt": "2026-10-19T03:02:49.110Z",
+          "durationMs": 21610
+        }
+      ],
+      "callCount": 1,
+      "status": "selected",
+      "selectedStrategyId": "method-applicability",
+      "exactMatch": true,
+      "rationale": "The unresolved rubric-linked target is whether the learner understands the duration condition that makes equal weighting a valid average-speed shortcut. The needed operation is to explain the shortcut's applicability in the existing trip, connecting segment durations with total distance and total time, without performing a calculation. Method-applicability specifically probes the conditions for the learner's proposed method. Answer-reason-consistency is a possible broader alternative, but is less precise here because the missing support is a method's usable condition. A controlled comparison would require adding a comparison not established in this Understand-level transcript.",
+      "traceFile": "cases/coverage-method-applicability-understand.json"
+    },
+    {
+      "caseId": "coverage-scope-and-reference-apply",
+      "expectedStrategyId": "scope-and-reference",
+      "level": "apply",
+      "topic": "Using classical relative velocity for a moving walkway",
+      "attempts": [
+        {
+          "status": "selected",
+          "finishedAt": "2026-10-19T03:02:50.980Z",
+          "durationMs": 17713
+        }
+      ],
+      "callCount": 1,
+      "status": "selected",
+      "selectedStrategyId": "scope-and-reference",
+      "exactMatch": true,
+      "rationale": "The unresolved rubric-linked evidence is whether the learner can retain both velocity reference assignments while calculating terminal velocity with consistent directional signs. The needed operation is a quantitative reference transformation in the existing physical event, not just naming frames. Scope-and-reference directly elicits this at Apply. Answer-reason-consistency is a possible generic alternative because a direction was supplied, but it is less specific than testing the reference assignments that determine that direction. No contrast, limit, or actual contradiction between the learner's two statements is established.",
+      "traceFile": "cases/coverage-scope-and-reference-apply.json"
+    },
+    {
+      "caseId": "coverage-scope-and-reference-analyze",
+      "expectedStrategyId": "scope-and-reference",
+      "level": "analyze",
+      "topic": "Analyzing interaction classification under a system boundary",
+      "attempts": [
+        {
+          "status": "selected",
+          "finishedAt": "2026-10-19T03:02:51.465Z",
+          "durationMs": 17008
+        }
+      ],
+      "callCount": 1,
+      "status": "selected",
+      "selectedStrategyId": "scope-and-reference",
+      "exactMatch": true,
+      "rationale": "The unresolved evidence is how the learner relates the external classification to the explicitly chosen ball-plus-Earth system, rather than merely recognizing its members. The needed operation is examination of the scope used by that classification while keeping the physical interaction fixed. Scope-and-reference directly targets this at Analyze. Classify-by-features is a plausible alternative for probing the size criterion, but the decisive unresolved relationship here concerns the specified system; a generic answer-reason probe would be less specific. No transfer balance or new boundary comparison is needed.",
+      "traceFile": "cases/coverage-scope-and-reference-analyze.json"
+    }
+  ],
+  "method": "Frozen diagnostic states were generated before targeted candidate filtering. Only select_strategy calls are permitted. All level-eligible reviewed strategies are offered. Expected strategy IDs, case IDs, titles, review guides, previous selections, questions, and scores are excluded from model requests. Production selection includes a structured plan, retained here; no question generation, assessment, diagnostic generation, suitability check, or model review is run.",
+  "updatedAt": "2026-10-19T03:02:51.477Z",
+  "summary": {
+    "completed": 17,
+    "total": 17,
+    "exactMatches": 11,
+    "mismatches": 6,
+    "abstentions": 0,
+    "errors": 0,
+    "modelCalls": 17,
+    "byLevel": {
+      "remember": {
+        "completed": 0,
+        "total": 0,
+        "exactMatches": 0
+      },
+      "understand": {
+        "completed": 8,
+        "total": 8,
+        "exactMatches": 5
+      },
+      "apply": {
+        "completed": 4,
+        "total": 4,
+        "exactMatches": 3
+      },
+      "analyze": {
+        "completed": 5,
+        "total": 5,
+        "exactMatches": 3
+      }
+    }
+  }
+}

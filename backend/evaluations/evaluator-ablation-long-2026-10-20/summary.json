@@ -1,0 +1,989 @@
+{
+  "model": "gpt-6.1-sol",
+  "runs": 18,
+  "uniqueCases": 6,
+  "repeats": 3,
+  "screening": {
+    "ablation": {
+      "variants": {
+        "existingFirst": {
+          "attempted": 18,
+          "matched": 18,
+          "mismatched": 0,
+          "errors": 0,
+          "abstentions": 0,
+          "falseCompletions": 0,
+          "unnecessaryBlocks": 0,
+          "meanSummedCallMs": 9785.388888888889
+        },
+        "existingConfirmed": {
+          "attempted": 18,
+          "matched": 18,
+          "mismatched": 0,
+          "errors": 0,
+          "abstentions": 0,
+          "falseCompletions": 0,
+          "unnecessaryBlocks": 0,
+          "meanSummedCallMs": 17267.5
+        },
+        "leanRefined": {
+          "attempted": 18,
+          "matched": 18,
+          "mismatched": 0,
+          "errors": 0,
+          "abstentions": 0,
+          "falseCompletions": 0,
+          "unnecessaryBlocks": 0,
+          "meanSummedCallMs": 16653.777777777777
+        },
+        "refinedWithShadow": {
+          "attempted": 18,
+          "matched": 18,
+          "mismatched": 0,
+          "errors": 0,
+          "abstentions": 0,
+          "falseCompletions": 0,
+          "unnecessaryBlocks": 0,
+          "meanSummedCallMs": 24155.944444444445
+        }
+      },
+      "effects": {
+        "confirmation": {
+          "comparable": 18,
+          "correctedFalseCompletions": 0,
+          "introducedBlocks": 0
+        },
+        "shadow": {
+          "comparable": 18,
+          "correctedFalseCompletions": 0,
+          "introducedBlocks": 0
+        }
+      }
+    },
+    "branches": {
+      "legacy": {
+        "attempted": 18,
+        "matched": 18,
+        "mismatched": 0,
+        "errors": 0,
+        "abstentions": 0,
+        "falseCompletions": 0,
+        "unnecessaryBlocks": 0
+      },
+      "refined": {
+        "attempted": 18,
+        "matched": 18,
+        "mismatched": 0,
+        "errors": 0,
+        "abstentions": 0,
+        "falseCompletions": 0,
+        "unnecessaryBlocks": 0
+      }
+    },
+    "paired": {
+      "comparable": 18,
+      "refinedOnlyMatched": 0,
+      "legacyOnlyMatched": 0,
+      "bothMatched": 18,
+      "bothMismatched": 0,
+      "policySensitive": 0
+    },
+    "shadow": {
+      "reviewed": 9,
+      "falseCompletionOpportunities": 0,
+      "caughtFalseCompletions": 0,
+      "missedFalseCompletions": 0,
+      "blockedCorrectCompletions": 0,
+      "confirmedCorrectCompletions": 9,
+      "errors": 0,
+      "unscorable": 0
+    }
+  },
+  "latency": {
+    "existingFirst": {
+      "n": 18,
+      "meanMs": 9785.388888888889,
+      "medianMs": 9755.5,
+      "minMs": 8257,
+      "maxMs": 11578
+    },
+    "existingConfirmed": {
+      "n": 18,
+      "meanMs": 17267.5,
+      "medianMs": 18425,
+      "minMs": 10117,
+      "maxMs": 22388
+    },
+    "leanRefined": {
+      "n": 18,
+      "meanMs": 16653.777777777777,
+      "medianMs": 15999.5,
+      "minMs": 11853,
+      "maxMs": 22659
+    },
+    "refinedWithShadow": {
+      "n": 18,
+      "meanMs": 24155.944444444445,
+      "medianMs": 23140,
+      "minMs": 15916,
+      "maxMs": 33148
+    }
+  },
+  "additionalStages": {
+    "existingConfirmed": {
+      "n": 14,
+      "meanMs": 9619.857142857143,
+      "medianMs": 9605,
+      "minMs": 8624,
+      "maxMs": 11785
+    },
+    "refinedWithShadow": {
+      "n": 9,
+      "meanMs": 15004.333333333334,
+      "medianMs": 14520,
+      "minMs": 11768,
+      "maxMs": 19086
+    }
+  },
+  "callCounts": {
+    "legacy": 32,
+    "refined": 18,
+    "shadow review": 9
+  },
+  "versions": {
+    "evaluatorVersion": [
+      "refined-evaluator-v4-lean"
+    ],
+    "promptVersion": [
+      "1ed6b362365e1015fd4ce68ea57a48f664401c3ceee0009263c8d629323a1cde"
+    ],
+    "refinedPromptVersion": [
+      "5e705c813cc55570e6d855a030e8cb1fd16c28ce4d64286dcbee902d2d372833"
+    ]
+  },
+  "sourceHashesUnchanged": true,
+  "cases": [
+    {
+      "id": "long-capacitor-conditions-unresolved",
+      "variants": {
+        "existingFirst": {
+          "repeats": [
+            {
+              "eligible": false,
+              "screen": "matched",
+              "criteria": [
+                "flawed",
+                "supported"
+              ],
+              "task": "flawed"
+            },
+            {
+              "eligible": false,
+              "screen": "matched",
+              "criteria": [
+                "flawed",
+                "supported"
+              ],
+              "task": "flawed"
+            },
+            {
+              "eligible": false,
+              "screen": "matched",
+              "criteria": [
+                "flawed",
+                "supported"
+              ],
+              "task": "flawed"
+            }
+          ],
+          "completionConsistent": true,
+          "criterionLabelsConsistent": true,
+          "taskLabelConsistent": true
+        },
+        "existingConfirmed": {
+          "repeats": [
+            {
+              "eligible": false,
+              "screen": "matched",
+              "criteria": [
+                "flawed",
+                "supported"
+              ],
+              "task": "flawed"
+            },
+            {
+              "eligible": false,
+              "screen": "matched",
+              "criteria": [
+                "flawed",
+                "supported"
+              ],
+              "task": "flawed"
+            },
+            {
+              "eligible": false,
+              "screen": "matched",
+              "criteria": [
+                "flawed",
+                "supported"
+              ],
+              "task": "flawed"
+            }
+          ],
+          "completionConsistent": true,
+          "criterionLabelsConsistent": true,
+          "taskLabelConsistent": true
+        },
+        "leanRefined": {
+          "repeats": [
+            {
+              "eligible": false,
+              "screen": "matched",
+              "criteria": [
+                "flawed",
+                "supported"
+              ],
+              "task": "flawed"
+            },
+            {
+              "eligible": false,
+              "screen": "matched",
+              "criteria": [
+                "flawed",
+                "supported"
+              ],
+              "task": "flawed"
+            },
+            {
+              "eligible": false,
+              "screen": "matched",
+              "criteria": [
+                "flawed",
+                "supported"
+              ],
+              "task": "flawed"
+            }
+          ],
+          "completionConsistent": true,
+          "criterionLabelsConsistent": true,
+          "taskLabelConsistent": true
+        },
+        "refinedWithShadow": {
+          "repeats": [
+            {
+              "eligible": false,
+              "screen": "matched",
+              "criteria": [
+                "flawed",
+                "supported"
+              ],
+              "task": "flawed"
+            },
+            {
+              "eligible": false,
+              "screen": "matched",
+              "criteria": [
+                "flawed",
+                "supported"
+              ],
+              "task": "flawed"
+            },
+            {
+              "eligible": false,
+              "screen": "matched",
+              "criteria": [
+                "flawed",
+                "supported"
+              ],
+              "task": "flawed"
+            }
+          ],
+          "completionConsistent": true,
+          "criterionLabelsConsistent": true,
+          "taskLabelConsistent": true
+        }
+      }
+    },
+    {
+      "id": "long-capacitor-conditions-resolved",
+      "variants": {
+        "existingFirst": {
+          "repeats": [
+            {
+              "eligible": true,
+              "screen": "matched",
+              "criteria": [
+                "supported",
+                "supported"
+              ],
+              "task": "supported"
+            },
+            {
+              "eligible": true,
+              "screen": "matched",
+              "criteria": [
+                "supported",
+                "supported"
+              ],
+              "task": "supported"
+            },
+            {
+              "eligible": true,
+              "screen": "matched",
+              "criteria": [
+                "supported",
+                "supported"
+              ],
+              "task": "supported"
+            }
+          ],
+          "completionConsistent": true,
+          "criterionLabelsConsistent": true,
+          "taskLabelConsistent": true
+        },
+        "existingConfirmed": {
+          "repeats": [
+            {
+              "eligible": true,
+              "screen": "matched",
+              "criteria": [
+                "supported",
+                "supported"
+              ],
+              "task": "supported"
+            },
+            {
+              "eligible": true,
+              "screen": "matched",
+              "criteria": [
+                "supported",
+                "supported"
+              ],
+              "task": "supported"
+            },
+            {
+              "eligible": true,
+              "screen": "matched",
+              "criteria": [
+                "supported",
+                "supported"
+              ],
+              "task": "supported"
+            }
+          ],
+          "completionConsistent": true,
+          "criterionLabelsConsistent": true,
+          "taskLabelConsistent": true
+        },
+        "leanRefined": {
+          "repeats": [
+            {
+              "eligible": true,
+              "screen": "matched",
+              "criteria": [
+                "supported",
+                "supported"
+              ],
+              "task": "supported"
+            },
+            {
+              "eligible": true,
+              "screen": "matched",
+              "criteria": [
+                "supported",
+                "supported"
+              ],
+              "task": "supported"
+            },
+            {
+              "eligible": true,
+              "screen": "matched",
+              "criteria": [
+                "supported",
+                "supported"
+              ],
+              "task": "supported"
+            }
+          ],
+          "completionConsistent": true,
+          "criterionLabelsConsistent": true,
+          "taskLabelConsistent": true
+        },
+        "refinedWithShadow": {
+          "repeats": [
+            {
+              "eligible": true,
+              "screen": "matched",
+              "criteria": [
+                "supported",
+                "supported"
+              ],
+              "task": "supported"
+            },
+            {
+              "eligible": true,
+              "screen": "matched",
+              "criteria": [
+                "supported",
+                "supported"
+              ],
+              "task": "supported"
+            },
+            {
+              "eligible": true,
+              "screen": "matched",
+              "criteria": [
+                "supported",
+                "supported"
+              ],
+              "task": "supported"
+            }
+          ],
+          "completionConsistent": true,
+          "criterionLabelsConsistent": true,
+          "taskLabelConsistent": true
+        }
+      }
+    },
+    {
+      "id": "long-speed-partial-repair-unresolved",
+      "variants": {
+        "existingFirst": {
+          "repeats": [
+            {
+              "eligible": false,
+              "screen": "matched",
+              "criteria": [
+                "flawed"
+              ],
+              "task": "flawed"
+            },
+            {
+              "eligible": false,
+              "screen": "matched",
+              "criteria": [
+                "flawed"
+              ],
+              "task": "flawed"
+            },
+            {
+              "eligible": false,
+              "screen": "matched",
+              "criteria": [
+                "flawed"
+              ],
+              "task": "flawed"
+            }
+          ],
+          "completionConsistent": true,
+          "criterionLabelsConsistent": true,
+          "taskLabelConsistent": true
+        },
+        "existingConfirmed": {
+          "repeats": [
+            {
+              "eligible": false,
+              "screen": "matched",
+              "criteria": [
+                "flawed"
+              ],
+              "task": "flawed"
+            },
+            {
+              "eligible": false,
+              "screen": "matched",
+              "criteria": [
+                "flawed"
+              ],
+              "task": "flawed"
+            },
+            {
+              "eligible": false,
+              "screen": "matched",
+              "criteria": [
+                "flawed"
+              ],
+              "task": "flawed"
+            }
+          ],
+          "completionConsistent": true,
+          "criterionLabelsConsistent": true,
+          "taskLabelConsistent": true
+        },
+        "leanRefined": {
+          "repeats": [
+            {
+              "eligible": false,
+              "screen": "matched",
+              "criteria": [
+                "flawed"
+              ],
+              "task": "flawed"
+            },
+            {
+              "eligible": false,
+              "screen": "matched",
+              "criteria": [
+                "flawed"
+              ],
+              "task": "flawed"
+            },
+            {
+              "eligible": false,
+              "screen": "matched",
+              "criteria": [
+                "flawed"
+              ],
+              "task": "flawed"
+            }
+          ],
+          "completionConsistent": true,
+          "criterionLabelsConsistent": true,
+          "taskLabelConsistent": true
+        },
+        "refinedWithShadow": {
+          "repeats": [
+            {
+              "eligible": false,
+              "screen": "matched",
+              "criteria": [
+                "flawed"
+              ],
+              "task": "flawed"
+            },
+            {
+              "eligible": false,
+              "screen": "matched",
+              "criteria": [
+                "flawed"
+              ],
+              "task": "flawed"
+            },
+            {
+              "eligible": false,
+              "screen": "matched",
+              "criteria": [
+                "flawed"
+              ],
+              "task": "flawed"
+            }
+          ],
+          "completionConsistent": true,
+          "criterionLabelsConsistent": true,
+          "taskLabelConsistent": true
+        }
+      }
+    },
+    {
+      "id": "long-speed-partial-repair-resolved",
+      "variants": {
+        "existingFirst": {
+          "repeats": [
+            {
+              "eligible": true,
+              "screen": "matched",
+              "criteria": [
+                "supported"
+              ],
+              "task": "supported"
+            },
+            {
+              "eligible": true,
+              "screen": "matched",
+              "criteria": [
+                "supported"
+              ],
+              "task": "supported"
+            },
+            {
+              "eligible": true,
+              "screen": "matched",
+              "criteria": [
+                "supported"
+              ],
+              "task": "supported"
+            }
+          ],
+          "completionConsistent": true,
+          "criterionLabelsConsistent": true,
+          "taskLabelConsistent": true
+        },
+        "existingConfirmed": {
+          "repeats": [
+            {
+              "eligible": true,
+              "screen": "matched",
+              "criteria": [
+                "supported"
+              ],
+              "task": "supported"
+            },
+            {
+              "eligible": true,
+              "screen": "matched",
+              "criteria": [
+                "supported"
+              ],
+              "task": "supported"
+            },
+            {
+              "eligible": true,
+              "screen": "matched",
+              "criteria": [
+                "supported"
+              ],
+              "task": "supported"
+            }
+          ],
+          "completionConsistent": true,
+          "criterionLabelsConsistent": true,
+          "taskLabelConsistent": true
+        },
+        "leanRefined": {
+          "repeats": [
+            {
+              "eligible": true,
+              "screen": "matched",
+              "criteria": [
+                "supported"
+              ],
+              "task": "supported"
+            },
+            {
+              "eligible": true,
+              "screen": "matched",
+              "criteria": [
+                "supported"
+              ],
+              "task": "supported"
+            },
+            {
+              "eligible": true,
+              "screen": "matched",
+              "criteria": [
+                "supported"
+              ],
+              "task": "supported"
+            }
+          ],
+          "completionConsistent": true,
+          "criterionLabelsConsistent": true,
+          "taskLabelConsistent": true
+        },
+        "refinedWithShadow": {
+          "repeats": [
+            {
+              "eligible": true,
+              "screen": "matched",
+              "criteria": [
+                "supported"
+              ],
+              "task": "supported"
+            },
+            {
+              "eligible": true,
+              "screen": "matched",
+              "criteria": [
+                "supported"
+              ],
+              "task": "supported"
+            },
+            {
+              "eligible": true,
+              "screen": "matched",
+              "criteria": [
+                "supported"
+              ],
+              "task": "supported"
+            }
+          ],
+          "completionConsistent": true,
+          "criterionLabelsConsistent": true,
+          "taskLabelConsistent": true
+        }
+      }
+    },
+    {
+      "id": "long-confounding-hints-unresolved",
+      "variants": {
+        "existingFirst": {
+          "repeats": [
+            {
+              "eligible": false,
+              "screen": "matched",
+              "criteria": [
+                "supported",
+                "flawed"
+              ],
+              "task": "flawed"
+            },
+            {
+              "eligible": false,
+              "screen": "matched",
+              "criteria": [
+                "supported",
+                "flawed"
+              ],
+              "task": "flawed"
+            },
+            {
+              "eligible": false,
+              "screen": "matched",
+              "criteria": [
+                "supported",
+                "flawed"
+              ],
+              "task": "flawed"
+            }
+          ],
+          "completionConsistent": true,
+          "criterionLabelsConsistent": true,
+          "taskLabelConsistent": true
+        },
+        "existingConfirmed": {
+          "repeats": [
+            {
+              "eligible": false,
+              "screen": "matched",
+              "criteria": [
+                "supported",
+                "flawed"
+              ],
+              "task": "flawed"
+            },
+            {
+              "eligible": false,
+              "screen": "matched",
+              "criteria": [
+                "supported",
+                "flawed"
+              ],
+              "task": "flawed"
+            },
+            {
+              "eligible": false,
+              "screen": "matched",
+              "criteria": [
+                "supported",
+                "flawed"
+              ],
+              "task": "flawed"
+            }
+          ],
+          "completionConsistent": true,
+          "criterionLabelsConsistent": true,
+          "taskLabelConsistent": true
+        },
+        "leanRefined": {
+          "repeats": [
+            {
+              "eligible": false,
+              "screen": "matched",
+              "criteria": [
+                "supported",
+                "flawed"
+              ],
+              "task": "flawed"
+            },
+            {
+              "eligible": false,
+              "screen": "matched",
+              "criteria": [
+                "supported",
+                "flawed"
+              ],
+              "task": "flawed"
+            },
+            {
+              "eligible": false,
+              "screen": "matched",
+              "criteria": [
+                "supported",
+                "flawed"
+              ],
+              "task": "flawed"
+            }
+          ],
+          "completionConsistent": true,
+          "criterionLabelsConsistent": true,
+          "taskLabelConsistent": true
+        },
+        "refinedWithShadow": {
+          "repeats": [
+            {
+              "eligible": false,
+              "screen": "matched",
+              "criteria": [
+                "supported",
+                "flawed"
+              ],
+              "task": "flawed"
+            },
+            {
+              "eligible": false,
+              "screen": "matched",
+              "criteria": [
+                "supported",
+                "flawed"
+              ],
+              "task": "flawed"
+            },
+            {
+              "eligible": false,
+              "screen": "matched",
+              "criteria": [
+                "supported",
+                "flawed"
+              ],
+              "task": "flawed"
+            }
+          ],
+          "completionConsistent": true,
+          "criterionLabelsConsistent": true,
+          "taskLabelConsistent": true
+        }
+      }
+    },
+    {
+      "id": "long-confounding-hints-resolved",
+      "variants": {
+        "existingFirst": {
+          "repeats": [
+            {
+              "eligible": true,
+              "screen": "matched",
+              "criteria": [
+                "supported",
+                "supported"
+              ],
+              "task": "supported"
+            },
+            {
+              "eligible": true,
+              "screen": "matched",
+              "criteria": [
+                "supported",
+                "supported"
+              ],
+              "task": "supported"
+            },
+            {
+              "eligible": true,
+              "screen": "matched",
+              "criteria": [
+                "supported",
+                "supported"
+              ],
+              "task": "supported"
+            }
+          ],
+          "completionConsistent": true,
+          "criterionLabelsConsistent": true,
+          "taskLabelConsistent": true
+        },
+        "existingConfirmed": {
+          "repeats": [
+            {
+              "eligible": true,
+              "screen": "matched",
+              "criteria": [
+                "supported",
+                "supported"
+              ],
+              "task": "supported"
+            },
+            {
+              "eligible": true,
+              "screen": "matched",
+              "criteria": [
+                "supported",
+                "supported"
+              ],
+              "task": "supported"
+            },
+            {
+              "eligible": true,
+              "screen": "matched",
+              "criteria": [
+                "supported",
+                "supported"
+              ],
+              "task": "supported"
+            }
+          ],
+          "completionConsistent": true,
+          "criterionLabelsConsistent": true,
+          "taskLabelConsistent": true
+        },
+        "leanRefined": {
+          "repeats": [
+            {
+              "eligible": true,
+              "screen": "matched",
+              "criteria": [
+                "supported",
+                "supported"
+              ],
+              "task": "supported"
+            },
+            {
+              "eligible": true,
+              "screen": "matched",
+              "criteria": [
+                "supported",
+                "supported"
+              ],
+              "task": "supported"
+            },
+            {
+              "eligible": true,
+              "screen": "matched",
+              "criteria": [
+                "supported",
+                "supported"
+              ],
+              "task": "supported"
+            }
+          ],
+          "completionConsistent": true,
+          "criterionLabelsConsistent": true,
+          "taskLabelConsistent": true
+        },
+        "refinedWithShadow": {
+          "repeats": [
+            {
+              "eligible": true,
+              "screen": "matched",
+              "criteria": [
+                "supported",
+                "supported"
+              ],
+              "task": "supported"
+            },
+            {
+              "eligible": true,
+              "screen": "matched",
+              "criteria": [
+                "supported",
+                "supported"
+              ],
+              "task": "supported"
+            },
+            {
+              "eligible": true,
+              "screen": "matched",
+              "criteria": [
+                "supported",
+                "supported"
+              ],
+              "task": "supported"
+            }
+          ],
+          "completionConsistent": true,
+          "criterionLabelsConsistent": true,
+          "taskLabelConsistent": true
+        }
+      }
+    }
+  ]
+}

@@ -1,0 +1,232 @@
+{
+  "version": 1,
+  "createdAt": "2026-10-19T03:00:46.276Z",
+  "reviewer": "Coding assistant implementation review; not independent instructor adjudication",
+  "basis": "Reviewed full fixed transcripts, active rubrics, frozen diagnostic objectives, selector rationales, and actual structured plans. A valid alternative must preserve a defensible next-question evidence target and level. A selection error loses a constitutive relationship required by its chosen target. Valid does not imply preferable or complete coverage of the entire rubric.",
+  "scoring": "Initial expected labels remain unchanged. Required-evidence criteria are frozen before the rerun; later plans will be manually checked against them. Original valid-alternative labels are not an exhaustive whitelist of future valid labels.",
+  "summary": {
+    "validAlternatives": 15,
+    "selectionErrors": 2
+  },
+  "cases": [
+    {
+      "caseId": "coverage-controlled-comparison-understand",
+      "expectedStrategyId": "controlled-comparison",
+      "originalSelectedStrategyId": "reconcile-claims",
+      "level": "understand",
+      "classification": "valid_alternative",
+      "reason": "Reconciliation directly probes the learner’s own acknowledgement of matched volumes versus the proposed extra-water explanation. A valid first probe; it does not establish the temperature relationship.",
+      "requiredEvidence": "Elicit how matched volume constrains the explanation, or its relationship to the varied temperature, without inventing a new experiment.",
+      "initialRecognizedLabels": [
+        "controlled-comparison",
+        "reconcile-claims"
+      ]
+    },
+    {
+      "caseId": "coverage-boundary-case-understand",
+      "expectedStrategyId": "boundary-case",
+      "originalSelectedStrategyId": "answer-reason-consistency",
+      "level": "understand",
+      "classification": "valid_alternative",
+      "reason": "The answer–reason construction explicitly tests the role of zero displacement in the work claim. It preserves the boundary evidence even under a broader label.",
+      "requiredEvidence": "Elicit the role of no displacement in the stated work claim; do not substitute effort or fatigue alone.",
+      "initialRecognizedLabels": [
+        "boundary-case",
+        "answer-reason-consistency"
+      ]
+    },
+    {
+      "caseId": "coverage-boundary-case-apply",
+      "expectedStrategyId": "boundary-case",
+      "originalSelectedStrategyId": "answer-reason-consistency",
+      "level": "apply",
+      "classification": "valid_alternative",
+      "reason": "The plan retains finite resistance, zero voltage, numerical method use, and validity of the operation at zero. It is substantively a boundary probe under a broad label.",
+      "requiredEvidence": "Require independent use of a resistor relationship at the supplied zero-voltage condition and reasoning about the operation’s validity.",
+      "initialRecognizedLabels": [
+        "boundary-case",
+        "answer-reason-consistency"
+      ]
+    },
+    {
+      "caseId": "coverage-remove-condition-analyze",
+      "expectedStrategyId": "remove-condition",
+      "originalSelectedStrategyId": "answer-reason-consistency",
+      "level": "analyze",
+      "classification": "valid_alternative",
+      "reason": "The plan asks for analysis of the claimed deceleration after thrust ends under the unchanged force-free condition. The diagnostic removal structure is retained.",
+      "requiredEvidence": "Analyze the claimed effect of thrust removal with the remaining force conditions explicit; do not invent resistance.",
+      "initialRecognizedLabels": [
+        "remove-condition",
+        "answer-reason-consistency"
+      ]
+    },
+    {
+      "caseId": "coverage-quantity-versus-change-understand",
+      "expectedStrategyId": "quantity-versus-change",
+      "originalSelectedStrategyId": "clarify-specific-term",
+      "level": "understand",
+      "classification": "valid_alternative",
+      "reason": "“Filling rapidly” could mean gross inflow or increasing stored amount. Clarifying the exact phrase before diagnosing a value/rate error is justified. This does not complete the whole rubric.",
+      "requiredEvidence": "Resolve the blocking meaning of the phrase, or directly distinguish stored level, net change, and flows without assuming the learner’s intended meaning.",
+      "initialRecognizedLabels": [
+        "quantity-versus-change",
+        "clarify-specific-term"
+      ]
+    },
+    {
+      "caseId": "coverage-quantity-versus-change-analyze",
+      "expectedStrategyId": "quantity-versus-change",
+      "originalSelectedStrategyId": "evidence-inference",
+      "level": "analyze",
+      "classification": "valid_alternative",
+      "reason": "The evidence–inference plan examines whether equal endpoint balances justify no activity in light of stated deposits and withdrawals. This addresses the core inference without fabricating another learner claim.",
+      "requiredEvidence": "Relate equal endpoint balances to the stated transactions; a bare challenge to belief without that relationship is insufficient.",
+      "initialRecognizedLabels": [
+        "quantity-versus-change",
+        "evidence-inference"
+      ]
+    },
+    {
+      "caseId": "coverage-reconcile-claims-apply",
+      "expectedStrategyId": "reconcile-claims",
+      "originalSelectedStrategyId": "answer-reason-consistency",
+      "level": "apply",
+      "classification": "valid_alternative",
+      "reason": "The plan requests a numerical consistency check across all three claimed values and interpretation of that check. Its operation is reconciliation even though labeled answer–reason.",
+      "requiredEvidence": "Use the supplied voltage/current/resistance values to check their mutual consistency and interpret the result.",
+      "initialRecognizedLabels": [
+        "reconcile-claims",
+        "answer-reason-consistency"
+      ]
+    },
+    {
+      "caseId": "coverage-representation-change-understand",
+      "expectedStrategyId": "representation-change",
+      "originalSelectedStrategyId": "quantity-versus-change",
+      "level": "understand",
+      "classification": "selection_error",
+      "reason": "The quantity/change plan asks only about graph height and flatness and drops the required correspondence with the table. It can test a related distinction but cannot establish the selected cross-representation evidence target.",
+      "requiredEvidence": "Explicitly connect the repeated table values to the existing graph’s height or flatness, while distinguishing constant from zero distance.",
+      "initialRecognizedLabels": [
+        "representation-change"
+      ]
+    },
+    {
+      "caseId": "coverage-representation-change-analyze",
+      "expectedStrategyId": "representation-change",
+      "originalSelectedStrategyId": "answer-reason-consistency",
+      "level": "analyze",
+      "classification": "valid_alternative",
+      "reason": "The answer–reason plan explicitly compares each resistor’s node attachments in both drawings. It preserves the equivalent-representation operation; the label is less precise than the construction.",
+      "requiredEvidence": "Compare connectivity across both layouts using the labeled nodes, then relate that comparison to the classification claim.",
+      "initialRecognizedLabels": [
+        "representation-change",
+        "answer-reason-consistency"
+      ]
+    },
+    {
+      "caseId": "coverage-answer-reason-consistency-apply",
+      "expectedStrategyId": "answer-reason-consistency",
+      "originalSelectedStrategyId": "controlled-comparison",
+      "level": "apply",
+      "classification": "valid_alternative",
+      "reason": "The changed final reading creates a valid single-factor contrast between the learner’s middle-entry rule and an arithmetic-mean procedure. Other relevant features are fixed and the calculation is requested.",
+      "requiredEvidence": "Elicit a calculation that distinguishes the middle-entry shortcut from an arithmetic-mean procedure, without supplying either procedure.",
+      "initialRecognizedLabels": [
+        "answer-reason-consistency",
+        "controlled-comparison"
+      ]
+    },
+    {
+      "caseId": "coverage-conservation-accounting-understand",
+      "expectedStrategyId": "conservation-accounting",
+      "originalSelectedStrategyId": "answer-reason-consistency",
+      "level": "understand",
+      "classification": "selection_error",
+      "reason": "The plan asks only why the learner believes disappearance. It never requests an account of the tracked water within the closed clothes-plus-air system, so it loses the defining evidence target.",
+      "requiredEvidence": "Elicit how the water is accounted for across the closed clothes-plus-room-air system during drying; do not supply a destination, state change, or conservation rule.",
+      "initialRecognizedLabels": [
+        "conservation-accounting"
+      ]
+    },
+    {
+      "caseId": "coverage-classify-by-features-understand",
+      "expectedStrategyId": "classify-by-features",
+      "originalSelectedStrategyId": "answer-reason-consistency",
+      "level": "understand",
+      "classification": "valid_alternative",
+      "reason": "Asking why appearance change suffices directly elicits the feature used for the chemical-reaction classification. It is a reasonable feature-criterion probe under a broad label.",
+      "requiredEvidence": "Probe whether and why the stated appearance feature supports the classification in the existing melting situation, without teaching a criterion.",
+      "initialRecognizedLabels": [
+        "classify-by-features",
+        "answer-reason-consistency"
+      ]
+    },
+    {
+      "caseId": "coverage-classify-by-features-analyze",
+      "expectedStrategyId": "classify-by-features",
+      "originalSelectedStrategyId": "necessary-sufficient",
+      "level": "analyze",
+      "classification": "valid_alternative",
+      "reason": "The learner explicitly claims a feature is sufficient for linearity. Testing that implication against the included curved changing-slope cases is a valid classification analysis.",
+      "requiredEvidence": "Examine whether smooth appearance supports the proposed grouping using the supplied curved/changing-slope cases.",
+      "initialRecognizedLabels": [
+        "classify-by-features",
+        "necessary-sufficient"
+      ]
+    },
+    {
+      "caseId": "coverage-scale-level-distinction-understand",
+      "expectedStrategyId": "scale-level-distinction",
+      "originalSelectedStrategyId": "answer-reason-consistency",
+      "level": "understand",
+      "classification": "valid_alternative",
+      "reason": "The plan directly probes the inference from a group mean to every individual’s height. It retains the part/aggregate distinction even though using answer–reason labeling. The opening assistant turn also contaminated this fixture by stating identical heights.",
+      "requiredEvidence": "Elicit the relationship between a reported group summary and individual values; do not demand a new calculation.",
+      "initialRecognizedLabels": [
+        "scale-level-distinction",
+        "answer-reason-consistency"
+      ]
+    },
+    {
+      "caseId": "coverage-method-applicability-understand",
+      "expectedStrategyId": "method-applicability",
+      "originalSelectedStrategyId": "answer-reason-consistency",
+      "level": "understand",
+      "classification": "valid_alternative",
+      "reason": "The planned relationship between segment duration and weighting directly bears on the shortcut’s conditions. A broader label does not remove that evidence, though a method-applicability label would be more precise.",
+      "requiredEvidence": "Elicit the relationship between segment duration and validity of equal speed weighting within the existing conceptual task.",
+      "initialRecognizedLabels": [
+        "method-applicability",
+        "answer-reason-consistency"
+      ]
+    },
+    {
+      "caseId": "coverage-scope-and-reference-apply",
+      "expectedStrategyId": "scope-and-reference",
+      "originalSelectedStrategyId": "answer-reason-consistency",
+      "level": "apply",
+      "classification": "valid_alternative",
+      "reason": "The plan requires references for each velocity, consistent signs, and the final numerical terminal velocity. It fully preserves the frame-composition evidence despite the broad label.",
+      "requiredEvidence": "Apply the supplied velocities with explicit references and consistent signs to find terminal velocity; merely name frames is insufficient.",
+      "initialRecognizedLabels": [
+        "scope-and-reference",
+        "answer-reason-consistency"
+      ]
+    },
+    {
+      "caseId": "coverage-scope-and-reference-analyze",
+      "expectedStrategyId": "scope-and-reference",
+      "originalSelectedStrategyId": "classify-by-features",
+      "level": "analyze",
+      "classification": "valid_alternative",
+      "reason": "Feature-based classification is legitimate when the boundary is already specified: the plan probes why size should govern internal/external classification for that stated system. Boundary dependence would be the more specific label.",
+      "requiredEvidence": "Analyze the relative relevance of the stated system membership and the learner’s size-based criterion to interaction classification; do not give the classification rule.",
+      "initialRecognizedLabels": [
+        "scope-and-reference",
+        "classify-by-features"
+      ]
+    }
+  ]
+}

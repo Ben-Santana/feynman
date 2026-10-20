@@ -1,0 +1,1024 @@
+{
+  "version": 1,
+  "mode": "open-selection-only",
+  "model": "gpt-6.1-sol",
+  "provider": "chatgpt",
+  "corpusVersion": "question-strategies-5",
+  "sourceDiagnosticRun": "../strategy-levels-v5-final/results.json",
+  "sourceDiagnosticHash": "b0613bbdee8db5b19227c15eceb5ad0b04d75a0ad26f55a647f12cae5efadd20",
+  "fixturesHash": "259aa4f117d9cc577561a35f5024f87d672c8e496667a309f1ba438c6d8a4ca3",
+  "sourceHashes": {
+    "backend/src/strategyPlanning.js": "48c10c7f8ec25c2b63f65cd4c6bb134a4ca129b2861227587c7690edb0684172",
+    "backend/src/questionTargeting.js": "30877660e805761da341ce9e7d413fdad64bce9955d194a1cda28bc7ea71d764",
+    "backend/src/questionStrategies.js": "a64ae26c8ed8d9c0c02d20315341bb7e61d5f565f9dccb46e791524f28526156",
+    "backend/question-strategies.json": "f4a3b7d81681f5776237bd5c5259ddbc175973aeb09871f6bd76168c2067f320",
+    "scripts/evaluate-open-strategy-selection.mjs": "e1328c84d919beaf9b13e375f9bbaea851085621e6cbc22f5910ec447e96972d"
+  },
+  "fingerprint": "bd9c3a093107147e1a13d7dd5549039658db5a0691535869dd5c44175386551b",
+  "total": 51,
+  "startedAt": "2026-10-19T02:50:19.970Z",
+  "results": [
+    {
+      "caseId": "coverage-controlled-comparison-understand",
+      "expectedStrategyId": "controlled-comparison",
+      "level": "understand",
+      "topic": "Interpreting a controlled salt-dissolving comparison",
+      "attempts": [
+        {
+          "status": "selected",
+          "finishedAt": "2026-10-19T02:50:39.804Z",
+          "durationMs": 19819
+        }
+      ],
+      "callCount": 1,
+      "status": "selected",
+      "selectedStrategyId": "reconcile-claims",
+      "exactMatch": false,
+      "rationale": "The learner both acknowledges matched volumes and tentatively proposes more water in the warm cup. The needed evidence is how those two actual statements fit together, not a prediction for a new comparison or a general justification of the observed outcome. Reconciliation probes that existing relationship at Understand while allowing that the learner may instead doubt the matched-volume premise.",
+      "traceFile": "cases/coverage-controlled-comparison-understand.json"
+    },
+    {
+      "caseId": "coverage-controlled-comparison-apply",
+      "expectedStrategyId": "controlled-comparison",
+      "level": "apply",
+      "topic": "Using simulated controlled insulation measurements",
+      "attempts": [
+        {
+          "status": "selected",
+          "finishedAt": "2026-10-19T02:50:39.349Z",
+          "durationMs": 19356
+        }
+      ],
+      "callCount": 1,
+      "status": "selected",
+      "selectedStrategyId": "controlled-comparison",
+      "exactMatch": true,
+      "rationale": "The missing evidence is application of the single-factor matched comparison, not recall, a heat-transfer mechanism, or reconciliation of conflicting claims. The supplied simulated measurements and matched conditions permit an Apply-level experimental probe of how the learner uses the measurements to estimate the sleeve effect.",
+      "traceFile": "cases/coverage-controlled-comparison-apply.json"
+    },
+    {
+      "caseId": "coverage-controlled-comparison-analyze",
+      "expectedStrategyId": "controlled-comparison",
+      "level": "analyze",
+      "topic": "Analyzing a controlled dissolving study explanation",
+      "attempts": [
+        {
+          "status": "selected",
+          "finishedAt": "2026-10-19T02:50:37.819Z",
+          "durationMs": 17824
+        }
+      ],
+      "callCount": 1,
+      "status": "selected",
+      "selectedStrategyId": "controlled-comparison",
+      "exactMatch": true,
+      "rationale": "The active task already supplies a single-factor comparison: stirring speed differs while temperature, cube size, and water volume are fixed. An Analyze-level probe can examine how that comparison bears on the student's temperature attribution without inventing a new contrast or treating the student's compatible statements as a contradiction.",
+      "traceFile": "cases/coverage-controlled-comparison-analyze.json"
+    },
+    {
+      "caseId": "coverage-boundary-case-understand",
+      "expectedStrategyId": "boundary-case",
+      "level": "understand",
+      "topic": "Interpreting zero travel distance in a work claim",
+      "attempts": [
+        {
+          "status": "selected",
+          "finishedAt": "2026-10-19T02:50:57.118Z",
+          "durationMs": 17779
+        }
+      ],
+      "callCount": 1,
+      "status": "selected",
+      "selectedStrategyId": "answer-reason-consistency",
+      "exactMatch": false,
+      "rationale": "The learner has explicitly answered that mechanical work on the stationary crate is large and supported it with push magnitude. The missing evidence is how the learner relates the crate's lack of movement to that answer. This strategy probes that specific supporting relationship in the existing explanation at Understand, without inventing a comparison or treating tiredness as an established misconception.",
+      "traceFile": "cases/coverage-boundary-case-understand.json"
+    },
+    {
+      "caseId": "coverage-boundary-case-apply",
+      "expectedStrategyId": "boundary-case",
+      "level": "apply",
+      "topic": "Applying resistance at zero potential difference",
+      "attempts": [
+        {
+          "status": "selected",
+          "finishedAt": "2026-10-19T02:50:53.993Z",
+          "durationMs": 14629
+        }
+      ],
+      "callCount": 1,
+      "status": "selected",
+      "selectedStrategyId": "answer-reason-consistency",
+      "exactMatch": false,
+      "rationale": "The learner has supplied an infinite-current answer and a questionable supporting operation. A single quantitative follow-up can elicit the relationship and actual calculation supporting that answer without inventing a second claim, a comparison, or a new condition.",
+      "traceFile": "cases/coverage-boundary-case-apply.json"
+    },
+    {
+      "caseId": "coverage-boundary-case-analyze",
+      "expectedStrategyId": "boundary-case",
+      "level": "analyze",
+      "topic": "Analyzing a probability rule at a limiting event",
+      "attempts": [
+        {
+          "status": "selected",
+          "finishedAt": "2026-10-19T02:51:00.850Z",
+          "durationMs": 21038
+        }
+      ],
+      "callCount": 1,
+      "status": "selected",
+      "selectedStrategyId": "boundary-case",
+      "exactMatch": true,
+      "rationale": "The missing evidence is whether the learner's uncertainty argument survives the whole-sample-space boundary case. This directly tests the scope of the proposed rule at Analyze, without inventing conflicting claims or treating the issue as sampling variability.",
+      "traceFile": "cases/coverage-boundary-case-analyze.json"
+    },
+    {
+      "caseId": "coverage-remove-condition-understand",
+      "expectedStrategyId": "remove-condition",
+      "level": "understand",
+      "topic": "Distinguishing a heater from stored thermal energy",
+      "attempts": [
+        {
+          "status": "selected",
+          "finishedAt": "2026-10-19T02:51:08.940Z",
+          "durationMs": 14934
+        }
+      ],
+      "callCount": 1,
+      "status": "selected",
+      "selectedStrategyId": "remove-condition",
+      "exactMatch": true,
+      "rationale": "The missing evidence concerns the learner's relationship between removal of electrical input and the metal's continuing state in the already discussed unplugging event. Remove-condition directly targets that relationship at Understand without introducing a new prediction exercise or requiring an unestablished energy-balance method.",
+      "traceFile": "cases/coverage-remove-condition-understand.json"
+    },
+    {
+      "caseId": "coverage-remove-condition-apply",
+      "expectedStrategyId": "remove-condition",
+      "level": "apply",
+      "topic": "Predicting a state after a clamp is removed",
+      "attempts": [
+        {
+          "status": "selected",
+          "finishedAt": "2026-10-19T02:51:13.875Z",
+          "durationMs": 16745
+        }
+      ],
+      "callCount": 1,
+      "status": "selected",
+      "selectedStrategyId": "remove-condition",
+      "exactMatch": true,
+      "rationale": "The missing evidence concerns what persists and what changes after a named constraint is removed. This strategy directly tests application in that release situation with the fixed end and initial time frame explicit; it does not require inventing a comparison or a contradiction between student claims.",
+      "traceFile": "cases/coverage-remove-condition-apply.json"
+    },
+    {
+      "caseId": "coverage-remove-condition-analyze",
+      "expectedStrategyId": "remove-condition",
+      "level": "analyze",
+      "topic": "Analyzing motion after propulsion stops",
+      "attempts": [
+        {
+          "status": "selected",
+          "finishedAt": "2026-10-19T02:51:14.914Z",
+          "durationMs": 14053
+        }
+      ],
+      "callCount": 1,
+      "status": "selected",
+      "selectedStrategyId": "answer-reason-consistency",
+      "exactMatch": false,
+      "rationale": "The learner has supplied a specific prediction and a questionable supporting relationship. The needed evidence is how they justify decreasing speed under the stated force-free condition, not a new comparison or a conflict between two student claims. This strategy supports analysis of that answer–reason link without assuming an opposing force or requiring unestablished prediction prerequisites.",
+      "traceFile": "cases/coverage-remove-condition-analyze.json"
+    },
+    {
+      "caseId": "coverage-quantity-versus-change-understand",
+      "expectedStrategyId": "quantity-versus-change",
+      "level": "understand",
+      "topic": "Separating reservoir level from change in level",
+      "attempts": [
+        {
+          "status": "selected",
+          "finishedAt": "2026-10-19T02:51:26.900Z",
+          "durationMs": 17953
+        }
+      ],
+      "callCount": 1,
+      "status": "selected",
+      "selectedStrategyId": "clarify-specific-term",
+      "exactMatch": false,
+      "rationale": "The phrase 'filling rapidly' could refer to water entering or to the stored amount increasing. Clarifying that exact phrase is needed before treating the student's statements as contradictory or as evidence of quantity–change confusion. This probes meaning in the existing explanation at Understand without introducing a new exercise.",
+      "traceFile": "cases/coverage-quantity-versus-change-understand.json"
+    },
+    {
+      "caseId": "coverage-quantity-versus-change-apply",
+      "expectedStrategyId": "quantity-versus-change",
+      "level": "apply",
+      "topic": "Using a constant pressure record",
+      "attempts": [
+        {
+          "status": "selected",
+          "finishedAt": "2026-10-19T02:51:28.392Z",
+          "durationMs": 14504
+        }
+      ],
+      "callCount": 1,
+      "status": "selected",
+      "selectedStrategyId": "quantity-versus-change",
+      "exactMatch": true,
+      "rationale": "The missing evidence is whether the student can calculate a rate from the readings rather than reuse the pressure value. A quantity-versus-change probe directly targets that distinction while requiring quantitative application, without inventing a contrast or a contradiction.",
+      "traceFile": "cases/coverage-quantity-versus-change-apply.json"
+    },
+    {
+      "caseId": "coverage-quantity-versus-change-analyze",
+      "expectedStrategyId": "quantity-versus-change",
+      "level": "analyze",
+      "topic": "Analyzing constant bank balance with ongoing flows",
+      "attempts": [
+        {
+          "status": "selected",
+          "finishedAt": "2026-10-19T02:51:31.049Z",
+          "durationMs": 16125
+        }
+      ],
+      "callCount": 1,
+      "status": "selected",
+      "selectedStrategyId": "evidence-inference",
+      "exactMatch": false,
+      "rationale": "The missing evidence is the learner's warrant for inferring no transactions from matching endpoint balances, given the stated occurrence of deposits and withdrawals. This probes what the existing observations support at Analyze, without inventing a controlled contrast or treating the task's transaction statement as a second student claim.",
+      "traceFile": "cases/coverage-quantity-versus-change-analyze.json"
+    },
+    {
+      "caseId": "coverage-reconcile-claims-understand",
+      "expectedStrategyId": "reconcile-claims",
+      "level": "understand",
+      "topic": "Reconciling equal density and unequal mass statements",
+      "attempts": [
+        {
+          "status": "selected",
+          "finishedAt": "2026-10-19T02:51:41.577Z",
+          "durationMs": 14671
+        }
+      ],
+      "callCount": 1,
+      "status": "selected",
+      "selectedStrategyId": "reconcile-claims",
+      "exactMatch": true,
+      "rationale": "The learner explicitly asserts equal volume, twice the mass, and equal density for the same samples. The missing evidence is how these claims fit together, not merely the warrant for a single answer. Reconcile-claims supports probing this existing relationship at Understand without a new calculation or altered conditions.",
+      "traceFile": "cases/coverage-reconcile-claims-understand.json"
+    },
+    {
+      "caseId": "coverage-reconcile-claims-apply",
+      "expectedStrategyId": "reconcile-claims",
+      "level": "apply",
+      "topic": "Checking two claims about resistance and current",
+      "attempts": [
+        {
+          "status": "selected",
+          "finishedAt": "2026-10-19T02:51:48.735Z",
+          "durationMs": 20334
+        }
+      ],
+      "callCount": 1,
+      "status": "selected",
+      "selectedStrategyId": "answer-reason-consistency",
+      "exactMatch": false,
+      "rationale": "The learner supplies a definite consistency judgment but no quantitative support. The missing evidence is use of the voltage-current-resistance relationship behind that judgment, not a controlled contrast or a causal mechanism. This strategy supports a single quantitative application in the supplied setting without providing the relationship to be used.",
+      "traceFile": "cases/coverage-reconcile-claims-apply.json"
+    },
+    {
+      "caseId": "coverage-reconcile-claims-analyze",
+      "expectedStrategyId": "reconcile-claims",
+      "level": "analyze",
+      "topic": "Analyzing two definitions of a geometric figure",
+      "attempts": [
+        {
+          "status": "selected",
+          "finishedAt": "2026-10-19T02:51:47.098Z",
+          "durationMs": 16043
+        }
+      ],
+      "callCount": 1,
+      "status": "selected",
+      "selectedStrategyId": "reconcile-claims",
+      "exactMatch": true,
+      "rationale": "The learner explicitly treats the two parallel-side conditions as equivalent and simultaneously applicable to the same figure. The missing evidence is their reasoning about the relationship between these claims, not a recalled category definition or a new comparison. Reconcile-claims directly supports analysis of that relationship without assuming either claim describes the actual geometry.",
+      "traceFile": "cases/coverage-reconcile-claims-analyze.json"
+    },
+    {
+      "caseId": "coverage-representation-change-understand",
+      "expectedStrategyId": "representation-change",
+      "level": "understand",
+      "topic": "Reading an existing distance table and graph",
+      "attempts": [
+        {
+          "status": "selected",
+          "finishedAt": "2026-10-19T02:52:01.342Z",
+          "durationMs": 19757
+        }
+      ],
+      "callCount": 1,
+      "status": "selected",
+      "selectedStrategyId": "quantity-versus-change",
+      "exactMatch": false,
+      "rationale": "The learner explicitly infers no distance from a flat line. The missing evidence is whether they distinguish the distance shown by the line's height from what its flatness means over time. This can be probed within the existing trip at Understand, without a new prediction or computation.",
+      "traceFile": "cases/coverage-representation-change-understand.json"
+    },
+    {
+      "caseId": "coverage-representation-change-apply",
+      "expectedStrategyId": "representation-change",
+      "level": "apply",
+      "topic": "Plotting a supplied volume-time table",
+      "attempts": [
+        {
+          "status": "selected",
+          "finishedAt": "2026-10-19T02:52:04.332Z",
+          "durationMs": 17204
+        }
+      ],
+      "callCount": 1,
+      "status": "selected",
+      "selectedStrategyId": "representation-change",
+      "exactMatch": true,
+      "rationale": "The needed evidence is application of the supplied table entry to a graph location, keeping the observation unchanged across representations. This directly tests preservation of the initial volume at Apply without inventing a comparison or asking the learner to analyze a contradiction.",
+      "traceFile": "cases/coverage-representation-change-apply.json"
+    },
+    {
+      "caseId": "coverage-representation-change-analyze",
+      "expectedStrategyId": "representation-change",
+      "level": "analyze",
+      "topic": "Analyzing equivalent circuit drawings",
+      "attempts": [
+        {
+          "status": "selected",
+          "finishedAt": "2026-10-19T02:52:13.216Z",
+          "durationMs": 24474
+        }
+      ],
+      "callCount": 1,
+      "status": "selected",
+      "selectedStrategyId": "answer-reason-consistency",
+      "exactMatch": false,
+      "rationale": "The learner supplied a definite answer and an explicit but questionable warrant: vertical placement establishes a series connection. The missing evidence is how the resistor-terminal connections support that answer. A focused check of that link fits Analyze without assuming diagram-reading competence or inventing a second conflicting claim.",
+      "traceFile": "cases/coverage-representation-change-analyze.json"
+    },
+    {
+      "caseId": "coverage-clarify-specific-term-remember",
+      "expectedStrategyId": "clarify-specific-term",
+      "level": "remember",
+      "topic": "Identifying what a student means by load",
+      "attempts": [
+        {
+          "status": "selected",
+          "finishedAt": "2026-10-19T02:52:12.425Z",
+          "durationMs": 11069
+        }
+      ],
+      "callCount": 1,
+      "status": "selected",
+      "selectedStrategyId": "clarify-specific-term",
+      "exactMatch": true,
+      "rationale": "The missing evidence is the referent of the student's exact term 'load', not a clearly specified fact omitted from otherwise unambiguous wording. Clarifying that referent supports the active Remember rubric without asking for explanation.",
+      "traceFile": "cases/coverage-clarify-specific-term-remember.json"
+    },
+    {
+      "caseId": "coverage-clarify-specific-term-understand",
+      "expectedStrategyId": "clarify-specific-term",
+      "level": "understand",
+      "topic": "Clarifying what stored means in a memory account",
+      "attempts": [
+        {
+          "status": "selected",
+          "finishedAt": "2026-10-19T02:52:19.196Z",
+          "durationMs": 14853
+        }
+      ],
+      "callCount": 1,
+      "status": "selected",
+      "selectedStrategyId": "clarify-specific-term",
+      "exactMatch": true,
+      "rationale": "The missing evidence is the intended meaning of the learner's exact word 'stored', not a demonstrated contradiction or claim that earlier values are automatically preserved. Clarifying this word within the existing account fits Understand without introducing code execution or a new problem.",
+      "traceFile": "cases/coverage-clarify-specific-term-understand.json"
+    },
+    {
+      "caseId": "coverage-recall-specific-element-remember",
+      "expectedStrategyId": "recall-specific-element",
+      "level": "remember",
+      "topic": "Recalling a missing circuit component name",
+      "attempts": [
+        {
+          "status": "selected",
+          "finishedAt": "2026-10-19T02:52:25.716Z",
+          "durationMs": 13285
+        }
+      ],
+      "callCount": 1,
+      "status": "selected",
+      "selectedStrategyId": "recall-specific-element",
+      "exactMatch": true,
+      "rationale": "The learner explicitly identifies a missing component name, with no ambiguous wording or evidenced misconception. The active Remember rubric calls for that one name, so recall-specific-element fits; clarify-specific-term would address an ambiguity that is not present.",
+      "traceFile": "cases/coverage-recall-specific-element-remember.json"
+    },
+    {
+      "caseId": "coverage-answer-reason-consistency-understand",
+      "expectedStrategyId": "answer-reason-consistency",
+      "level": "understand",
+      "topic": "Probing a reason for a dilution answer",
+      "attempts": [
+        {
+          "status": "selected",
+          "finishedAt": "2026-10-19T02:52:27.782Z",
+          "durationMs": 14560
+        }
+      ],
+      "callCount": 1,
+      "status": "selected",
+      "selectedStrategyId": "answer-reason-consistency",
+      "exactMatch": true,
+      "rationale": "The learner has supplied an actual outcome but explicitly reports that its connection to mixture amounts is missing. The needed evidence is the supporting relationship within that existing account, not a new comparison, an invented conflict, or an assumed loss of dissolved material.",
+      "traceFile": "cases/coverage-answer-reason-consistency-understand.json"
+    },
+    {
+      "caseId": "coverage-answer-reason-consistency-apply",
+      "expectedStrategyId": "answer-reason-consistency",
+      "level": "apply",
+      "topic": "Checking the procedure behind an arithmetic answer",
+      "attempts": [
+        {
+          "status": "selected",
+          "finishedAt": "2026-10-19T02:52:37.640Z",
+          "durationMs": 18431
+        }
+      ],
+      "callCount": 1,
+      "status": "selected",
+      "selectedStrategyId": "controlled-comparison",
+      "exactMatch": false,
+      "rationale": "Changing only the last reading preserves the middle entry while separating the results of the competing procedures. This supplies the missing Apply-level evidence through a quantitative calculation, without requiring a definition or inventing a contradiction between the student's claims.",
+      "traceFile": "cases/coverage-answer-reason-consistency-apply.json"
+    },
+    {
+      "caseId": "coverage-answer-reason-consistency-analyze",
+      "expectedStrategyId": "answer-reason-consistency",
+      "level": "analyze",
+      "topic": "Analyzing reasoning behind a correct heat-flow direction",
+      "attempts": [
+        {
+          "status": "selected",
+          "finishedAt": "2026-10-19T02:52:44.952Z",
+          "durationMs": 19223
+        }
+      ],
+      "callCount": 1,
+      "status": "selected",
+      "selectedStrategyId": "answer-reason-consistency",
+      "exactMatch": true,
+      "rationale": "The learner has supplied a heat-flow direction and a questionable supporting claim. The missing evidence is their analysis of the link between temperature, total internal energy, and that direction—not a transfer balance or a conflict between two claims. This strategy directly probes that warrant at Analyze without requiring an unfamiliar limiting case or an invented comparison.",
+      "traceFile": "cases/coverage-answer-reason-consistency-analyze.json"
+    },
+    {
+      "caseId": "coverage-mechanism-tracing-understand",
+      "expectedStrategyId": "mechanism-tracing",
+      "level": "understand",
+      "topic": "Connecting a drug target to a cellular effect",
+      "attempts": [
+        {
+          "status": "selected",
+          "finishedAt": "2026-10-19T02:52:41.458Z",
+          "durationMs": 13666
+        }
+      ],
+      "callCount": 1,
+      "status": "selected",
+      "selectedStrategyId": "mechanism-tracing",
+      "exactMatch": true,
+      "rationale": "The missing evidence is one causal connection within the student's existing explanation: how reduced availability of the needed component relates to slower bacterial growth. Mechanism-tracing directly probes that connection at Understand without introducing a new experiment, a transfer balance, or conflicting claims.",
+      "traceFile": "cases/coverage-mechanism-tracing-understand.json"
+    },
+    {
+      "caseId": "coverage-mechanism-tracing-apply",
+      "expectedStrategyId": "mechanism-tracing",
+      "level": "apply",
+      "topic": "Tracing a supplied update dependency",
+      "attempts": [
+        {
+          "status": "selected",
+          "finishedAt": "2026-10-19T02:52:53.390Z",
+          "durationMs": 15740
+        }
+      ],
+      "callCount": 1,
+      "status": "selected",
+      "selectedStrategyId": "mechanism-tracing",
+      "exactMatch": true,
+      "rationale": "The missing evidence is execution of the dependency between the intermediate assignment and final update, not reconciliation of conflicting claims or justification of a supplied numerical answer. Mechanism-tracing explicitly supports code execution at Apply with the supplied code and input.",
+      "traceFile": "cases/coverage-mechanism-tracing-apply.json"
+    },
+    {
+      "caseId": "coverage-mechanism-tracing-analyze",
+      "expectedStrategyId": "mechanism-tracing",
+      "level": "analyze",
+      "topic": "Analyzing an incomplete infection explanation",
+      "attempts": [
+        {
+          "status": "selected",
+          "finishedAt": "2026-10-19T02:52:59.408Z",
+          "durationMs": 17937
+        }
+      ],
+      "callCount": 1,
+      "status": "selected",
+      "selectedStrategyId": "mechanism-tracing",
+      "exactMatch": true,
+      "rationale": "The missing evidence is causal integration between entry and production, not recall of stage functions or accounting for a conserved transfer. Mechanism-tracing can examine the learner's explicit dismissal of intermediate events at Analyze without supplying the missing link or introducing an artificial removal experiment.",
+      "traceFile": "cases/coverage-mechanism-tracing-analyze.json"
+    },
+    {
+      "caseId": "coverage-conservation-accounting-understand",
+      "expectedStrategyId": "conservation-accounting",
+      "level": "understand",
+      "topic": "Accounting for water in drying clothes",
+      "attempts": [
+        {
+          "status": "selected",
+          "finishedAt": "2026-10-19T02:53:01.949Z",
+          "durationMs": 16981
+        }
+      ],
+      "callCount": 1,
+      "status": "selected",
+      "selectedStrategyId": "answer-reason-consistency",
+      "exactMatch": false,
+      "rationale": "The learner has supplied an explicit conclusion about nonexistence but no reason connecting it to the decrease of liquid water in the clothes. Probing that supporting relationship directly fits Understand without introducing a new exercise or assuming that two student claims contradict each other. Conservation accounting is relevant to the content, but the immediately missing evidence is the reason for the actual answer.",
+      "traceFile": "cases/coverage-conservation-accounting-understand.json"
+    },
+    {
+      "caseId": "coverage-conservation-accounting-apply",
+      "expectedStrategyId": "conservation-accounting",
+      "level": "apply",
+      "topic": "Balancing charge at a circuit junction",
+      "attempts": [
+        {
+          "status": "selected",
+          "finishedAt": "2026-10-19T02:53:08.119Z",
+          "durationMs": 14717
+        }
+      ],
+      "callCount": 1,
+      "status": "selected",
+      "selectedStrategyId": "conservation-accounting",
+      "exactMatch": true,
+      "rationale": "The missing evidence is quantitative accounting for charge transferred across a defined junction during one second with no accumulation. This fits conservation-accounting at Apply, rather than tracing a causal mechanism or reconciling an invented contradiction.",
+      "traceFile": "cases/coverage-conservation-accounting-apply.json"
+    },
+    {
+      "caseId": "coverage-conservation-accounting-analyze",
+      "expectedStrategyId": "conservation-accounting",
+      "level": "analyze",
+      "topic": "Analyzing energy accounting in a sealed device",
+      "attempts": [
+        {
+          "status": "selected",
+          "finishedAt": "2026-10-19T02:53:14.582Z",
+          "durationMs": 15161
+        }
+      ],
+      "callCount": 1,
+      "status": "selected",
+      "selectedStrategyId": "conservation-accounting",
+      "exactMatch": true,
+      "rationale": "The missing evidence is an account of where the rotor's decreasing rotational energy goes within an already specified whole-device boundary, and how the stationary casing bears on that account. This is a storage/transformation balance at Analyze, not a missing causal step or an invented contradiction between two claims.",
+      "traceFile": "cases/coverage-conservation-accounting-analyze.json"
+    },
+    {
+      "caseId": "coverage-classify-by-features-understand",
+      "expectedStrategyId": "classify-by-features",
+      "level": "understand",
+      "topic": "Classifying a chemical change by relevant features",
+      "attempts": [
+        {
+          "status": "selected",
+          "finishedAt": "2026-10-19T02:53:20.778Z",
+          "durationMs": 18818
+        }
+      ],
+      "callCount": 1,
+      "status": "selected",
+      "selectedStrategyId": "answer-reason-consistency",
+      "exactMatch": false,
+      "rationale": "The student has explicitly classified melting as a chemical reaction and named appearance change as sufficient, but has not explained the supporting link. This strategy probes that link within the existing explanation at Understand, without inventing a comparison or treating the student's two statements as a contradiction. The needed evidence is the justification for the answer, not a new classification exercise or clarification of an ambiguous term.",
+      "traceFile": "cases/coverage-classify-by-features-understand.json"
+    },
+    {
+      "caseId": "coverage-classify-by-features-apply",
+      "expectedStrategyId": "classify-by-features",
+      "level": "apply",
+      "topic": "Classifying a supplied abstract-data behavior",
+      "attempts": [
+        {
+          "status": "selected",
+          "finishedAt": "2026-10-19T02:53:24.143Z",
+          "durationMs": 16012
+        }
+      ],
+      "callCount": 1,
+      "status": "selected",
+      "selectedStrategyId": "classify-by-features",
+      "exactMatch": true,
+      "rationale": "The missing evidence is application of a category criterion to supplied behavior, not recall of a name alone. The learner explicitly classifies by visual arrangement and dismisses removal order. Classification by features directly probes the basis for membership without inventing a conflicting claim or requiring a controlled comparison.",
+      "traceFile": "cases/coverage-classify-by-features-apply.json"
+    },
+    {
+      "caseId": "coverage-classify-by-features-analyze",
+      "expectedStrategyId": "classify-by-features",
+      "level": "analyze",
+      "topic": "Analyzing an invalid grouping of functions",
+      "attempts": [
+        {
+          "status": "selected",
+          "finishedAt": "2026-10-19T02:53:32.442Z",
+          "durationMs": 17846
+        }
+      ],
+      "callCount": 1,
+      "status": "selected",
+      "selectedStrategyId": "necessary-sufficient",
+      "exactMatch": false,
+      "rationale": "The learner explicitly treats smooth appearance as sufficient to establish linearity. The missing evidence is analysis of that implication against the curved, changing-slope graphs already included in the task, not a limiting case or a newly constructed comparison. This fits Analyze and the theoretical rubric without requiring slope calculations or resolving the affine-versus-linear-map convention.",
+      "traceFile": "cases/coverage-classify-by-features-analyze.json"
+    },
+    {
+      "caseId": "coverage-necessary-sufficient-understand",
+      "expectedStrategyId": "necessary-sufficient",
+      "level": "understand",
+      "topic": "Interpreting a divisibility condition",
+      "attempts": [
+        {
+          "status": "selected",
+          "finishedAt": "2026-10-19T02:53:37.002Z",
+          "durationMs": 16213
+        }
+      ],
+      "callCount": 1,
+      "status": "selected",
+      "selectedStrategyId": "necessary-sufficient",
+      "exactMatch": true,
+      "rationale": "The missing evidence concerns the direction of an explicit conditional relationship, not a limiting case or a conflict between claims. This strategy can probe the learner's stated sufficiency claim at Understand without introducing a new numerical exercise or supplying a counterexample.",
+      "traceFile": "cases/coverage-necessary-sufficient-understand.json"
+    },
+    {
+      "caseId": "coverage-necessary-sufficient-apply",
+      "expectedStrategyId": "necessary-sufficient",
+      "level": "apply",
+      "topic": "Testing sufficiency with a concrete integer",
+      "attempts": [
+        {
+          "status": "selected",
+          "finishedAt": "2026-10-19T02:53:41.188Z",
+          "durationMs": 17032
+        }
+      ],
+      "callCount": 1,
+      "status": "selected",
+      "selectedStrategyId": "necessary-sufficient",
+      "exactMatch": true,
+      "rationale": "The missing evidence is application of a divisibility test to the supplied 10 and use of that result to assess the claimed sufficiency of evenness. This concerns the completeness of a condition, not behavior at a limit or a conflict between two student claims. The Apply-level probe can retain the existing theoretical task without supplying a method or counterexample conclusion.",
+      "traceFile": "cases/coverage-necessary-sufficient-apply.json"
+    },
+    {
+      "caseId": "coverage-necessary-sufficient-analyze",
+      "expectedStrategyId": "necessary-sufficient",
+      "level": "analyze",
+      "topic": "Analyzing reversed medical screening logic",
+      "attempts": [
+        {
+          "status": "selected",
+          "finishedAt": "2026-10-19T02:53:48.109Z",
+          "durationMs": 15657
+        }
+      ],
+      "callCount": 1,
+      "status": "selected",
+      "selectedStrategyId": "necessary-sufficient",
+      "exactMatch": true,
+      "rationale": "The missing evidence concerns the direction of an explicit implication and the learner's dismissal of the model's false-positive cases. This fits necessary-sufficient at Analyze, rather than a limiting case, a new controlled comparison, or a probabilistic calculation.",
+      "traceFile": "cases/coverage-necessary-sufficient-analyze.json"
+    },
+    {
+      "caseId": "coverage-scale-level-distinction-understand",
+      "expectedStrategyId": "scale-level-distinction",
+      "level": "understand",
+      "topic": "Interpreting an average from a group",
+      "attempts": [
+        {
+          "status": "selected",
+          "finishedAt": "2026-10-19T02:53:52.281Z",
+          "durationMs": 15268
+        }
+      ],
+      "callCount": 1,
+      "status": "selected",
+      "selectedStrategyId": "answer-reason-consistency",
+      "exactMatch": false,
+      "rationale": "The learner has supplied an explicit answer about each person's height, but the relationship supporting that answer is missing. This strategy elicits that warrant within the existing setting at Understand, without inventing a comparison or treating the two compatible student statements as contradictory.",
+      "traceFile": "cases/coverage-scale-level-distinction-understand.json"
+    },
+    {
+      "caseId": "coverage-scale-level-distinction-apply",
+      "expectedStrategyId": "scale-level-distinction",
+      "level": "apply",
+      "topic": "Predicting aggregate resistance from reproductive differences",
+      "attempts": [
+        {
+          "status": "selected",
+          "finishedAt": "2026-10-19T02:54:04.197Z",
+          "durationMs": 23000
+        }
+      ],
+      "callCount": 1,
+      "status": "selected",
+      "selectedStrategyId": "scale-level-distinction",
+      "exactMatch": true,
+      "rationale": "The missing evidence is the learner's application of differences in individual reproduction to the composition of the whole population. Their claim explicitly requires individual transformation for a population-level change. This is a distinction between levels, not a stochastic prediction, a representation conversion, or two demonstrably contradictory claims. A qualitative application avoids assuming unassessed counting or proportion-calculation skills.",
+      "traceFile": "cases/coverage-scale-level-distinction-apply.json"
+    },
+    {
+      "caseId": "coverage-scale-level-distinction-analyze",
+      "expectedStrategyId": "scale-level-distinction",
+      "level": "analyze",
+      "topic": "Analyzing a community-average claim",
+      "attempts": [
+        {
+          "status": "selected",
+          "finishedAt": "2026-10-19T02:54:08.979Z",
+          "durationMs": 20858
+        }
+      ],
+      "callCount": 1,
+      "status": "selected",
+      "selectedStrategyId": "scale-level-distinction",
+      "exactMatch": true,
+      "rationale": "The missing evidence concerns the link between a town-level average and a claim about every individual household, not a random process, a controlled contrast, or two conflicting student claims. This strategy directly probes that link at Analyze while treating the learner's quoted statement as an uncertainty, not an endorsed belief.",
+      "traceFile": "cases/coverage-scale-level-distinction-analyze.json"
+    },
+    {
+      "caseId": "coverage-evidence-inference-understand",
+      "expectedStrategyId": "evidence-inference",
+      "level": "understand",
+      "topic": "Interpreting an observational tutoring association",
+      "attempts": [
+        {
+          "status": "selected",
+          "finishedAt": "2026-10-19T02:54:08.585Z",
+          "durationMs": 16300
+        }
+      ],
+      "callCount": 1,
+      "status": "selected",
+      "selectedStrategyId": "evidence-inference",
+      "exactMatch": true,
+      "rationale": "The missing evidence is the learner's explanation of why volunteer recruitment does not affect the causal interpretation of the existing grade comparison. Evidence-inference probes the warrant for this conclusion using the stated observational evidence, without inventing a controlled contrast or treating the learner's compatible claims as contradictory.",
+      "traceFile": "cases/coverage-evidence-inference-understand.json"
+    },
+    {
+      "caseId": "coverage-evidence-inference-apply",
+      "expectedStrategyId": "evidence-inference",
+      "level": "apply",
+      "topic": "Interpreting simulated measurements with uncertainty",
+      "attempts": [
+        {
+          "status": "selected",
+          "finishedAt": "2026-10-19T02:54:20.120Z",
+          "durationMs": 15910
+        }
+      ],
+      "callCount": 1,
+      "status": "selected",
+      "selectedStrategyId": "evidence-inference",
+      "exactMatch": true,
+      "rationale": "The missing evidence is application of the supplied measurement uncertainty to a definite-increase claim. Evidence-inference directly probes what this existing simulated result warrants at Apply, without inventing a controlled contrast, a random-process model, or conflicting student claims.",
+      "traceFile": "cases/coverage-evidence-inference-apply.json"
+    },
+    {
+      "caseId": "coverage-evidence-inference-analyze",
+      "expectedStrategyId": "evidence-inference",
+      "level": "analyze",
+      "topic": "Analyzing generalization from a convenience sample",
+      "attempts": [
+        {
+          "status": "selected",
+          "finishedAt": "2026-10-19T02:54:26.253Z",
+          "durationMs": 17658
+        }
+      ],
+      "callCount": 1,
+      "status": "selected",
+      "selectedStrategyId": "evidence-inference",
+      "exactMatch": true,
+      "rationale": "The missing evidence concerns the warrant for moving from the existing gym-recruited survey finding to a claim about all students. Evidence-inference directly probes that relationship at Analyze without inventing a controlled contrast or treating the learner's two statements as contradictory.",
+      "traceFile": "cases/coverage-evidence-inference-analyze.json"
+    },
+    {
+      "caseId": "coverage-stochastic-reasoning-understand",
+      "expectedStrategyId": "stochastic-reasoning",
+      "level": "understand",
+      "topic": "Interpreting an expected count for a die",
+      "attempts": [
+        {
+          "status": "selected",
+          "finishedAt": "2026-10-19T02:54:26.039Z",
+          "durationMs": 17052
+        }
+      ],
+      "callCount": 1,
+      "status": "selected",
+      "selectedStrategyId": "stochastic-reasoning",
+      "exactMatch": true,
+      "rationale": "The missing evidence concerns the relationship between equal single-roll probabilities and the count realized in a block, not a conflict between endorsed claims. The existing setting explicitly specifies independent rolls, so a conceptual probe can address uncertainty without introducing a new exercise or assuming the learner endorses a guarantee.",
+      "traceFile": "cases/coverage-stochastic-reasoning-understand.json"
+    },
+    {
+      "caseId": "coverage-stochastic-reasoning-apply",
+      "expectedStrategyId": "stochastic-reasoning",
+      "level": "apply",
+      "topic": "Applying a sampling model to distinguish expected counts from guaranteed outcomes",
+      "attempts": [
+        {
+          "status": "selected",
+          "finishedAt": "2026-10-19T02:54:35.454Z",
+          "durationMs": 15324
+        }
+      ],
+      "callCount": 1,
+      "status": "selected",
+      "selectedStrategyId": "stochastic-reasoning",
+      "exactMatch": true,
+      "rationale": "The missing evidence is execution of the specified probability model for a single event, after the learner treated an expected count as certain. Stochastic-reasoning directly elicits quantitative application under explicit trial and independence conditions; no invented contrast or conflict between two claims is needed.",
+      "traceFile": "cases/coverage-stochastic-reasoning-apply.json"
+    },
+    {
+      "caseId": "coverage-stochastic-reasoning-analyze",
+      "expectedStrategyId": "stochastic-reasoning",
+      "level": "analyze",
+      "topic": "Analyzing variation in a specified random simulation",
+      "attempts": [
+        {
+          "status": "selected",
+          "finishedAt": "2026-10-19T02:54:41.030Z",
+          "durationMs": 14975
+        }
+      ],
+      "callCount": 1,
+      "status": "selected",
+      "selectedStrategyId": "stochastic-reasoning",
+      "exactMatch": true,
+      "rationale": "The missing evidence concerns the learner's assumption that a fixed random sampling model guarantees identical realized run means. Stochastic-reasoning directly probes that relationship under the established independent sampling conditions at Analyze, without inventing a controlled contrast or treating the two student statements as a contradiction.",
+      "traceFile": "cases/coverage-stochastic-reasoning-analyze.json"
+    },
+    {
+      "caseId": "coverage-method-applicability-understand",
+      "expectedStrategyId": "method-applicability",
+      "level": "understand",
+      "topic": "Explaining an assumption behind an average-speed shortcut",
+      "attempts": [
+        {
+          "status": "selected",
+          "finishedAt": "2026-10-19T02:54:49.539Z",
+          "durationMs": 23273
+        }
+      ],
+      "callCount": 1,
+      "status": "selected",
+      "selectedStrategyId": "answer-reason-consistency",
+      "exactMatch": false,
+      "rationale": "The learner has explicitly answered that equal weighting always works, but the relationship supporting that answer is missing. Probing how duration relates to weighting addresses that gap at Understand without inventing a comparison, a limiting case, or a second conflicting claim.",
+      "traceFile": "cases/coverage-method-applicability-understand.json"
+    },
+    {
+      "caseId": "coverage-method-applicability-apply",
+      "expectedStrategyId": "method-applicability",
+      "level": "apply",
+      "topic": "Selecting a method for unequal-time travel",
+      "attempts": [
+        {
+          "status": "selected",
+          "finishedAt": "2026-10-19T02:54:49.486Z",
+          "durationMs": 14023
+        }
+      ],
+      "callCount": 1,
+      "status": "selected",
+      "selectedStrategyId": "method-applicability",
+      "exactMatch": true,
+      "rationale": "The evidence concerns a shortcut selected without regard to the supplied durations. Method-applicability directly elicits selection and execution in the original quantitative task, without inventing a comparison or requiring an absent numerical answer.",
+      "traceFile": "cases/coverage-method-applicability-apply.json"
+    },
+    {
+      "caseId": "coverage-method-applicability-analyze",
+      "expectedStrategyId": "method-applicability",
+      "level": "analyze",
+      "topic": "Analyzing an unjustified inverse calculation",
+      "attempts": [
+        {
+          "status": "selected",
+          "finishedAt": "2026-10-19T02:54:56.885Z",
+          "durationMs": 15844
+        }
+      ],
+      "callCount": 1,
+      "status": "selected",
+      "selectedStrategyId": "method-applicability",
+      "exactMatch": true,
+      "rationale": "The missing evidence concerns whether the proposed inverse method is available under the stated matrix condition. This directly fits method-applicability at Analyze, rather than requiring a new comparison or treating the learner's compatible 'some' and 'every' statements as contradictory.",
+      "traceFile": "cases/coverage-method-applicability-analyze.json"
+    },
+    {
+      "caseId": "coverage-scope-and-reference-understand",
+      "expectedStrategyId": "scope-and-reference",
+      "level": "understand",
+      "topic": "Specifying the observer in a conveyor claim",
+      "attempts": [
+        {
+          "status": "selected",
+          "finishedAt": "2026-10-19T02:55:02.992Z",
+          "durationMs": 13492
+        }
+      ],
+      "callCount": 1,
+      "status": "selected",
+      "selectedStrategyId": "scope-and-reference",
+      "exactMatch": true,
+      "rationale": "The missing evidence is the reference intended by an existing stationary claim, not a contradiction or a change of representation. Scope-and-reference directly elicits that reference and its support within the learner's existing account at Understand.",
+      "traceFile": "cases/coverage-scope-and-reference-understand.json"
+    },
+    {
+      "caseId": "coverage-scope-and-reference-apply",
+      "expectedStrategyId": "scope-and-reference",
+      "level": "apply",
+      "topic": "Using classical relative velocity for a moving walkway",
+      "attempts": [
+        {
+          "status": "selected",
+          "finishedAt": "2026-10-19T02:55:09.228Z",
+          "durationMs": 19679
+        }
+      ],
+      "callCount": 1,
+      "status": "selected",
+      "selectedStrategyId": "answer-reason-consistency",
+      "exactMatch": false,
+      "rationale": "The learner has supplied a concrete terminal-direction answer, but the calculation and reference assignments supporting it are missing. This strategy elicits quantitative application behind that answer without treating the tentative wording as an established misconception. Unlike reconcile-claims, it does not invent a conflict between recognizing different references and stating a direction; unlike a reference-clarification-only probe, it requires a calculation.",
+      "traceFile": "cases/coverage-scope-and-reference-apply.json"
+    },
+    {
+      "caseId": "coverage-scope-and-reference-analyze",
+      "expectedStrategyId": "scope-and-reference",
+      "level": "analyze",
+      "topic": "Analyzing interaction classification under a system boundary",
+      "attempts": [
+        {
+          "status": "selected",
+          "finishedAt": "2026-10-19T02:55:14.964Z",
+          "durationMs": 18069
+        }
+      ],
+      "callCount": 1,
+      "status": "selected",
+      "selectedStrategyId": "classify-by-features",
+      "exactMatch": false,
+      "rationale": "The missing evidence is which feature the learner uses to classify the interaction, and why that feature supports the classification in the explicitly defined system. This fits Analyze because it examines the size-based criterion in the learner's argument. The system membership is already understood, so clarifying an unspecified scope is not the primary need; nor are the two statements necessarily contradictory under the learner's rule.",
+      "traceFile": "cases/coverage-scope-and-reference-analyze.json"
+    }
+  ],
+  "method": "Frozen diagnostic states were generated before targeted candidate filtering. Only select_strategy calls are permitted. All level-eligible reviewed strategies are offered. Expected strategy IDs, case IDs, titles, review guides, previous selections, questions, and scores are excluded from model requests. Production selection includes a structured plan, retained here; no question generation, assessment, diagnostic generation, suitability check, or model review is run.",
+  "updatedAt": "2026-10-19T02:55:14.972Z",
+  "summary": {
+    "completed": 51,
+    "total": 51,
+    "exactMatches": 34,
+    "mismatches": 17,
+    "abstentions": 0,
+    "errors": 0,
+    "modelCalls": 51,
+    "byLevel": {
+      "remember": {
+        "completed": 2,
+        "total": 2,
+        "exactMatches": 2
+      },
+      "understand": {
+        "completed": 17,
+        "total": 17,
+        "exactMatches": 9
+      },
+      "apply": {
+        "completed": 16,
+        "total": 16,
+        "exactMatches": 12
+      },
+      "analyze": {
+        "completed": 16,
+        "total": 16,
+        "exactMatches": 11
+      }
+    }
+  }
+}

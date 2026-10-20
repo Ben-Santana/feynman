@@ -1,0 +1,152 @@
+{
+  "version": 1,
+  "reviewedAt": "2026-10-19T03:03:53.760Z",
+  "reviewer": "Coding assistant manual review; not an independent expert rating",
+  "criteriaHash": "b1ac558875e06066999df744981599245b859b2e07a08d71de7bda4399cbde0b",
+  "method": "Inspected each actual selected plan against the pre-rerun required-evidence criterion. Did not use exact-label agreement as automatic proof of validity; did not generate a question or call a model reviewer.",
+  "summary": {
+    "valid": 17,
+    "errors": 0,
+    "repairedOriginalErrors": 2,
+    "exactIntendedLabels": 11,
+    "validAlternativeLabels": 6
+  },
+  "cases": [
+    {
+      "caseId": "coverage-controlled-comparison-understand",
+      "selectedStrategyId": "reconcile-claims",
+      "exactIntendedLabel": false,
+      "valid": true,
+      "originalClassification": "valid_alternative",
+      "reason": "The reconciliation plan retains matched volume versus extra-water claims and asks how they fit the observed result. Valid first probe; other control relationships remain unassessed."
+    },
+    {
+      "caseId": "coverage-boundary-case-understand",
+      "selectedStrategyId": "boundary-case",
+      "exactIntendedLabel": true,
+      "valid": true,
+      "originalClassification": "valid_alternative",
+      "reason": "The plan explicitly probes zero motion in the existing work claim without a new exercise or supplied work rule."
+    },
+    {
+      "caseId": "coverage-boundary-case-apply",
+      "selectedStrategyId": "boundary-case",
+      "exactIntendedLabel": true,
+      "valid": true,
+      "originalClassification": "valid_alternative",
+      "reason": "The plan requires the relationship, numerical application at zero voltage, and validity of the chosen operation, without supplying the formula."
+    },
+    {
+      "caseId": "coverage-remove-condition-analyze",
+      "selectedStrategyId": "remove-condition",
+      "exactIntendedLabel": true,
+      "valid": true,
+      "originalClassification": "valid_alternative",
+      "reason": "The construction analyzes the shutdown-to-deceleration claim under the remaining force-free conditions."
+    },
+    {
+      "caseId": "coverage-quantity-versus-change-understand",
+      "selectedStrategyId": "clarify-specific-term",
+      "exactIntendedLabel": false,
+      "valid": true,
+      "originalClassification": "valid_alternative",
+      "reason": "The exact phrase remains plausibly ambiguous. The clarification asks what happens to the water while level stays constant without supplying alternatives."
+    },
+    {
+      "caseId": "coverage-quantity-versus-change-analyze",
+      "selectedStrategyId": "conservation-accounting",
+      "exactIntendedLabel": false,
+      "valid": true,
+      "originalClassification": "valid_alternative",
+      "reason": "The newly selected quantity-accounting strategy directly relates deposits and withdrawals to equal endpoint balances and the no-activity claim. Its explicit no-other-adjustments assumption defines a usable balance scope."
+    },
+    {
+      "caseId": "coverage-reconcile-claims-apply",
+      "selectedStrategyId": "reconcile-claims",
+      "exactIntendedLabel": true,
+      "valid": true,
+      "originalClassification": "valid_alternative",
+      "reason": "The construction requires a numerical check connecting all three claims and a supported consistency judgment."
+    },
+    {
+      "caseId": "coverage-representation-change-understand",
+      "selectedStrategyId": "representation-change",
+      "exactIntendedLabel": true,
+      "valid": true,
+      "originalClassification": "selection_error",
+      "reason": "Repaired: the plan explicitly maps the repeated table entries to the existing graph height and asks what that correspondence means for distance."
+    },
+    {
+      "caseId": "coverage-representation-change-analyze",
+      "selectedStrategyId": "representation-change",
+      "exactIntendedLabel": true,
+      "valid": true,
+      "originalClassification": "valid_alternative",
+      "reason": "The construction requires terminal-to-node mappings in both diagrams and uses that comparison to examine the visual-layout claim. Actual drawing generation was not tested."
+    },
+    {
+      "caseId": "coverage-answer-reason-consistency-apply",
+      "selectedStrategyId": "controlled-comparison",
+      "exactIntendedLabel": false,
+      "valid": true,
+      "originalClassification": "valid_alternative",
+      "reason": "The controlled contrast changes one reading while holding the others fixed and asks for a calculation; this validly distinguishes the stated shortcut from a mean procedure."
+    },
+    {
+      "caseId": "coverage-conservation-accounting-understand",
+      "selectedStrategyId": "conservation-accounting",
+      "exactIntendedLabel": true,
+      "valid": true,
+      "originalClassification": "selection_error",
+      "reason": "Repaired: the plan requests an account of water no longer in the clothes across the clothes-plus-room-air system during drying, without supplying a destination or state change."
+    },
+    {
+      "caseId": "coverage-classify-by-features-understand",
+      "selectedStrategyId": "necessary-sufficient",
+      "exactIntendedLabel": false,
+      "valid": true,
+      "originalClassification": "valid_alternative",
+      "reason": "The sufficiency probe asks why appearance alone warrants the classification in the existing melting event, retaining the identity condition."
+    },
+    {
+      "caseId": "coverage-classify-by-features-analyze",
+      "selectedStrategyId": "necessary-sufficient",
+      "exactIntendedLabel": false,
+      "valid": true,
+      "originalClassification": "valid_alternative",
+      "reason": "The sufficiency probe tests the proposed feature against supplied changing-slope curved cases and requires analysis of their relevance."
+    },
+    {
+      "caseId": "coverage-scale-level-distinction-understand",
+      "selectedStrategyId": "scale-level-distinction",
+      "exactIntendedLabel": true,
+      "valid": true,
+      "originalClassification": "valid_alternative",
+      "reason": "The construction directly probes the group-summary-to-individual inference. The inherited leading opening remains a fixture limitation."
+    },
+    {
+      "caseId": "coverage-method-applicability-understand",
+      "selectedStrategyId": "method-applicability",
+      "exactIntendedLabel": true,
+      "valid": true,
+      "originalClassification": "valid_alternative",
+      "reason": "The construction elicits how duration affects the equal-weight shortcut’s applicability within the established trip, without a new numerical exercise."
+    },
+    {
+      "caseId": "coverage-scope-and-reference-apply",
+      "selectedStrategyId": "scope-and-reference",
+      "exactIntendedLabel": true,
+      "valid": true,
+      "originalClassification": "valid_alternative",
+      "reason": "The plan requires a numerical terminal-velocity calculation with consistent signs and explicit references for the inputs."
+    },
+    {
+      "caseId": "coverage-scope-and-reference-analyze",
+      "selectedStrategyId": "scope-and-reference",
+      "exactIntendedLabel": true,
+      "valid": true,
+      "originalClassification": "valid_alternative",
+      "reason": "The plan asks what system the external classification refers to and relates that to the stated ball-plus-Earth membership, without giving a classification rule."
+    }
+  ]
+}

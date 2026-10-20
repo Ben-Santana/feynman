@@ -1,0 +1,865 @@
+{
+  "branches": {
+    "legacy": {
+      "attempted": 12,
+      "matched": 12,
+      "mismatched": 0,
+      "errors": 0,
+      "abstentions": 0,
+      "falseCompletions": 0,
+      "unnecessaryBlocks": 0
+    },
+    "refined": {
+      "attempted": 12,
+      "matched": 12,
+      "mismatched": 0,
+      "errors": 0,
+      "abstentions": 0,
+      "falseCompletions": 0,
+      "unnecessaryBlocks": 0
+    }
+  },
+  "paired": {
+    "comparable": 12,
+    "refinedOnlyMatched": 0,
+    "legacyOnlyMatched": 0,
+    "bothMatched": 12,
+    "bothMismatched": 0,
+    "policySensitive": 0
+  },
+  "shadow": {
+    "reviewed": 6,
+    "falseCompletionOpportunities": 0,
+    "caughtFalseCompletions": 0,
+    "missedFalseCompletions": 0,
+    "blockedCorrectCompletions": 0,
+    "confirmedCorrectCompletions": 6,
+    "errors": 0,
+    "unscorable": 0
+  },
+  "metadata": {
+    "driver": "Evaluator comparison tab Run folder",
+    "date": "2026-10-19",
+    "provider": "chatgpt",
+    "model": "gpt-6.1-sol",
+    "suiteVersion": "evaluator-conformance-2026-10-19-v4",
+    "expectationsFrozenAt": "2026-10-19T21:15:04.065Z",
+    "versions": {
+      "prompt": [
+        "1ed6b362365e1015fd4ce68ea57a48f664401c3ceee0009263c8d629323a1cde"
+      ],
+      "refinedPrompt": [
+        "12d9139eb62281de3d7f45b1d6d25d53639465e5917ef57cf611be1e7a2c6ee5"
+      ],
+      "evaluator": [
+        "refined-evaluator-v3"
+      ]
+    },
+    "manifestSourcesUnchanged": true
+  },
+  "caseResults": [
+    {
+      "id": "borderline-design-worst-case-sufficient",
+      "legacy": {
+        "status": "matched",
+        "eligible": true,
+        "falseCompletion": false,
+        "unnecessaryBlock": false,
+        "checks": [
+          {
+            "name": "level_completion",
+            "expected": true,
+            "actual": true,
+            "passed": true
+          },
+          {
+            "name": "criterion_1",
+            "expected": [
+              "supported"
+            ],
+            "actual": "supported",
+            "passed": true
+          }
+        ]
+      },
+      "refined": {
+        "status": "matched",
+        "eligible": true,
+        "falseCompletion": false,
+        "unnecessaryBlock": false,
+        "checks": [
+          {
+            "name": "level_completion",
+            "expected": true,
+            "actual": true,
+            "passed": true
+          },
+          {
+            "name": "criterion_1",
+            "expected": [
+              "supported"
+            ],
+            "actual": "supported",
+            "passed": true
+          }
+        ]
+      },
+      "shadow": {
+        "status": "matched",
+        "eligible": true,
+        "falseCompletion": false,
+        "unnecessaryBlock": false,
+        "checks": [
+          {
+            "name": "level_completion",
+            "expected": true,
+            "actual": true,
+            "passed": true
+          },
+          {
+            "name": "criterion_1",
+            "expected": [
+              "supported"
+            ],
+            "actual": "supported",
+            "passed": true
+          }
+        ],
+        "outcome": "confirmed_correct_completion"
+      },
+      "legacyReason": "The learner makes a concrete non-certification decision and justifies it using the worst-case interval relative to the hard upper bound.",
+      "refinedReason": "The learner makes an explicit rejection decision and correctly justifies it using the worst-case upper temperature of 100.2 C against the hard 100.0 C limit. This supplies both the required bound-based assessment and a concrete justified acceptance decision.",
+      "shadowReason": "The learner makes a concrete non-certification decision and correctly justifies it with the worst-case interval exceeding the hard upper limit. The additional acceptance threshold correctly handles equality. The preceding prompts supply the scenario and request a decision without supplying the assessed reasoning; no unresolved errors remain.",
+      "shadowDifferences": [],
+      "validationIssues": []
+    },
+    {
+      "id": "borderline-design-worst-case-subtle-error",
+      "legacy": {
+        "status": "matched",
+        "eligible": false,
+        "falseCompletion": false,
+        "unnecessaryBlock": false,
+        "checks": [
+          {
+            "name": "level_completion",
+            "expected": false,
+            "actual": false,
+            "passed": true
+          },
+          {
+            "name": "criterion_1",
+            "expected": [
+              "flawed",
+              "unclear"
+            ],
+            "actual": "flawed",
+            "passed": true
+          }
+        ]
+      },
+      "refined": {
+        "status": "matched",
+        "eligible": false,
+        "falseCompletion": false,
+        "unnecessaryBlock": false,
+        "checks": [
+          {
+            "name": "level_completion",
+            "expected": false,
+            "actual": false,
+            "passed": true
+          },
+          {
+            "name": "criterion_1",
+            "expected": [
+              "flawed",
+              "unclear"
+            ],
+            "actual": "flawed",
+            "passed": true
+          }
+        ]
+      },
+      "shadow": {
+        "status": "not_run",
+        "outcome": "not_run"
+      },
+      "legacyReason": "The learner makes an acceptance decision but justifies it using cancellation of symmetric errors and an expected value, which does not establish the required worst-case guarantee.",
+      "refinedReason": "The learner computes the possible temperature interval correctly but accepts compliance using invalid cancellation of symmetric worst-case error. This fails both the hard-bound decision and its technical justification.",
+      "validationIssues": []
+    },
+    {
+      "id": "borderline-quantifier-counterexample-sufficient",
+      "legacy": {
+        "status": "matched",
+        "eligible": true,
+        "falseCompletion": false,
+        "unnecessaryBlock": false,
+        "checks": [
+          {
+            "name": "level_completion",
+            "expected": true,
+            "actual": true,
+            "passed": true
+          },
+          {
+            "name": "criterion_1",
+            "expected": [
+              "supported"
+            ],
+            "actual": "supported",
+            "passed": true
+          }
+        ]
+      },
+      "refined": {
+        "status": "matched",
+        "eligible": true,
+        "falseCompletion": false,
+        "unnecessaryBlock": false,
+        "checks": [
+          {
+            "name": "level_completion",
+            "expected": true,
+            "actual": true,
+            "passed": true
+          },
+          {
+            "name": "criterion_1",
+            "expected": [
+              "supported"
+            ],
+            "actual": "supported",
+            "passed": true
+          }
+        ]
+      },
+      "shadow": {
+        "status": "matched",
+        "eligible": true,
+        "falseCompletion": false,
+        "unnecessaryBlock": false,
+        "checks": [
+          {
+            "name": "level_completion",
+            "expected": true,
+            "actual": true,
+            "passed": true
+          },
+          {
+            "name": "criterion_1",
+            "expected": [
+              "supported"
+            ],
+            "actual": "supported",
+            "passed": true
+          }
+        ],
+        "outcome": "confirmed_correct_completion"
+      },
+      "legacyReason": "The learner distinguishes a confirming example from a universal proof and explains how a differentiable function violates the claimed conclusion.",
+      "refinedReason": "The learner explains the decisive premise–conclusion mismatch in a counterexample and contrasts a single satisfying example with the scope of a claim about all differentiable functions. Together these establish both required relationships in the learner's own words.",
+      "shadowReason": "The learner contrasts a satisfying example with a differentiable function that violates the required derivative condition. Taken together, the explanation shows both why a positive example cannot establish the universal claim and why a premise-true, conclusion-false case disproves it. The reasoning is in the learner's own words, without supplied substantive reasoning.",
+      "shadowDifferences": [],
+      "validationIssues": []
+    },
+    {
+      "id": "borderline-quantifier-counterexample-subtle-error",
+      "legacy": {
+        "status": "matched",
+        "eligible": false,
+        "falseCompletion": false,
+        "unnecessaryBlock": false,
+        "checks": [
+          {
+            "name": "level_completion",
+            "expected": false,
+            "actual": false,
+            "passed": true
+          },
+          {
+            "name": "criterion_1",
+            "expected": [
+              "flawed",
+              "unclear"
+            ],
+            "actual": "flawed",
+            "passed": true
+          }
+        ]
+      },
+      "refined": {
+        "status": "matched",
+        "eligible": false,
+        "falseCompletion": false,
+        "unnecessaryBlock": false,
+        "checks": [
+          {
+            "name": "level_completion",
+            "expected": false,
+            "actual": false,
+            "passed": true
+          },
+          {
+            "name": "criterion_1",
+            "expected": [
+              "flawed",
+              "unclear"
+            ],
+            "actual": "flawed",
+            "passed": true
+          }
+        ]
+      },
+      "shadow": {
+        "status": "not_run",
+        "outcome": "not_run"
+      },
+      "legacyReason": "The learner incorrectly treats one confirming example as proof of a universal claim and rejects a relevant counterexample for violating its conclusion.",
+      "refinedReason": "The learner explicitly treats one satisfying example as proof of a universal implication and rejects a genuine counterexample because it violates the conclusion. These unresolved errors undermine both the required conceptual explanation and the understanding-level task.",
+      "validationIssues": []
+    },
+    {
+      "id": "borderline-aggregate-confounding-sufficient",
+      "legacy": {
+        "status": "matched",
+        "eligible": true,
+        "falseCompletion": false,
+        "unnecessaryBlock": false,
+        "checks": [
+          {
+            "name": "level_completion",
+            "expected": true,
+            "actual": true,
+            "passed": true
+          },
+          {
+            "name": "criterion_1",
+            "expected": [
+              "supported"
+            ],
+            "actual": "supported",
+            "passed": true
+          }
+        ]
+      },
+      "refined": {
+        "status": "matched",
+        "eligible": true,
+        "falseCompletion": false,
+        "unnecessaryBlock": false,
+        "checks": [
+          {
+            "name": "level_completion",
+            "expected": true,
+            "actual": true,
+            "passed": true
+          },
+          {
+            "name": "criterion_1",
+            "expected": [
+              "supported"
+            ],
+            "actual": "supported",
+            "passed": true
+          }
+        ]
+      },
+      "shadow": {
+        "status": "matched",
+        "eligible": true,
+        "falseCompletion": false,
+        "unnecessaryBlock": false,
+        "checks": [
+          {
+            "name": "level_completion",
+            "expected": true,
+            "actual": true,
+            "passed": true
+          },
+          {
+            "name": "criterion_1",
+            "expected": [
+              "supported"
+            ],
+            "actual": "supported",
+            "passed": true
+          }
+        ],
+        "outcome": "confirmed_correct_completion"
+      },
+      "legacyReason": "The learner correctly explains the equal within-risk-group rates, relates the aggregate difference to risk composition, and appropriately limits the causal conclusion.",
+      "refinedReason": "The learner accurately computes the equal within-risk success rates and explains how the differing risk composition produces the aggregate contrast without establishing causal treatment benefit. This is an own-words relational explanation, not merely a list of rates.",
+      "shadowReason": "The learner correctly computes identical within-risk success rates and explains that the differing risk composition accounts for the aggregate contrast without establishing a causal treatment benefit. The explanation is in the learner's own words; the assistant requested within-group rates but supplied no reasoning or answer. Both required definitions are sufficiently supported.",
+      "shadowDifferences": [],
+      "validationIssues": []
+    },
+    {
+      "id": "borderline-aggregate-confounding-subtle-error",
+      "legacy": {
+        "status": "matched",
+        "eligible": false,
+        "falseCompletion": false,
+        "unnecessaryBlock": false,
+        "checks": [
+          {
+            "name": "level_completion",
+            "expected": false,
+            "actual": false,
+            "passed": true
+          },
+          {
+            "name": "criterion_1",
+            "expected": [
+              "flawed",
+              "unclear"
+            ],
+            "actual": "flawed",
+            "passed": true
+          }
+        ]
+      },
+      "refined": {
+        "status": "matched",
+        "eligible": false,
+        "falseCompletion": false,
+        "unnecessaryBlock": false,
+        "checks": [
+          {
+            "name": "level_completion",
+            "expected": false,
+            "actual": false,
+            "passed": true
+          },
+          {
+            "name": "criterion_1",
+            "expected": [
+              "flawed",
+              "unclear"
+            ],
+            "actual": "flawed",
+            "passed": true
+          }
+        ]
+      },
+      "shadow": {
+        "status": "not_run",
+        "outcome": "not_run"
+      },
+      "legacyReason": "The learner correctly calculates the subgroup rates but draws an unsupported causal interpretation from them and leaves that error unresolved.",
+      "refinedReason": "The learner correctly computes the aggregate and within-risk success rates but explicitly misinterprets equal subgroup rates as confirming a causal treatment benefit after controlling risk. This material reasoning error prevents support for both criteria.",
+      "validationIssues": []
+    },
+    {
+      "id": "borderline-conditional-probability-sufficient",
+      "legacy": {
+        "status": "matched",
+        "eligible": true,
+        "falseCompletion": false,
+        "unnecessaryBlock": false,
+        "checks": [
+          {
+            "name": "level_completion",
+            "expected": true,
+            "actual": true,
+            "passed": true
+          },
+          {
+            "name": "criterion_1",
+            "expected": [
+              "supported"
+            ],
+            "actual": "supported",
+            "passed": true
+          }
+        ]
+      },
+      "refined": {
+        "status": "matched",
+        "eligible": true,
+        "falseCompletion": false,
+        "unnecessaryBlock": false,
+        "checks": [
+          {
+            "name": "level_completion",
+            "expected": true,
+            "actual": true,
+            "passed": true
+          },
+          {
+            "name": "criterion_1",
+            "expected": [
+              "supported"
+            ],
+            "actual": "supported",
+            "passed": true
+          }
+        ]
+      },
+      "shadow": {
+        "status": "matched",
+        "eligible": true,
+        "falseCompletion": false,
+        "unnecessaryBlock": false,
+        "checks": [
+          {
+            "name": "level_completion",
+            "expected": true,
+            "actual": true,
+            "passed": true
+          },
+          {
+            "name": "criterion_1",
+            "expected": [
+              "supported"
+            ],
+            "actual": "supported",
+            "passed": true
+          }
+        ],
+        "outcome": "confirmed_correct_completion"
+      },
+      "legacyReason": "The learner accurately explains the null-conditioned tail probability and explicitly distinguishes it from posterior probabilities of the hypotheses.",
+      "refinedReason": "The learner accurately explains the null-conditioned tail probability and distinguishes it from posterior model probabilities. Their explanation connects small p-values to unusual results under the null, establishing understanding rather than merely listing facts.",
+      "shadowReason": "The learner accurately explains the null-conditioned tail probability and distinguishes it from posterior probabilities. Their initial explanation relates small p-values to unusual results under the null, and their clarification supplies the precise conditioning without receiving substantive answer content.",
+      "shadowDifferences": [],
+      "validationIssues": []
+    },
+    {
+      "id": "borderline-conditional-probability-subtle-error",
+      "legacy": {
+        "status": "matched",
+        "eligible": false,
+        "falseCompletion": false,
+        "unnecessaryBlock": false,
+        "checks": [
+          {
+            "name": "level_completion",
+            "expected": false,
+            "actual": false,
+            "passed": true
+          },
+          {
+            "name": "criterion_1",
+            "expected": [
+              "flawed",
+              "unclear"
+            ],
+            "actual": "flawed",
+            "passed": true
+          }
+        ]
+      },
+      "refined": {
+        "status": "matched",
+        "eligible": false,
+        "falseCompletion": false,
+        "unnecessaryBlock": false,
+        "checks": [
+          {
+            "name": "level_completion",
+            "expected": false,
+            "actual": false,
+            "passed": true
+          },
+          {
+            "name": "criterion_1",
+            "expected": [
+              "flawed",
+              "unclear"
+            ],
+            "actual": "flawed",
+            "passed": true
+          }
+        ]
+      },
+      "shadow": {
+        "status": "not_run",
+        "outcome": "not_run"
+      },
+      "legacyReason": "The learner initially describes unusualness under a null model but then explicitly assigns probabilities to the null and alternative, leaving a central conceptual error unresolved.",
+      "refinedReason": "The learner initially relates a small p-value to unusual data under the null, but then explicitly reverses the conditioning and assigns probabilities to the null and alternative. Neither the required p-value definition nor understanding across its required distinctions is established.",
+      "validationIssues": []
+    },
+    {
+      "id": "borderline-average-rate-correction-sufficient",
+      "legacy": {
+        "status": "matched",
+        "eligible": true,
+        "falseCompletion": false,
+        "unnecessaryBlock": false,
+        "checks": [
+          {
+            "name": "level_completion",
+            "expected": true,
+            "actual": true,
+            "passed": true
+          },
+          {
+            "name": "criterion_1",
+            "expected": [
+              "supported"
+            ],
+            "actual": "supported",
+            "passed": true
+          }
+        ]
+      },
+      "refined": {
+        "status": "matched",
+        "eligible": true,
+        "falseCompletion": false,
+        "unnecessaryBlock": false,
+        "checks": [
+          {
+            "name": "level_completion",
+            "expected": true,
+            "actual": true,
+            "passed": true
+          },
+          {
+            "name": "criterion_1",
+            "expected": [
+              "supported"
+            ],
+            "actual": "supported",
+            "passed": true
+          }
+        ]
+      },
+      "shadow": {
+        "status": "matched",
+        "eligible": true,
+        "falseCompletion": false,
+        "unnecessaryBlock": false,
+        "checks": [
+          {
+            "name": "level_completion",
+            "expected": true,
+            "actual": true,
+            "passed": true
+          },
+          {
+            "name": "criterion_1",
+            "expected": [
+              "supported"
+            ],
+            "actual": "supported",
+            "passed": true
+          }
+        ],
+        "outcome": "confirmed_correct_completion"
+      },
+      "legacyReason": "The learner explicitly retracts the earlier error and correctly applies total distance divided by total time, with a consistent time-weighted interpretation.",
+      "refinedReason": "The learner explicitly corrected the earlier arithmetic-mean error and accurately calculated and justified the trip average using unequal leg times, total distance divided by total time, and equivalent time weighting. This supports both the concept criterion and the application task.",
+      "shadowReason": "The learner explicitly corrected the initial arithmetic-mean error and accurately calculated the unequal leg times, total distance, total time, and trip average. The explanation of time weights justifies the method and interprets the result in context. No unresolved material errors remain.",
+      "shadowDifferences": [],
+      "validationIssues": []
+    },
+    {
+      "id": "borderline-average-rate-correction-subtle-error",
+      "legacy": {
+        "status": "matched",
+        "eligible": false,
+        "falseCompletion": false,
+        "unnecessaryBlock": false,
+        "checks": [
+          {
+            "name": "level_completion",
+            "expected": false,
+            "actual": false,
+            "passed": true
+          },
+          {
+            "name": "criterion_1",
+            "expected": [
+              "flawed",
+              "unclear"
+            ],
+            "actual": "flawed",
+            "passed": true
+          }
+        ]
+      },
+      "refined": {
+        "status": "matched",
+        "eligible": false,
+        "falseCompletion": false,
+        "unnecessaryBlock": false,
+        "checks": [
+          {
+            "name": "level_completion",
+            "expected": false,
+            "actual": false,
+            "passed": true
+          },
+          {
+            "name": "criterion_1",
+            "expected": [
+              "flawed",
+              "unclear"
+            ],
+            "actual": "flawed",
+            "passed": true
+          }
+        ]
+      },
+      "shadow": {
+        "status": "not_run",
+        "outcome": "not_run"
+      },
+      "legacyReason": "I need a little more evidence before finishing.",
+      "refinedReason": "The learner correctly identifies the unequal leg times and the numerical average, but explicitly retains invalid equal weighting of the speeds. The partial correction therefore does not establish a valid application or total-distance/total-time justification.",
+      "validationIssues": []
+    },
+    {
+      "id": "borderline-capacitor-boundary-sufficient",
+      "legacy": {
+        "status": "matched",
+        "eligible": true,
+        "falseCompletion": false,
+        "unnecessaryBlock": false,
+        "checks": [
+          {
+            "name": "level_completion",
+            "expected": true,
+            "actual": true,
+            "passed": true
+          },
+          {
+            "name": "criterion_1",
+            "expected": [
+              "supported"
+            ],
+            "actual": "supported",
+            "passed": true
+          }
+        ]
+      },
+      "refined": {
+        "status": "matched",
+        "eligible": true,
+        "falseCompletion": false,
+        "unnecessaryBlock": false,
+        "checks": [
+          {
+            "name": "level_completion",
+            "expected": true,
+            "actual": true,
+            "passed": true
+          },
+          {
+            "name": "criterion_1",
+            "expected": [
+              "supported"
+            ],
+            "actual": "supported",
+            "passed": true
+          }
+        ]
+      },
+      "shadow": {
+        "status": "matched",
+        "eligible": true,
+        "falseCompletion": false,
+        "unnecessaryBlock": false,
+        "checks": [
+          {
+            "name": "level_completion",
+            "expected": true,
+            "actual": true,
+            "passed": true
+          },
+          {
+            "name": "criterion_1",
+            "expected": [
+              "supported"
+            ],
+            "actual": "supported",
+            "passed": true
+          }
+        ],
+        "outcome": "confirmed_correct_completion"
+      },
+      "legacyReason": "The learner correctly applies the separation dependence of capacitance and the battery-imposed voltage constraint to calculate and interpret the final stored energy.",
+      "refinedReason": "The learner correctly applies inverse separation scaling, uses the battery-imposed constant voltage boundary condition, and calculates and interprets the halving of stored field energy. Both definitions are fully evidenced.",
+      "shadowReason": "The learner correctly applies the inverse separation dependence of capacitance, identifies the battery-imposed fixed-voltage boundary condition with charge exchange, and calculates and interprets the halving of stored field energy. Both required definitions are fully evidenced without material errors.",
+      "shadowDifferences": [],
+      "validationIssues": []
+    },
+    {
+      "id": "borderline-capacitor-boundary-subtle-error",
+      "legacy": {
+        "status": "matched",
+        "eligible": false,
+        "falseCompletion": false,
+        "unnecessaryBlock": false,
+        "checks": [
+          {
+            "name": "level_completion",
+            "expected": false,
+            "actual": false,
+            "passed": true
+          },
+          {
+            "name": "criterion_1",
+            "expected": [
+              "flawed",
+              "unclear"
+            ],
+            "actual": "flawed",
+            "passed": true
+          }
+        ]
+      },
+      "refined": {
+        "status": "matched",
+        "eligible": false,
+        "falseCompletion": false,
+        "unnecessaryBlock": false,
+        "checks": [
+          {
+            "name": "level_completion",
+            "expected": false,
+            "actual": false,
+            "passed": true
+          },
+          {
+            "name": "criterion_1",
+            "expected": [
+              "flawed",
+              "unclear"
+            ],
+            "actual": "flawed",
+            "passed": true
+          }
+        ]
+      },
+      "shadow": {
+        "status": "not_run",
+        "outcome": "not_run"
+      },
+      "legacyReason": "The learner correctly scales capacitance but uses an incorrect boundary condition to calculate and interpret the final stored energy.",
+      "refinedReason": "The learner correctly finds the halved capacitance and initial energy, but then incorrectly treats charge as fixed despite the connected constant-voltage battery. This yields an incorrect doubled field energy and invalidates the application and boundary-condition justification.",
+      "validationIssues": []
+    }
+  ],
+  "callTiming": {
+    "legacy": {
+      "calls": 19,
+      "meanCallMs": 8173,
+      "recordedErrors": 0
+    },
+    "refined": {
+      "calls": 12,
+      "meanCallMs": 16065,
+      "recordedErrors": 0
+    },
+    "shadow review": {
+      "calls": 6,
+      "meanCallMs": 14282,
+      "recordedErrors": 0
+    }
+  }
+}

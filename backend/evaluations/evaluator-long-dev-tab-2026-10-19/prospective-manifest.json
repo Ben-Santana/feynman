@@ -1,0 +1,977 @@
+{
+  "createdAt": "2026-10-19T21:25:10.727Z",
+  "suiteVersion": "evaluator-conformance-2026-10-19-v5",
+  "repeats": 3,
+  "cases": [
+    {
+      "id": "long-capacitor-conditions-unresolved",
+      "pairId": "capacitor-conditions",
+      "tags": [
+        "long-conversation",
+        "shared-input"
+      ],
+      "input": {
+        "topic": "Energy and changing capacitor boundary conditions",
+        "level": "understand",
+        "learningType": "theoretical",
+        "aspects": [
+          "Explain why increasing plate separation lowers field energy while a connected ideal battery maintains voltage.",
+          "Explain why increasing separation raises field energy for an isolated capacitor with fixed charge, distinguishing this condition from the connected case."
+        ],
+        "messages": [
+          {
+            "id": "long_m1",
+            "role": "assistant",
+            "content": "Compare separating capacitor plates while attached to an ideal battery versus after disconnecting it. Area and dielectric stay fixed. Explain the stored field energy, not just the effort you feel."
+          },
+          {
+            "id": "long_m2",
+            "role": "user",
+            "content": "I always picture pulling against attraction, so I initially think energy must rise in either case. I remember two formulas but cannot decide which one is allowed."
+          },
+          {
+            "id": "long_m3",
+            "role": "assistant",
+            "content": "What determines which quantity stays fixed?"
+          },
+          {
+            "id": "long_m4",
+            "role": "user",
+            "content": "I am mixing up a fixed voltage source with trapped charge. The battery label says voltage, but I keep thinking it supplies the same charge forever."
+          },
+          {
+            "id": "long_m5",
+            "role": "assistant",
+            "content": "Think about whether charge can move through a connected wire. You can use that as a hint, then explain it yourself."
+          },
+          {
+            "id": "long_m6",
+            "role": "user",
+            "content": "If it remains connected, electrons can move to or from the plates. That means the initial charge is not a fixed total for the capacitor alone."
+          },
+          {
+            "id": "long_m7",
+            "role": "assistant",
+            "content": "How does separation affect capacitance?"
+          },
+          {
+            "id": "long_m8",
+            "role": "user",
+            "content": "Larger separation means smaller capacitance. Double the separation gives half the capacitance if the area and dielectric do not change."
+          },
+          {
+            "id": "long_m9",
+            "role": "assistant",
+            "content": "Can you connect that with the energy expression?"
+          },
+          {
+            "id": "long_m10",
+            "role": "user",
+            "content": "For the battery-connected case V is fixed, so U = CV²/2 falls when C falls. If C halves the field energy halves too. The battery must be part of the energy accounting."
+          },
+          {
+            "id": "long_m11",
+            "role": "assistant",
+            "content": "What if the wire is removed first?"
+          },
+          {
+            "id": "long_m12",
+            "role": "user",
+            "content": "Then I cannot send charge back through a wire. Q stays fixed and U = Q²/(2C) rises as C gets smaller. For halved C the energy doubles."
+          },
+          {
+            "id": "long_m13",
+            "role": "assistant",
+            "content": "Earlier you said the energy always rises. Is that still your claim?"
+          },
+          {
+            "id": "long_m14",
+            "role": "user",
+            "content": "No, I retract that universal claim. It only rises for the isolated fixed-charge capacitor. The connected fixed-voltage capacitor loses field energy even though pulling still takes work."
+          },
+          {
+            "id": "long_m15",
+            "role": "assistant",
+            "content": "Which energy are you discussing when you say it loses energy?"
+          },
+          {
+            "id": "long_m16",
+            "role": "user",
+            "content": "Only energy in the capacitor field. Not total energy of capacitor, battery, and the person. I was using the word system too loosely in my first answer."
+          },
+          {
+            "id": "long_m17",
+            "role": "assistant",
+            "content": "Does replacing the battery by an ideal source with the same voltage change the distinction?"
+          },
+          {
+            "id": "long_m18",
+            "role": "user",
+            "content": "No. The source still sets V and can exchange charge. An ideal wire connection is what matters, not whether I call it a battery or supply."
+          },
+          {
+            "id": "long_m19",
+            "role": "assistant",
+            "content": "You paused on the charge statement. What are you unsure about?"
+          },
+          {
+            "id": "long_m20",
+            "role": "user",
+            "content": "My notebook margin still says \"connected battery fixes Q = C_initial V\". I might have copied that from the disconnected case. I do not want to erase a correct equation by accident."
+          },
+          {
+            "id": "long_m21",
+            "role": "assistant",
+            "content": "Does that margin statement agree with your earlier explanation of charge moving through the wire?"
+          },
+          {
+            "id": "long_m22",
+            "role": "user",
+            "content": "Actually I will keep the margin statement for the connected case too: the wire can move charge, but the source must replace exactly what moves, so the capacitor total Q still stays at its initial value."
+          },
+          {
+            "id": "long_m23",
+            "role": "assistant",
+            "content": "And what happens to your energy conclusion if that is your final boundary condition?"
+          },
+          {
+            "id": "long_m24",
+            "role": "user",
+            "content": "That leaves my connected-case calculation inconsistent. The isolated case is still clear: no wire path, fixed Q, smaller C, larger field energy. I have not fixed the connected-case note yet."
+          },
+          {
+            "id": "long_m25",
+            "role": "assistant",
+            "content": "Please give your final position on that note and both conditions, even if one remains unresolved."
+          },
+          {
+            "id": "long_m26",
+            "role": "user",
+            "content": "Keep my earlier explanation that the connected energy goes down and the isolated energy goes up. The notebook claim about the source maintaining the initial capacitor charge also stays. Those are the two things I would write on the final answer sheet; I cannot reconcile them yet."
+          }
+        ]
+      },
+      "expected": {
+        "eligible": false,
+        "criterionStatuses": [
+          [
+            "flawed",
+            "unclear"
+          ],
+          [
+            "supported"
+          ]
+        ]
+      },
+      "rationale": "Track an explicitly reopened boundary-condition conflict after earlier correct assisted reasoning; preserve the separate isolated-case evidence."
+    },
+    {
+      "id": "long-capacitor-conditions-resolved",
+      "pairId": "capacitor-conditions",
+      "tags": [
+        "long-conversation",
+        "shared-input"
+      ],
+      "input": {
+        "topic": "Energy and changing capacitor boundary conditions",
+        "level": "understand",
+        "learningType": "theoretical",
+        "aspects": [
+          "Explain why increasing plate separation lowers field energy while a connected ideal battery maintains voltage.",
+          "Explain why increasing separation raises field energy for an isolated capacitor with fixed charge, distinguishing this condition from the connected case."
+        ],
+        "messages": [
+          {
+            "id": "long_m1",
+            "role": "assistant",
+            "content": "Compare separating capacitor plates while attached to an ideal battery versus after disconnecting it. Area and dielectric stay fixed. Explain the stored field energy, not just the effort you feel."
+          },
+          {
+            "id": "long_m2",
+            "role": "user",
+            "content": "I always picture pulling against attraction, so I initially think energy must rise in either case. I remember two formulas but cannot decide which one is allowed."
+          },
+          {
+            "id": "long_m3",
+            "role": "assistant",
+            "content": "What determines which quantity stays fixed?"
+          },
+          {
+            "id": "long_m4",
+            "role": "user",
+            "content": "I am mixing up a fixed voltage source with trapped charge. The battery label says voltage, but I keep thinking it supplies the same charge forever."
+          },
+          {
+            "id": "long_m5",
+            "role": "assistant",
+            "content": "Think about whether charge can move through a connected wire. You can use that as a hint, then explain it yourself."
+          },
+          {
+            "id": "long_m6",
+            "role": "user",
+            "content": "If it remains connected, electrons can move to or from the plates. That means the initial charge is not a fixed total for the capacitor alone."
+          },
+          {
+            "id": "long_m7",
+            "role": "assistant",
+            "content": "How does separation affect capacitance?"
+          },
+          {
+            "id": "long_m8",
+            "role": "user",
+            "content": "Larger separation means smaller capacitance. Double the separation gives half the capacitance if the area and dielectric do not change."
+          },
+          {
+            "id": "long_m9",
+            "role": "assistant",
+            "content": "Can you connect that with the energy expression?"
+          },
+          {
+            "id": "long_m10",
+            "role": "user",
+            "content": "For the battery-connected case V is fixed, so U = CV²/2 falls when C falls. If C halves the field energy halves too. The battery must be part of the energy accounting."
+          },
+          {
+            "id": "long_m11",
+            "role": "assistant",
+            "content": "What if the wire is removed first?"
+          },
+          {
+            "id": "long_m12",
+            "role": "user",
+            "content": "Then I cannot send charge back through a wire. Q stays fixed and U = Q²/(2C) rises as C gets smaller. For halved C the energy doubles."
+          },
+          {
+            "id": "long_m13",
+            "role": "assistant",
+            "content": "Earlier you said the energy always rises. Is that still your claim?"
+          },
+          {
+            "id": "long_m14",
+            "role": "user",
+            "content": "No, I retract that universal claim. It only rises for the isolated fixed-charge capacitor. The connected fixed-voltage capacitor loses field energy even though pulling still takes work."
+          },
+          {
+            "id": "long_m15",
+            "role": "assistant",
+            "content": "Which energy are you discussing when you say it loses energy?"
+          },
+          {
+            "id": "long_m16",
+            "role": "user",
+            "content": "Only energy in the capacitor field. Not total energy of capacitor, battery, and the person. I was using the word system too loosely in my first answer."
+          },
+          {
+            "id": "long_m17",
+            "role": "assistant",
+            "content": "Does replacing the battery by an ideal source with the same voltage change the distinction?"
+          },
+          {
+            "id": "long_m18",
+            "role": "user",
+            "content": "No. The source still sets V and can exchange charge. An ideal wire connection is what matters, not whether I call it a battery or supply."
+          },
+          {
+            "id": "long_m19",
+            "role": "assistant",
+            "content": "You paused on the charge statement. What are you unsure about?"
+          },
+          {
+            "id": "long_m20",
+            "role": "user",
+            "content": "My notebook margin still says \"connected battery fixes Q = C_initial V\". I might have copied that from the disconnected case. I do not want to erase a correct equation by accident."
+          },
+          {
+            "id": "long_m21",
+            "role": "assistant",
+            "content": "Does that margin statement agree with your earlier explanation of charge moving through the wire?"
+          },
+          {
+            "id": "long_m22",
+            "role": "user",
+            "content": "Actually I will keep the margin statement for the connected case too: the wire can move charge, but the source must replace exactly what moves, so the capacitor total Q still stays at its initial value."
+          },
+          {
+            "id": "long_m23",
+            "role": "assistant",
+            "content": "And what happens to your energy conclusion if that is your final boundary condition?"
+          },
+          {
+            "id": "long_m24",
+            "role": "user",
+            "content": "That leaves my connected-case calculation inconsistent. The isolated case is still clear: no wire path, fixed Q, smaller C, larger field energy. I have not fixed the connected-case note yet."
+          },
+          {
+            "id": "long_m25",
+            "role": "assistant",
+            "content": "Please give your final position on that note and both conditions, even if one remains unresolved."
+          },
+          {
+            "id": "long_m26",
+            "role": "user",
+            "content": "I now delete the connected-case fixed-charge note. A connected source fixes V; as C decreases, Q = CV decreases because charge returns to the source, and U = CV²/2 decreases. Only after disconnecting does Q stay fixed, so U = Q²/(2C) increases. The earlier right energy trend does not rescue the contradictory note unless I retract it, which I am doing here."
+          }
+        ]
+      },
+      "expected": {
+        "eligible": true,
+        "criterionStatuses": [
+          [
+            "supported"
+          ],
+          [
+            "supported"
+          ]
+        ]
+      },
+      "rationale": "Track an explicitly reopened boundary-condition conflict after earlier correct assisted reasoning; preserve the separate isolated-case evidence."
+    },
+    {
+      "id": "long-speed-partial-repair-unresolved",
+      "pairId": "speed-partial-repair",
+      "tags": [
+        "long-conversation",
+        "shared-input"
+      ],
+      "input": {
+        "topic": "Average speed with a late weighting conflict",
+        "level": "apply",
+        "learningType": "quantitative",
+        "aspects": [
+          "Calculate the average speed of a 12 km leg at 12 km/h followed by 12 km at 24 km/h, and justify the result using total distance and total time rather than an equal-speed average."
+        ],
+        "messages": [
+          {
+            "id": "long_m1",
+            "role": "assistant",
+            "content": "A cyclist travels 12 km at 12 km/h and another 12 km at 24 km/h, without stops. Calculate and explain average speed for the whole trip."
+          },
+          {
+            "id": "long_m2",
+            "role": "user",
+            "content": "I get 18 because the speeds are 12 and 24. Equal distances make it feel fair to give each speed half the vote."
+          },
+          {
+            "id": "long_m3",
+            "role": "assistant",
+            "content": "What durations do those distances imply?"
+          },
+          {
+            "id": "long_m4",
+            "role": "user",
+            "content": "The first leg takes 1 hour and the second half an hour. I did not notice that when I averaged the speeds."
+          },
+          {
+            "id": "long_m5",
+            "role": "assistant",
+            "content": "How could you use those durations without assuming equal time?"
+          },
+          {
+            "id": "long_m6",
+            "role": "user",
+            "content": "Maybe add the hours first? I am not asking you to calculate it. I just keep losing the total when switching between distance and speed."
+          },
+          {
+            "id": "long_m7",
+            "role": "assistant",
+            "content": "Keep separate totals for the distance and elapsed time. What are those totals?"
+          },
+          {
+            "id": "long_m8",
+            "role": "user",
+            "content": "Distance is 24 km and elapsed time is 1.5 hours. The total distance per total hour is 24/1.5 = 16 km/h."
+          },
+          {
+            "id": "long_m9",
+            "role": "assistant",
+            "content": "What does that say about the earlier 18?"
+          },
+          {
+            "id": "long_m10",
+            "role": "user",
+            "content": "I retract 18 as the trip average. It assumes equal time, which this journey does not have. The slow portion lasts twice as long as the faster portion."
+          },
+          {
+            "id": "long_m11",
+            "role": "assistant",
+            "content": "Could you describe the weighting in words?"
+          },
+          {
+            "id": "long_m12",
+            "role": "user",
+            "content": "The 12 km/h speed is present for two thirds of the trip time, and 24 km/h for one third. That weighted mean agrees with 16. I find the distance-over-time method less confusing."
+          },
+          {
+            "id": "long_m13",
+            "role": "assistant",
+            "content": "Where would a rest stop enter this calculation?"
+          },
+          {
+            "id": "long_m14",
+            "role": "user",
+            "content": "If we count the rest as part of elapsed trip time, it adds time with no distance and lowers trip-average speed. But the stated trip has no stop, so I am not adding one."
+          },
+          {
+            "id": "long_m15",
+            "role": "assistant",
+            "content": "Does including that hypothetical stop change the original givens?"
+          },
+          {
+            "id": "long_m16",
+            "role": "user",
+            "content": "No. Sorry, I was answering a different situation. For the original ride it remains 24 km over 1.5 hours."
+          },
+          {
+            "id": "long_m17",
+            "role": "assistant",
+            "content": "You wrote two methods in your notes. Do they agree?"
+          },
+          {
+            "id": "long_m18",
+            "role": "user",
+            "content": "The quotient method gives 16, but I wrote \"equal distance means equal weights on speed\" again next to it. I know that sentence appeared in my wrong start."
+          },
+          {
+            "id": "long_m19",
+            "role": "assistant",
+            "content": "Which part of the sentence would need checking?"
+          },
+          {
+            "id": "long_m20",
+            "role": "user",
+            "content": "The weights. But since I already know the final answer is 16, I think I can keep the equal weights and just call 16 the rounded mean of 12 and 24."
+          },
+          {
+            "id": "long_m21",
+            "role": "assistant",
+            "content": "Does rounding account for that difference?"
+          },
+          {
+            "id": "long_m22",
+            "role": "user",
+            "content": "It should not, since (12 + 24)/2 is exactly 18. I have corrected the arithmetic there, but I have not decided what to do with the equal-weight claim. The quotient calculation is still 16."
+          },
+          {
+            "id": "long_m23",
+            "role": "assistant",
+            "content": "Do the two claimed justifications describe the same elapsed time?"
+          },
+          {
+            "id": "long_m24",
+            "role": "user",
+            "content": "Not as written. One knows the legs last 1 and 0.5 hours; the other gives each speed the same share of time. I can see the mismatch without knowing which statement I want to cross out."
+          },
+          {
+            "id": "long_m25",
+            "role": "assistant",
+            "content": "State your final answer and whether that mismatch is actually resolved."
+          },
+          {
+            "id": "long_m26",
+            "role": "user",
+            "content": "My final numerical answer is 16 km/h from 24/1.5. I will also retain equal weights on 12 and 24 because the distances are equal, even though that gives 18 before rounding. I am only correcting the final number, not withdrawing that weighting explanation."
+          }
+        ]
+      },
+      "expected": {
+        "eligible": false,
+        "criterionStatuses": [
+          [
+            "flawed",
+            "unclear"
+          ]
+        ]
+      },
+      "rationale": "Distinguish a correct final number with retained invalid reasoning from a genuine late correction; do not let the long earlier correct derivation hide the later conflict."
+    },
+    {
+      "id": "long-speed-partial-repair-resolved",
+      "pairId": "speed-partial-repair",
+      "tags": [
+        "long-conversation",
+        "shared-input"
+      ],
+      "input": {
+        "topic": "Average speed with a late weighting conflict",
+        "level": "apply",
+        "learningType": "quantitative",
+        "aspects": [
+          "Calculate the average speed of a 12 km leg at 12 km/h followed by 12 km at 24 km/h, and justify the result using total distance and total time rather than an equal-speed average."
+        ],
+        "messages": [
+          {
+            "id": "long_m1",
+            "role": "assistant",
+            "content": "A cyclist travels 12 km at 12 km/h and another 12 km at 24 km/h, without stops. Calculate and explain average speed for the whole trip."
+          },
+          {
+            "id": "long_m2",
+            "role": "user",
+            "content": "I get 18 because the speeds are 12 and 24. Equal distances make it feel fair to give each speed half the vote."
+          },
+          {
+            "id": "long_m3",
+            "role": "assistant",
+            "content": "What durations do those distances imply?"
+          },
+          {
+            "id": "long_m4",
+            "role": "user",
+            "content": "The first leg takes 1 hour and the second half an hour. I did not notice that when I averaged the speeds."
+          },
+          {
+            "id": "long_m5",
+            "role": "assistant",
+            "content": "How could you use those durations without assuming equal time?"
+          },
+          {
+            "id": "long_m6",
+            "role": "user",
+            "content": "Maybe add the hours first? I am not asking you to calculate it. I just keep losing the total when switching between distance and speed."
+          },
+          {
+            "id": "long_m7",
+            "role": "assistant",
+            "content": "Keep separate totals for the distance and elapsed time. What are those totals?"
+          },
+          {
+            "id": "long_m8",
+            "role": "user",
+            "content": "Distance is 24 km and elapsed time is 1.5 hours. The total distance per total hour is 24/1.5 = 16 km/h."
+          },
+          {
+            "id": "long_m9",
+            "role": "assistant",
+            "content": "What does that say about the earlier 18?"
+          },
+          {
+            "id": "long_m10",
+            "role": "user",
+            "content": "I retract 18 as the trip average. It assumes equal time, which this journey does not have. The slow portion lasts twice as long as the faster portion."
+          },
+          {
+            "id": "long_m11",
+            "role": "assistant",
+            "content": "Could you describe the weighting in words?"
+          },
+          {
+            "id": "long_m12",
+            "role": "user",
+            "content": "The 12 km/h speed is present for two thirds of the trip time, and 24 km/h for one third. That weighted mean agrees with 16. I find the distance-over-time method less confusing."
+          },
+          {
+            "id": "long_m13",
+            "role": "assistant",
+            "content": "Where would a rest stop enter this calculation?"
+          },
+          {
+            "id": "long_m14",
+            "role": "user",
+            "content": "If we count the rest as part of elapsed trip time, it adds time with no distance and lowers trip-average speed. But the stated trip has no stop, so I am not adding one."
+          },
+          {
+            "id": "long_m15",
+            "role": "assistant",
+            "content": "Does including that hypothetical stop change the original givens?"
+          },
+          {
+            "id": "long_m16",
+            "role": "user",
+            "content": "No. Sorry, I was answering a different situation. For the original ride it remains 24 km over 1.5 hours."
+          },
+          {
+            "id": "long_m17",
+            "role": "assistant",
+            "content": "You wrote two methods in your notes. Do they agree?"
+          },
+          {
+            "id": "long_m18",
+            "role": "user",
+            "content": "The quotient method gives 16, but I wrote \"equal distance means equal weights on speed\" again next to it. I know that sentence appeared in my wrong start."
+          },
+          {
+            "id": "long_m19",
+            "role": "assistant",
+            "content": "Which part of the sentence would need checking?"
+          },
+          {
+            "id": "long_m20",
+            "role": "user",
+            "content": "The weights. But since I already know the final answer is 16, I think I can keep the equal weights and just call 16 the rounded mean of 12 and 24."
+          },
+          {
+            "id": "long_m21",
+            "role": "assistant",
+            "content": "Does rounding account for that difference?"
+          },
+          {
+            "id": "long_m22",
+            "role": "user",
+            "content": "It should not, since (12 + 24)/2 is exactly 18. I have corrected the arithmetic there, but I have not decided what to do with the equal-weight claim. The quotient calculation is still 16."
+          },
+          {
+            "id": "long_m23",
+            "role": "assistant",
+            "content": "Do the two claimed justifications describe the same elapsed time?"
+          },
+          {
+            "id": "long_m24",
+            "role": "user",
+            "content": "Not as written. One knows the legs last 1 and 0.5 hours; the other gives each speed the same share of time. I can see the mismatch without knowing which statement I want to cross out."
+          },
+          {
+            "id": "long_m25",
+            "role": "assistant",
+            "content": "State your final answer and whether that mismatch is actually resolved."
+          },
+          {
+            "id": "long_m26",
+            "role": "user",
+            "content": "My final answer is 16 km/h from 24 km divided by 1.5 hours. I withdraw both the equal-weight explanation and the rounding excuse. The leg times differ, so speed weights must be two thirds and one third; those give 16 exactly. My earlier 18 and the late attempt to preserve equal weights are errors, not alternative valid methods."
+          }
+        ]
+      },
+      "expected": {
+        "eligible": true,
+        "criterionStatuses": [
+          [
+            "supported"
+          ]
+        ]
+      },
+      "rationale": "Distinguish a correct final number with retained invalid reasoning from a genuine late correction; do not let the long earlier correct derivation hide the later conflict."
+    },
+    {
+      "id": "long-confounding-hints-unresolved",
+      "pairId": "confounding-hints",
+      "tags": [
+        "long-conversation",
+        "shared-input"
+      ],
+      "input": {
+        "topic": "Replication versus controlling a confounded experiment",
+        "level": "understand",
+        "learningType": "theoretical",
+        "aspects": [
+          "Explain why changing both voltage and bulb type prevents a causal conclusion about voltage alone.",
+          "Explain why repeated measurements of the same confounded design do not remove that confound, and describe a comparison that separates the factors."
+        ],
+        "messages": [
+          {
+            "id": "long_m1",
+            "role": "assistant",
+            "content": "A lamp study increases voltage but uses a different bulb type at each voltage. Brighter readings occur at higher voltage. Explain what conclusions are supported and how replication relates to the design."
+          },
+          {
+            "id": "long_m2",
+            "role": "user",
+            "content": "I would say voltage caused the brighter light. The readings line up nicely, although the bulbs were changed too. I am not sure whether changing bulbs is a big deal if each one works."
+          },
+          {
+            "id": "long_m3",
+            "role": "assistant",
+            "content": "What else changed alongside voltage?"
+          },
+          {
+            "id": "long_m4",
+            "role": "user",
+            "content": "Bulb type. Different bulbs could have different resistance or efficiency, so the two possible influences are entangled."
+          },
+          {
+            "id": "long_m5",
+            "role": "assistant",
+            "content": "What would repeating the observations help you learn?"
+          },
+          {
+            "id": "long_m6",
+            "role": "user",
+            "content": "Whether the measurements bounce around. I used to think enough repetitions automatically make a causal conclusion, but now that sounds too strong."
+          },
+          {
+            "id": "long_m7",
+            "role": "assistant",
+            "content": "Distinguish consistency of a measurement from separating explanations. That is a hint, not a new result from the experiment."
+          },
+          {
+            "id": "long_m8",
+            "role": "user",
+            "content": "A consistent pattern could still come from the systematically different bulbs. Less random noise would not tell me whether bulb type or voltage produced the pattern."
+          },
+          {
+            "id": "long_m9",
+            "role": "assistant",
+            "content": "Can you suggest an informative comparison?"
+          },
+          {
+            "id": "long_m10",
+            "role": "user",
+            "content": "Keep the same bulb type and measurement setup while changing voltage, or test each bulb type at every voltage. Then the factors are no longer locked together in one direction."
+          },
+          {
+            "id": "long_m11",
+            "role": "assistant",
+            "content": "What can you say about the present evidence?"
+          },
+          {
+            "id": "long_m12",
+            "role": "user",
+            "content": "It shows association in this setup, not voltage-alone causation. I retract my first causal wording. The bulb change remains a plausible alternative explanation."
+          },
+          {
+            "id": "long_m13",
+            "role": "assistant",
+            "content": "Suppose the original design was repeated one hundred times at every condition. What changes?"
+          },
+          {
+            "id": "long_m14",
+            "role": "user",
+            "content": "We would estimate repeatability better. If bulb and voltage are still paired the same way, the systematic confound stays. One hundred repeats are not the same as a crossed comparison."
+          },
+          {
+            "id": "long_m15",
+            "role": "assistant",
+            "content": "Do you mean repetition is useless?"
+          },
+          {
+            "id": "long_m16",
+            "role": "user",
+            "content": "No, sorry, I did not mean useless. Repeats address random variation and precision; changing the comparison design addresses the confound. Those are different jobs."
+          },
+          {
+            "id": "long_m17",
+            "role": "assistant",
+            "content": "Apply that distinction to a second example without relying on a phrase from the lamp discussion. Two plant groups get different fertilizers and are always placed on different windowsills."
+          },
+          {
+            "id": "long_m18",
+            "role": "user",
+            "content": "Fertilizer and location vary together, so light or temperature by the windowsill could explain growth. Repeating the groups on the same assigned windowsills would estimate variability but still leave location tied to fertilizer."
+          },
+          {
+            "id": "long_m19",
+            "role": "assistant",
+            "content": "What comparison would help separate those influences?"
+          },
+          {
+            "id": "long_m20",
+            "role": "user",
+            "content": "Assign both fertilizers across both windowsill conditions, with repeated plants under each combination, or hold location constant while comparing fertilizers. I would not call more plants alone a fix for systematic assignment."
+          },
+          {
+            "id": "long_m21",
+            "role": "assistant",
+            "content": "You marked a caveat next to the lamp conclusion. What is it?"
+          },
+          {
+            "id": "long_m22",
+            "role": "user",
+            "content": "I am tempted to say the confound becomes negligible after enough repeats, because random measurement errors average away. That is the justification I originally wanted to use for voltage."
+          },
+          {
+            "id": "long_m23",
+            "role": "assistant",
+            "content": "Does that averaging argument also address the fact that the bulb type changes with voltage?"
+          },
+          {
+            "id": "long_m24",
+            "role": "user",
+            "content": "It addresses random errors, not the paired bulb types. The original voltage-alone conclusion is still unsupported. I have not yet withdrawn the separate claim that enough replication removes the confound itself."
+          },
+          {
+            "id": "long_m25",
+            "role": "assistant",
+            "content": "Please settle that last claim and give a final comparison design."
+          },
+          {
+            "id": "long_m26",
+            "role": "user",
+            "content": "Voltage-alone causation is not established by these observations, and I would prefer holding bulb type fixed. But I still maintain that, even without changing the design, arbitrarily many repeats would average the systematic bulb confound to zero. That is my final replication claim."
+          }
+        ]
+      },
+      "expected": {
+        "eligible": false,
+        "criterionStatuses": [
+          [
+            "supported"
+          ],
+          [
+            "flawed",
+            "unclear"
+          ]
+        ]
+      },
+      "rationale": "Earlier hints and a correct new-context explanation must not erase a later unresolved systematic-versus-random-error contradiction; resolving it should preserve valid assisted evidence without inventing an independence requirement."
+    },
+    {
+      "id": "long-confounding-hints-resolved",
+      "pairId": "confounding-hints",
+      "tags": [
+        "long-conversation",
+        "shared-input"
+      ],
+      "input": {
+        "topic": "Replication versus controlling a confounded experiment",
+        "level": "understand",
+        "learningType": "theoretical",
+        "aspects": [
+          "Explain why changing both voltage and bulb type prevents a causal conclusion about voltage alone.",
+          "Explain why repeated measurements of the same confounded design do not remove that confound, and describe a comparison that separates the factors."
+        ],
+        "messages": [
+          {
+            "id": "long_m1",
+            "role": "assistant",
+            "content": "A lamp study increases voltage but uses a different bulb type at each voltage. Brighter readings occur at higher voltage. Explain what conclusions are supported and how replication relates to the design."
+          },
+          {
+            "id": "long_m2",
+            "role": "user",
+            "content": "I would say voltage caused the brighter light. The readings line up nicely, although the bulbs were changed too. I am not sure whether changing bulbs is a big deal if each one works."
+          },
+          {
+            "id": "long_m3",
+            "role": "assistant",
+            "content": "What else changed alongside voltage?"
+          },
+          {
+            "id": "long_m4",
+            "role": "user",
+            "content": "Bulb type. Different bulbs could have different resistance or efficiency, so the two possible influences are entangled."
+          },
+          {
+            "id": "long_m5",
+            "role": "assistant",
+            "content": "What would repeating the observations help you learn?"
+          },
+          {
+            "id": "long_m6",
+            "role": "user",
+            "content": "Whether the measurements bounce around. I used to think enough repetitions automatically make a causal conclusion, but now that sounds too strong."
+          },
+          {
+            "id": "long_m7",
+            "role": "assistant",
+            "content": "Distinguish consistency of a measurement from separating explanations. That is a hint, not a new result from the experiment."
+          },
+          {
+            "id": "long_m8",
+            "role": "user",
+            "content": "A consistent pattern could still come from the systematically different bulbs. Less random noise would not tell me whether bulb type or voltage produced the pattern."
+          },
+          {
+            "id": "long_m9",
+            "role": "assistant",
+            "content": "Can you suggest an informative comparison?"
+          },
+          {
+            "id": "long_m10",
+            "role": "user",
+            "content": "Keep the same bulb type and measurement setup while changing voltage, or test each bulb type at every voltage. Then the factors are no longer locked together in one direction."
+          },
+          {
+            "id": "long_m11",
+            "role": "assistant",
+            "content": "What can you say about the present evidence?"
+          },
+          {
+            "id": "long_m12",
+            "role": "user",
+            "content": "It shows association in this setup, not voltage-alone causation. I retract my first causal wording. The bulb change remains a plausible alternative explanation."
+          },
+          {
+            "id": "long_m13",
+            "role": "assistant",
+            "content": "Suppose the original design was repeated one hundred times at every condition. What changes?"
+          },
+          {
+            "id": "long_m14",
+            "role": "user",
+            "content": "We would estimate repeatability better. If bulb and voltage are still paired the same way, the systematic confound stays. One hundred repeats are not the same as a crossed comparison."
+          },
+          {
+            "id": "long_m15",
+            "role": "assistant",
+            "content": "Do you mean repetition is useless?"
+          },
+          {
+            "id": "long_m16",
+            "role": "user",
+            "content": "No, sorry, I did not mean useless. Repeats address random variation and precision; changing the comparison design addresses the confound. Those are different jobs."
+          },
+          {
+            "id": "long_m17",
+            "role": "assistant",
+            "content": "Apply that distinction to a second example without relying on a phrase from the lamp discussion. Two plant groups get different fertilizers and are always placed on different windowsills."
+          },
+          {
+            "id": "long_m18",
+            "role": "user",
+            "content": "Fertilizer and location vary together, so light or temperature by the windowsill could explain growth. Repeating the groups on the same assigned windowsills would estimate variability but still leave location tied to fertilizer."
+          },
+          {
+            "id": "long_m19",
+            "role": "assistant",
+            "content": "What comparison would help separate those influences?"
+          },
+          {
+            "id": "long_m20",
+            "role": "user",
+            "content": "Assign both fertilizers across both windowsill conditions, with repeated plants under each combination, or hold location constant while comparing fertilizers. I would not call more plants alone a fix for systematic assignment."
+          },
+          {
+            "id": "long_m21",
+            "role": "assistant",
+            "content": "You marked a caveat next to the lamp conclusion. What is it?"
+          },
+          {
+            "id": "long_m22",
+            "role": "user",
+            "content": "I am tempted to say the confound becomes negligible after enough repeats, because random measurement errors average away. That is the justification I originally wanted to use for voltage."
+          },
+          {
+            "id": "long_m23",
+            "role": "assistant",
+            "content": "Does that averaging argument also address the fact that the bulb type changes with voltage?"
+          },
+          {
+            "id": "long_m24",
+            "role": "user",
+            "content": "It addresses random errors, not the paired bulb types. The original voltage-alone conclusion is still unsupported. I have not yet withdrawn the separate claim that enough replication removes the confound itself."
+          },
+          {
+            "id": "long_m25",
+            "role": "assistant",
+            "content": "Please settle that last claim and give a final comparison design."
+          },
+          {
+            "id": "long_m26",
+            "role": "user",
+            "content": "I withdraw the claim that repeated confounded measurements average the confound away. Random errors can average down, but bulb type still changes systematically with voltage, so voltage-alone causation remains unsupported. Hold bulb type and measurement setup fixed while varying voltage, or cross each bulb type with each voltage and replicate within those combinations. The same distinction applies to fertilizer versus windowsill."
+          }
+        ]
+      },
+      "expected": {
+        "eligible": true,
+        "criterionStatuses": [
+          [
+            "supported"
+          ],
+          [
+            "supported"
+          ]
+        ]
+      },
+      "rationale": "Earlier hints and a correct new-context explanation must not erase a later unresolved systematic-versus-random-error contradiction; resolving it should preserve valid assisted evidence without inventing an independence requirement."
+    }
+  ],
+  "sourceHashes": {
+    "backend/src/evaluatorLongCases.js": "bc4f7166d67cc882c17d8ee8e6c7c0050b4204bb4b4774da0721c8121a45284d",
+    "backend/src/evaluatorComparison.js": "0620a57f8a086bc480aa8b0e8c98321cf1e6b18f0abc0a2b325775627883b80b",
+    "backend/src/evaluatorContracts.js": "8222c14787ee92f67aefbbf4e9414ab1a957185422da28fc5c53580f11f1b1c5",
+    "backend/src/evaluatorBenchmark.js": "f3b419729831abf19a18753eb12923b9b5e5f77d0cf29ad8255781fbda322553",
+    "backend/src/chat.js": "e32c178676c9fa42b79e0d1b32d26c7ca243f344ad7a3d8a6a7529aeed46a768",
+    "frontend/src/learningTypes.js": "abcda1f0a07a30c8fa11d866c05d6167ed74723958a2812d3729dc599b992a63",
+    "backend/prompts.json": "1ed6b362365e1015fd4ce68ea57a48f664401c3ceee0009263c8d629323a1cde"
+  }
+}

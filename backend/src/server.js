@@ -11,6 +11,13 @@ import { AIError, createProviderQuery } from './providers/LanguageModelProvider.
 import { createProviderRegistry } from './providers/registry.js';
 import { compareQuestions } from './strategyComparison.js';
 import { comparisonCases, corpusVersion } from './questionStrategies.js';
+import { readSavedQuestionEvaluation, reviewQuestionPair } from './questionEvaluation.js';
+import { compareEvaluators, comparisonOptions, deferredEvaluatorWork } from './evaluatorComparison.js';
+import { createEvaluationContext, EvaluatorInputError, evaluatorVersion } from './evaluatorContracts.js';
+import { evaluatorComparisonCases, evaluatorTestCases } from './evaluatorTestCases.js';
+import { screenEvaluatorComparison } from './evaluatorBenchmark.js';
+
+const evaluatorCases = evaluatorComparisonCases;
 
 export function createApiServer({ query, hosted = false, env = process.env, promptsPath = promptFile, chatgpt = hosted ? null : createChatGPT(), providers = createProviderRegistry({ chatgpt, env }), accountService = createAccountService(env) } = {}) {
   const allowedOrigins = hosted
@@ -23,12 +30,14 @@ export function createApiServer({ query, hosted = false, env = process.env, prom
     const calls = req.url === '/api/chat' && req.headers['x-feynman-trace'] === '1' ? [] : null;
     const developer = req.url === '/api/developer/prompts';
     const comparison = req.url === '/api/developer/question-comparison';
+    const questionReview = req.url === '/api/developer/question-review';
+    const evaluatorComparison = req.url === '/api/developer/evaluator-comparison';
     const callbackRequest = req.url === '/auth/callback' || req.url.startsWith('/auth/callback?');
     if (callbackRequest) console.info('Feynman ChatGPT callback: HTTP request received.');
     // Hosted instances cannot persist local OAuth credentials or source edits.
     if (hosted && developer && req.method !== 'GET') return send(403, { error: 'Prompts are read-only on this deployment. Use the local Feynman app to edit them.' });
     if (hosted && (callbackRequest || ['/api/ai/sign-in', '/api/ai/sign-out', '/api/ai/remove-account'].includes(req.url))) return send(403, { error: 'ChatGPT connections require the local Feynman app. Choose Anthropic in AI settings on this deployment.' });
-    if (hosted && comparison) return send(403, { error: 'Question comparisons require the local Feynman app.' });
+    if (hosted && (comparison || questionReview || evaluatorComparison)) return send(403, { error: 'Question comparisons require the local Feynman app.' });
     if (!hosted && !/^(localhost|127\.0\.0\.1)(:\d+)?$/.test(req.headers.host || '')) return send(403, { error: 'The Feynman API is only available on localhost.' });
     if (req.method === 'GET' && callbackRequest) {
       res.setHeader('Content-Type', 'text/plain; charset=utf-8');
@@ -82,7 +91,8 @@ export function createApiServer({ query, hosted = false, env = process.env, prom
       const privileged = req.url.startsWith('/api/developer/') || calls || ['/api/ai/sign-in', '/api/ai/sign-out', '/api/ai/remove-account'].includes(req.url);
       if (privileged && account.role !== 'admin') throw new AccountError('Admin access required.', 403);
       if (developer && req.method === 'GET') return send(200, { ...listPrompts(promptsPath), editable: !hosted });
-      if (comparison && req.method === 'GET') return send(200, { cases: comparisonCases, corpusVersion });
+      if (comparison && req.method === 'GET') return send(200, { cases: comparisonCases, corpusVersion, savedEvaluation: readSavedQuestionEvaluation() });
+      if (evaluatorComparison && req.method === 'GET') return send(200, { cases: evaluatorCases, evaluatorVersion, deferred: deferredEvaluatorWork });
       const provider = req.headers['x-feynman-provider'] || 'anthropic';
       const accounts = account.role === 'admin' ? chatgpt?.accounts() || [] : [];
       const accountId = req.headers['x-feynman-account'] || accounts.find(item => item.connected)?.id;
@@ -97,11 +107,11 @@ export function createApiServer({ query, hosted = false, env = process.env, prom
       if (req.method === 'GET' && req.url === '/api/ai/models') return send(200, { models: await adapter.listModels() });
       const aiControl = ['/api/ai/sign-in', '/api/ai/sign-out', '/api/ai/remove-account'].includes(req.url);
       if (aiControl && (!req.headers.origin || !/^application\/json(?:;|$)/i.test(req.headers['content-type'] || ''))) return send(403, { error: 'Open AI settings in the local Feynman app to manage accounts.' });
-      if (req.method !== 'POST' || !['/api/chat', '/api/concepts', '/api/concept-suggestions', '/api/rubric', '/api/developer/rubric', '/api/developer/prompts', '/api/developer/question-comparison', '/api/ai/sign-in', '/api/ai/sign-out', '/api/ai/remove-account'].includes(req.url)) return send(404, { error: 'Not found' });
+      if (req.method !== 'POST' || !['/api/chat', '/api/concepts', '/api/concept-suggestions', '/api/rubric', '/api/developer/rubric', '/api/developer/prompts', '/api/developer/question-comparison', '/api/developer/question-review', '/api/developer/evaluator-comparison', '/api/ai/sign-in', '/api/ai/sign-out', '/api/ai/remove-account'].includes(req.url)) return send(404, { error: 'Not found' });
       let body = '';
       for await (const chunk of req) {
         body += chunk;
-        const limit = aiControl ? 10_000 : developer ? 200_000 : req.url === '/api/chat' ? 12_000_000 : 7_000_000;
+        const limit = aiControl ? 10_000 : developer ? 200_000 : req.url === '/api/chat' || evaluatorComparison ? 12_000_000 : 7_000_000;
         if (Buffer.byteLength(body) > limit) return send(413, { error: 'Request is too large.' });
       }
       let input;
@@ -122,6 +132,30 @@ export function createApiServer({ query, hosted = false, env = process.env, prom
         ...options, signal: options.signal ? AbortSignal.any([options.signal, disconnected.signal]) : disconnected.signal,
       });
       const configurationError = adapter.metadata.configurationHelp;
+      if (evaluatorComparison) {
+        let evaluationOptions;
+        try { evaluationOptions = comparisonOptions({ mode: input.mode, shadow: input.shadow }); }
+        catch (error) { if (error instanceof EvaluatorInputError) return send(400, { error: error.message }); throw error; }
+        const fixture = typeof input.caseId === 'string' ? evaluatorCases.find(item => item.id === input.caseId) : null;
+        if (input.caseId !== undefined && !fixture) return send(400, { error: 'Choose a valid evaluator comparison case.' });
+        const evaluationInput = structuredClone(fixture || input);
+        // Developer run controls are not curriculum data or ordinary chat modes.
+        delete evaluationInput.mode;
+        delete evaluationInput.shadow;
+        try { createEvaluationContext(evaluationInput); } catch (error) { if (error instanceof EvaluatorInputError) return send(400, { error: error.message }); throw error; }
+        if (!configured) return send(503, { error: configurationError });
+        const result = await compareEvaluators(evaluationInput, selectedQuery, loadPrompts(promptsPath), { provider, model }, evaluationOptions);
+        const testCase = fixture && evaluatorTestCases.find(c => c.id === fixture.id);
+        if (testCase) result.screening = screenEvaluatorComparison(testCase, result);
+        return send(200, result);
+      }
+      if (questionReview) {
+        const fixture = comparisonCases.find(item => item.id === input.caseId);
+        if (!fixture) return send(400, { error: 'Choose a valid comparison case.' });
+        if (typeof input.baseline !== 'string' || !input.baseline.trim() || input.baseline.length > 12000 || typeof input.enhanced !== 'string' || !input.enhanced.trim() || input.enhanced.length > 12000) return send(400, { error: 'Provide two questions of up to 12,000 characters.' });
+        if (!configured) return send(503, { error: configurationError });
+        return send(200, { ...await reviewQuestionPair(fixture, input.baseline, input.enhanced, selectedQuery), provider, model });
+      }
       if (comparison) {
         if (!comparisonCases.some(item => item.id === input.caseId)) return send(400, { error: 'Choose a valid comparison case.' });
         if (!configured) return send(503, { error: configurationError });
@@ -142,7 +176,7 @@ export function createApiServer({ query, hosted = false, env = process.env, prom
       try { input = validate(input); } catch (error) { return send(400, { error: error.message }); }
       if (!configured) return send(503, { error: configurationError });
       const tracedQuery = calls ? async (instructions, messages, response, options) => {
-        const call = { role: response.name === 'evaluate_learning' ? 'evaluator' : response.name === 'summarize_learning' ? 'report' : 'learner', request: structuredClone({ model, instructions, messages, response }) };
+        const call = { role: ['evaluate_learning', 'evaluate_refined', 'diagnose_understanding'].includes(response.name) ? 'evaluator' : response.name === 'summarize_learning' ? 'report' : 'learner', request: structuredClone({ model, instructions, messages, response }) };
         calls.push(call);
         const started = Date.now();
         try {

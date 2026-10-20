@@ -1,0 +1,538 @@
+{
+  "metadata": {
+    "completedDate": "2026-10-20",
+    "startedDate": "2026-10-19",
+    "driver": "Evaluator comparison tab: three folder batches plus four request-error retries",
+    "model": "gpt-6.1-sol",
+    "suiteVersion": "evaluator-conformance-2026-10-19-v5",
+    "sourceHashesUnchanged": true,
+    "promptVersions": [
+      "1ed6b362365e1015fd4ce68ea57a48f664401c3ceee0009263c8d629323a1cde"
+    ]
+  },
+  "allAttempts": {
+    "branches": {
+      "legacy": {
+        "attempted": 22,
+        "matched": 18,
+        "mismatched": 0,
+        "errors": 4,
+        "abstentions": 0,
+        "falseCompletions": 0,
+        "unnecessaryBlocks": 0
+      },
+      "refined": {
+        "attempted": 22,
+        "matched": 17,
+        "mismatched": 1,
+        "errors": 4,
+        "abstentions": 0,
+        "falseCompletions": 0,
+        "unnecessaryBlocks": 0
+      }
+    },
+    "paired": {
+      "comparable": 18,
+      "refinedOnlyMatched": 0,
+      "legacyOnlyMatched": 1,
+      "bothMatched": 17,
+      "bothMismatched": 0,
+      "policySensitive": 0
+    },
+    "shadow": {
+      "reviewed": 9,
+      "falseCompletionOpportunities": 0,
+      "caughtFalseCompletions": 0,
+      "missedFalseCompletions": 0,
+      "blockedCorrectCompletions": 0,
+      "confirmedCorrectCompletions": 9,
+      "errors": 0,
+      "unscorable": 0
+    }
+  },
+  "successful": {
+    "branches": {
+      "legacy": {
+        "attempted": 18,
+        "matched": 18,
+        "mismatched": 0,
+        "errors": 0,
+        "abstentions": 0,
+        "falseCompletions": 0,
+        "unnecessaryBlocks": 0
+      },
+      "refined": {
+        "attempted": 18,
+        "matched": 17,
+        "mismatched": 1,
+        "errors": 0,
+        "abstentions": 0,
+        "falseCompletions": 0,
+        "unnecessaryBlocks": 0
+      }
+    },
+    "paired": {
+      "comparable": 18,
+      "refinedOnlyMatched": 0,
+      "legacyOnlyMatched": 1,
+      "bothMatched": 17,
+      "bothMismatched": 0,
+      "policySensitive": 0
+    },
+    "shadow": {
+      "reviewed": 9,
+      "falseCompletionOpportunities": 0,
+      "caughtFalseCompletions": 0,
+      "missedFalseCompletions": 0,
+      "blockedCorrectCompletions": 0,
+      "confirmedCorrectCompletions": 9,
+      "errors": 0,
+      "unscorable": 0
+    }
+  },
+  "perCase": [
+    {
+      "caseId": "long-capacitor-conditions-unresolved",
+      "expected": {
+        "eligible": false,
+        "criterionStatuses": [
+          [
+            "flawed",
+            "unclear"
+          ],
+          [
+            "supported"
+          ]
+        ]
+      },
+      "attempts": 3,
+      "successful": 3,
+      "legacyCompletion": [
+        false,
+        false,
+        false
+      ],
+      "refinedCompletion": [
+        false,
+        false,
+        false
+      ],
+      "legacyStatuses": [
+        [
+          "flawed",
+          "supported"
+        ],
+        [
+          "flawed",
+          "supported"
+        ],
+        [
+          "flawed",
+          "supported"
+        ]
+      ],
+      "refinedStatuses": [
+        [
+          "flawed",
+          "flawed"
+        ],
+        [
+          "flawed",
+          "supported"
+        ],
+        [
+          "flawed",
+          "supported"
+        ]
+      ],
+      "screens": [
+        {
+          "runId": "bac0a380-f866-4ae7-9a1c-44f1347986fa",
+          "legacy": "matched",
+          "refined": "mismatched",
+          "shadow": "not_run"
+        },
+        {
+          "runId": "f7abc608-9941-4bcc-9606-b157db17906b",
+          "legacy": "matched",
+          "refined": "matched",
+          "shadow": "not_run"
+        },
+        {
+          "runId": "f3ff396a-79c4-486e-bbbb-4712a688f2d8",
+          "legacy": "matched",
+          "refined": "matched",
+          "shadow": "not_run"
+        }
+      ]
+    },
+    {
+      "caseId": "long-capacitor-conditions-resolved",
+      "expected": {
+        "eligible": true,
+        "criterionStatuses": [
+          [
+            "supported"
+          ],
+          [
+            "supported"
+          ]
+        ]
+      },
+      "attempts": 3,
+      "successful": 3,
+      "legacyCompletion": [
+        true,
+        true,
+        true
+      ],
+      "refinedCompletion": [
+        true,
+        true,
+        true
+      ],
+      "legacyStatuses": [
+        [
+          "supported",
+          "supported"
+        ],
+        [
+          "supported",
+          "supported"
+        ],
+        [
+          "supported",
+          "supported"
+        ]
+      ],
+      "refinedStatuses": [
+        [
+          "supported",
+          "supported"
+        ],
+        [
+          "supported",
+          "supported"
+        ],
+        [
+          "supported",
+          "supported"
+        ]
+      ],
+      "screens": [
+        {
+          "runId": "3574b755-40d6-42d3-859b-77ccb611c7d3",
+          "legacy": "matched",
+          "refined": "matched",
+          "shadow": "confirmed_correct_completion"
+        },
+        {
+          "runId": "ee2bc4f6-4478-4222-a2d6-459f019eec90",
+          "legacy": "matched",
+          "refined": "matched",
+          "shadow": "confirmed_correct_completion"
+        },
+        {
+          "runId": "9e0e53f9-f855-4f6f-b89e-fca2e496624d",
+          "legacy": "matched",
+          "refined": "matched",
+          "shadow": "confirmed_correct_completion"
+        }
+      ]
+    },
+    {
+      "caseId": "long-speed-partial-repair-unresolved",
+      "expected": {
+        "eligible": false,
+        "criterionStatuses": [
+          [
+            "flawed",
+            "unclear"
+          ]
+        ]
+      },
+      "attempts": 4,
+      "successful": 3,
+      "legacyCompletion": [
+        false,
+        false,
+        false
+      ],
+      "refinedCompletion": [
+        false,
+        false,
+        false
+      ],
+      "legacyStatuses": [
+        [
+          "flawed"
+        ],
+        [
+          "flawed"
+        ],
+        [
+          "flawed"
+        ]
+      ],
+      "refinedStatuses": [
+        [
+          "flawed"
+        ],
+        [
+          "flawed"
+        ],
+        [
+          "flawed"
+        ]
+      ],
+      "screens": [
+        {
+          "runId": "b1db66aa-892e-48b8-837b-6f820253ec41",
+          "legacy": "matched",
+          "refined": "matched",
+          "shadow": "not_run"
+        },
+        {
+          "runId": "c432499e-3fc8-48e1-9484-4ee78f6e01b2",
+          "legacy": "matched",
+          "refined": "matched",
+          "shadow": "not_run"
+        },
+        {
+          "runId": "7eb48a24-167b-419d-a6d8-a5978f66c5b7",
+          "legacy": "matched",
+          "refined": "matched",
+          "shadow": "not_run"
+        }
+      ]
+    },
+    {
+      "caseId": "long-speed-partial-repair-resolved",
+      "expected": {
+        "eligible": true,
+        "criterionStatuses": [
+          [
+            "supported"
+          ]
+        ]
+      },
+      "attempts": 4,
+      "successful": 3,
+      "legacyCompletion": [
+        true,
+        true,
+        true
+      ],
+      "refinedCompletion": [
+        true,
+        true,
+        true
+      ],
+      "legacyStatuses": [
+        [
+          "supported"
+        ],
+        [
+          "supported"
+        ],
+        [
+          "supported"
+        ]
+      ],
+      "refinedStatuses": [
+        [
+          "supported"
+        ],
+        [
+          "supported"
+        ],
+        [
+          "supported"
+        ]
+      ],
+      "screens": [
+        {
+          "runId": "7992d7a4-c2ab-4a6c-a54d-d502438e9e7d",
+          "legacy": "matched",
+          "refined": "matched",
+          "shadow": "confirmed_correct_completion"
+        },
+        {
+          "runId": "ed9046ac-9305-4c9e-916c-b63280a9232d",
+          "legacy": "matched",
+          "refined": "matched",
+          "shadow": "confirmed_correct_completion"
+        },
+        {
+          "runId": "63be888e-bfc3-4bca-94eb-e76054ca19e6",
+          "legacy": "matched",
+          "refined": "matched",
+          "shadow": "confirmed_correct_completion"
+        }
+      ]
+    },
+    {
+      "caseId": "long-confounding-hints-unresolved",
+      "expected": {
+        "eligible": false,
+        "criterionStatuses": [
+          [
+            "supported"
+          ],
+          [
+            "flawed",
+            "unclear"
+          ]
+        ]
+      },
+      "attempts": 4,
+      "successful": 3,
+      "legacyCompletion": [
+        false,
+        false,
+        false
+      ],
+      "refinedCompletion": [
+        false,
+        false,
+        false
+      ],
+      "legacyStatuses": [
+        [
+          "supported",
+          "flawed"
+        ],
+        [
+          "supported",
+          "flawed"
+        ],
+        [
+          "supported",
+          "flawed"
+        ]
+      ],
+      "refinedStatuses": [
+        [
+          "supported",
+          "flawed"
+        ],
+        [
+          "supported",
+          "flawed"
+        ],
+        [
+          "supported",
+          "flawed"
+        ]
+      ],
+      "screens": [
+        {
+          "runId": "3ed7a076-38d8-46b8-bde2-994fe526143c",
+          "legacy": "matched",
+          "refined": "matched",
+          "shadow": "not_run"
+        },
+        {
+          "runId": "0f9cb59c-eb43-4762-9092-185c694c2a68",
+          "legacy": "matched",
+          "refined": "matched",
+          "shadow": "not_run"
+        },
+        {
+          "runId": "6c8f806c-7314-4878-84ac-d71906d2828a",
+          "legacy": "matched",
+          "refined": "matched",
+          "shadow": "not_run"
+        }
+      ]
+    },
+    {
+      "caseId": "long-confounding-hints-resolved",
+      "expected": {
+        "eligible": true,
+        "criterionStatuses": [
+          [
+            "supported"
+          ],
+          [
+            "supported"
+          ]
+        ]
+      },
+      "attempts": 4,
+      "successful": 3,
+      "legacyCompletion": [
+        true,
+        true,
+        true
+      ],
+      "refinedCompletion": [
+        true,
+        true,
+        true
+      ],
+      "legacyStatuses": [
+        [
+          "supported",
+          "supported"
+        ],
+        [
+          "supported",
+          "supported"
+        ],
+        [
+          "supported",
+          "supported"
+        ]
+      ],
+      "refinedStatuses": [
+        [
+          "supported",
+          "supported"
+        ],
+        [
+          "supported",
+          "supported"
+        ],
+        [
+          "supported",
+          "supported"
+        ]
+      ],
+      "screens": [
+        {
+          "runId": "f9aab8b0-a453-4faa-843d-7b0bf397f5ab",
+          "legacy": "matched",
+          "refined": "matched",
+          "shadow": "confirmed_correct_completion"
+        },
+        {
+          "runId": "13bd1339-3e14-4c1c-8f2f-9c04ae1ddf13",
+          "legacy": "matched",
+          "refined": "matched",
+          "shadow": "confirmed_correct_completion"
+        },
+        {
+          "runId": "14a01744-1849-496f-a850-b0283e7a8753",
+          "legacy": "matched",
+          "refined": "matched",
+          "shadow": "confirmed_correct_completion"
+        }
+      ]
+    }
+  ],
+  "callTiming": {
+    "legacy": {
+      "calls": 33,
+      "meanCallMs": 9947
+    },
+    "refined": {
+      "calls": 18,
+      "meanCallMs": 24195
+    },
+    "shadow review": {
+      "calls": 9,
+      "meanCallMs": 22462
+    }
+  }
+}

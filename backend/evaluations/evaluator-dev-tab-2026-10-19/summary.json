@@ -1,0 +1,184 @@
+{
+  "date": "2026-10-19",
+  "driver": "Evaluator comparison developer tab",
+  "provider": "chatgpt",
+  "modelSelection": "Account default",
+  "verifiedDefault": "GPT-6.1-Sol",
+  "historyLimit": 40,
+  "original": {
+    "count": 36,
+    "summary": {
+      "legacy": {
+        "attempted": 36,
+        "matched": 34,
+        "mismatched": 2,
+        "errors": 0,
+        "abstentions": 0,
+        "falseCompletions": 0,
+        "unnecessaryBlocks": 1
+      },
+      "refined": {
+        "attempted": 36,
+        "matched": 34,
+        "mismatched": 2,
+        "errors": 0,
+        "abstentions": 0,
+        "falseCompletions": 0,
+        "unnecessaryBlocks": 2
+      }
+    },
+    "failures": [
+      {
+        "caseId": "rubric-full-text-not-waived",
+        "runId": "b4b91e05-6928-4a9c-908b-d21c188db012",
+        "branch": "legacy",
+        "screen": {
+          "status": "mismatched",
+          "eligible": false,
+          "falseCompletion": false,
+          "unnecessaryBlock": false,
+          "checks": [
+            {
+              "name": "level_completion",
+              "expected": false,
+              "actual": false,
+              "passed": true
+            },
+            {
+              "name": "criterion_1",
+              "expected": [
+                "supported"
+              ],
+              "actual": "unclear",
+              "passed": false
+            }
+          ]
+        },
+        "reason": "The learner correctly identifies the energy location but does not explain why separating opposite charges requires work."
+      },
+      {
+        "caseId": "experimental-analyze-demonstration",
+        "runId": "90837a93-3536-4c33-84b3-ef32d174d196",
+        "branch": "refined",
+        "screen": {
+          "status": "mismatched",
+          "eligible": false,
+          "falseCompletion": false,
+          "unnecessaryBlock": true,
+          "checks": [
+            {
+              "name": "level_completion",
+              "expected": true,
+              "actual": false,
+              "passed": false
+            },
+            {
+              "name": "criterion_1",
+              "expected": [
+                "supported"
+              ],
+              "actual": "supported",
+              "passed": true
+            }
+          ]
+        },
+        "reason": "The learner adequately evaluates the causal claim, identifies confounding and uncertainty, and proposes a controlled comparison. The broader analysis task remains incomplete because no actual theory–evidence comparison or discrepancy analysis is demonstrated."
+      },
+      {
+        "caseId": "theoretical-analyze-demonstration",
+        "runId": "2d018a6f-0029-4524-8a0f-fa8dde072ad0",
+        "branch": "legacy",
+        "screen": {
+          "status": "mismatched",
+          "eligible": false,
+          "falseCompletion": false,
+          "unnecessaryBlock": true,
+          "checks": [
+            {
+              "name": "level_completion",
+              "expected": true,
+              "actual": false,
+              "passed": false
+            },
+            {
+              "name": "criterion_1",
+              "expected": [
+                "supported"
+              ],
+              "actual": "unclear",
+              "passed": false
+            }
+          ]
+        },
+        "reason": "The learner explains energy conservation and the distinction between internal energy and net heat flow, but the insulation analysis is ambiguous because its location is unspecified."
+      },
+      {
+        "caseId": "theoretical-analyze-demonstration",
+        "runId": "2d018a6f-0029-4524-8a0f-fa8dde072ad0",
+        "branch": "refined",
+        "screen": {
+          "status": "mismatched",
+          "eligible": false,
+          "falseCompletion": false,
+          "unnecessaryBlock": true,
+          "checks": [
+            {
+              "name": "level_completion",
+              "expected": true,
+              "actual": false,
+              "passed": false
+            },
+            {
+              "name": "criterion_1",
+              "expected": [
+                "supported"
+              ],
+              "actual": "unclear",
+              "passed": false
+            }
+          ]
+        },
+        "reason": "The learner explains energy conservation, the role of temperature difference, and the distinction between internal energy and net heat flow. The insulation analysis is ambiguous: the scenario already specifies isolation and does not say whether added insulation is between the blocks or around the system."
+      }
+    ],
+    "shadow": {
+      "completed": 13,
+      "wouldBlock": 0,
+      "errors": 0
+    }
+  },
+  "revisedExampleReruns": {
+    "count": 2,
+    "summary": {
+      "legacy": {
+        "attempted": 2,
+        "matched": 2,
+        "mismatched": 0,
+        "errors": 0,
+        "abstentions": 0,
+        "falseCompletions": 0,
+        "unnecessaryBlocks": 0
+      },
+      "refined": {
+        "attempted": 2,
+        "matched": 2,
+        "mismatched": 0,
+        "errors": 0,
+        "abstentions": 0,
+        "falseCompletions": 0,
+        "unnecessaryBlocks": 0
+      }
+    },
+    "failures": [],
+    "shadow": {
+      "completed": 2,
+      "wouldBlock": 0,
+      "errors": 0
+    }
+  },
+  "limitations": [
+    "Authored expectations, not professor-scored accuracy benchmarks.",
+    "Original fixture mismatches retained; no criteria waived.",
+    "Model slug is verified from AI settings, not independently recorded in each response."
+  ]
+}

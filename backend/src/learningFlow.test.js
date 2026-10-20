@@ -7,6 +7,15 @@ const rubric = { remember: 'Mention A and B.', understand: 'Explain why.', apply
 const concept = (id, target = 'analyze') => ({ id, name: id, rubric, target, passed: 0, stageStart: 0, messages: [], draft: '', assessment: null });
 const assessment = complete => ({ complete, reason: '', criteria: [], task: {} });
 
+test('learner state persists for the active stage and clears when advancing', () => {
+  const learnerModel = { state: { understands: [], potentialMisconceptions: [], missingConcepts: [], uncertainty: [], diagnosticObjective: 'Check the claim.', evidence: [] }, strategyId: 'remove-condition' };
+  const current = concept('motion');
+  const pending = advanceConcept(current, [], { message: 'Which interaction remains?', expression: 'attentive', assessment: assessment(false), learnerModel });
+  assert.deepEqual(pending.learnerModel, learnerModel);
+  const next = advanceConcept(pending, [], { message: 'Complete.', expression: 'excited', assessment: assessment(true) }, { message: 'Next level.' });
+  assert.equal(next.learnerModel, undefined);
+});
+
 test('starting creates one independent Remember chat per concept', () => {
   const original = [concept('integrals'), concept('derivatives')];
   const started = startConcepts(original);

@@ -1,0 +1,69 @@
+{
+  "branches": {
+    "legacy": {
+      "attempted": 16,
+      "matched": 15,
+      "mismatched": 1,
+      "errors": 0,
+      "abstentions": 0,
+      "falseCompletions": 0,
+      "unnecessaryBlocks": 0
+    },
+    "refined": {
+      "attempted": 16,
+      "matched": 16,
+      "mismatched": 0,
+      "errors": 0,
+      "abstentions": 0,
+      "falseCompletions": 0,
+      "unnecessaryBlocks": 0
+    }
+  },
+  "paired": {
+    "comparable": 16,
+    "refinedOnlyMatched": 1,
+    "legacyOnlyMatched": 0,
+    "bothMatched": 15,
+    "bothMismatched": 0,
+    "policySensitive": 4
+  },
+  "shadow": {
+    "reviewed": 8,
+    "falseCompletionOpportunities": 0,
+    "caughtFalseCompletions": 0,
+    "missedFalseCompletions": 0,
+    "blockedCorrectCompletions": 0,
+    "confirmedCorrectCompletions": 8,
+    "errors": 0,
+    "unscorable": 0
+  },
+  "metadata": {
+    "date": "2026-10-19",
+    "driver": "Evaluator comparison developer tab, two Run folder batches",
+    "provider": "chatgpt",
+    "model": "gpt-6.1-sol",
+    "suiteVersion": "evaluator-conformance-2026-10-19-v3",
+    "uniqueCases": 16,
+    "promptVersions": [
+      "1ed6b362365e1015fd4ce68ea57a48f664401c3ceee0009263c8d629323a1cde"
+    ],
+    "refinedPromptVersions": [
+      "12d9139eb62281de3d7f45b1d6d25d53639465e5917ef57cf611be1e7a2c6ee5"
+    ],
+    "limitation": "One authored status-label mismatch is not a pass/block improvement. No false-completion opportunities for shadow review."
+  },
+  "callTiming": {
+    "legacy": {
+      "calls": 24,
+      "meanCallMs": 5998
+    },
+    "refined": {
+      "calls": 16,
+      "meanCallMs": 12347
+    },
+    "shadow review": {
+      "calls": 8,
+      "meanCallMs": 11721
+    }
+  }
+}

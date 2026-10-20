@@ -50,7 +50,7 @@ export class AnthropicProvider extends LanguageModelProvider {
     const response = await this.fetcher('https://api.anthropic.com/v1/messages', {
       method: 'POST', signal,
       headers: { 'content-type': 'application/json', ...this.headers() },
-      body: JSON.stringify({ model, max_tokens: ['evaluate_learning', 'extract_concepts', 'generate_rubric'].includes(output.name) ? 8192 : 4096,
+      body: JSON.stringify({ model, max_tokens: ['evaluate_learning', 'evaluate_refined', 'review_refined_shadow', 'extract_concepts', 'generate_rubric'].includes(output.name) ? 8192 : 4096,
         system: automaticTools ? `${instructions}\n\nReturn your final result by calling ${output.name} exactly once with arguments matching its schema. A plain text response cannot be processed by this application.` : instructions,
         messages: anthropicMessages(messages), tools: [{ name: output.name, description: output.description, input_schema: output.schema }], tool_choice: automaticTools ? { type: 'auto' } : { type: 'tool', name: output.name } }),
     });

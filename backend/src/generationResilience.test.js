@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { chat, generateRubric, generateLevelRubric, validate } from './chat.js';
+import { chat as conversationChat, generateRubric, generateLevelRubric, validate } from './chat.js';
 import { AIError, createProviderQuery, LanguageModelProvider } from './providers/LanguageModelProvider.js';
 import { generateRubricBatches } from '../../frontend/src/rubricGeneration.ts';
 
@@ -137,3 +137,6 @@ test('large supplied context stays bounded while direct API batches progress', a
   });
   assert.equal(result.length, 6);
 });
+
+// Preserve regression coverage for the original developer-comparison baseline.
+function chat(input, query, prompts) { return conversationChat(input, query, prompts, { evaluator: 'legacy', learner: 'default' }); }

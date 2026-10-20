@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { chat, validate, generateRubric, conceptsFromStudyTest, suggestConceptsFromFiles } from './chat.js';
+import { chat as conversationChat, validate, generateRubric, conceptsFromStudyTest, suggestConceptsFromFiles } from './chat.js';
 import { learningTypes, learningTypeIds, resolveLearningType, restoreLearningType } from '../../frontend/src/learningTypes.js';
 import { draftTarget, genericRubric, fillMissingRubric, restoreDraft, withBasicCriterion } from '../../frontend/src/rubricSetup.ts';
 import { assessmentTranscript, advanceConcept, restoreLearning, levelIds } from '../../frontend/src/learningFlow.ts';
@@ -208,3 +208,6 @@ test('a failed scenario or evaluator call propagates without manufacturing compl
   await assert.rejects(chat(input('experimental', 'apply'), failure), /Offline/);
   await assert.rejects(chat(input('design', 'analyze', conversation()), failure), /Offline/);
 });
+
+// Preserve regression coverage for the original developer-comparison baseline.
+function chat(input, query, prompts) { return conversationChat(input, query, prompts, { evaluator: 'legacy', learner: 'default' }); }

@@ -3,8 +3,10 @@ import { loadPrompts } from './promptStore.js';
 import { checklistItems, checklistText } from '../../frontend/src/rubricChecklist.js';
 import { extractArchiveText } from './uploadExtract.js';
 import { randomUUID } from 'node:crypto';
-import { targetedQuestionInstructions, assertTargetedQuestion } from './questionTargeting.js';
+import { targetedQuestionInstructions, assertTargetedQuestion, questionIntegrityInstructions, assertQuestionIntegrity } from './questionTargeting.js';
 import { learningTypes, resolveLearningType, needsScenarioOpening } from '../../frontend/src/learningTypes.js';
+import { evaluateRefined, conversationAssessment } from './refinedEvaluator.js';
+import { generateStrategyQuestion } from './strategyLearner.js';
 const initialPrompts = loadPrompts();
 export const rubrics = Object.fromEntries(['remember', 'understand', 'apply', 'analyze'].map(level => [level, initialPrompts.text('chat.rubric.' + level)]));
 const statuses = ['supported', 'needs_clarification', 'flawed', 'missing'];
@@ -212,6 +214,37 @@ function reconcile(first, second) {
   const complete = criteria.every(c => c.status === 'supported') && task.status === 'supported';
   return { ...first, criteria, task, nextQuestionFocus: complete ? '' : second.nextQuestionFocus || first.nextQuestionFocus, reason: complete ? first.reason : 'I need a little more evidence before finishing.', complete };
 }
+// Shared by ordinary chats and the evaluator comparison. No classmate generation.
+export async function evaluateLegacy(input, query, prompts = loadPrompts(), { onFirstAssessment } = {}) {
+  const { level, topic, messages, criterion } = validate(input);
+  const learningType = resolveLearningType(input.learningType);
+  const profile = { ...learningTypes[learningType], ...prompts.profile(learningType) };
+  const paperAnalysis = level === 'analyze' && learningType === 'quantitative';
+  const aspects = criterion && /^\s*1[.)]\s/m.test(criterion) ? checklistItems(criterion) : input.aspects;
+  const latestPaper = messages.findLast(m => m.paper)?.paper;
+  const reviewIndex = latestPaper ? messages.findIndex(m => m.review?.paperId === latestPaper.id) : -1;
+  if (!messages.length || (paperAnalysis && (reviewIndex < 0 || messages.at(-1)?.review?.paperId === latestPaper.id))) return null;
+  const levelRubric = level === 'remember' || level === 'understand' || learningType === 'quantitative' ? prompts.text('chat.rubric.' + level) : profile.tasks[level];
+  const context = prompts.text('chat.context', { learningTypeLabel: profile.label, level, curriculum: JSON.stringify({ topic, aspects, criterion: criterion || null }) });
+  const evaluatorSystem = prompts.text('chat.evaluator', { context, levelRubric, levelHelp: profile.help[level], quantitativeTask: level === 'apply' && learningType === 'quantitative' ? profile.tasks.apply : '', stageEvidence: !paperAnalysis ? prompts.text('chat.stageEvidence') : '' });
+  const content = [{ type: 'text', text: JSON.stringify(messages.map((m, messageIndex) => ({ messageIndex, role: m.role, content: messageText(m) }))) }];
+  messages.forEach((m, messageIndex) => { if (m.boardImage) content.push({ type: 'text', text: `Whiteboard image for messageIndex ${messageIndex}:` }, boardBlock(m.boardImage)); });
+  const evaluatorMessages = [{ role: 'user', content: content.length === 1 ? content[0].text : content }];
+  const evaluate = system => retryStructuredOutput(async (attempt, signal) => assessment(
+    await repairQuery(query, attempt, signal)(system, evaluatorMessages, tool('evaluate_learning', {
+      ...assessmentProperties,
+      criteria: { ...assessmentProperties.criteria, minItems: aspects.length, maxItems: aspects.length,
+        items: { ...assessmentProperties.criteria.items, properties: { ...assessmentProperties.criteria.items.properties, aspect: { type: 'string', enum: [...new Set(aspects)] } } } },
+    })), aspects, messages, level, -1));
+  let checked = await evaluate(evaluatorSystem);
+  // Developer ablations observe this exact first pass without changing the
+  // production confirmation policy or issuing a duplicate assessment.
+  onFirstAssessment?.(structuredClone(checked));
+  if (checked.complete || checked.criteria.some(c => c.status === 'flawed' && c.result === 'correct') || (checked.task.status === 'flawed' && checked.task.result === 'correct')) {
+    checked = reconcile(checked, await evaluate(prompts.text('chat.secondAssessment', { evaluatorSystem })));
+  }
+  return checked;
+}
 function followUpFocus(checked, prompts) {
   const target = checked.criteria.find(c => c.status !== 'supported') || (checked.task.status !== 'supported' ? { aspect: 'the overall task', status: checked.task.status } : null);
   if (!target) return '';
@@ -219,13 +252,12 @@ function followUpFocus(checked, prompts) {
   const instruction = target.status === 'flawed' ? prompts.text('chat.focusFlawed') : prompts.text('chat.focusMissing');
   return prompts.text('chat.followUpFocus', { focus: JSON.stringify(focus), instruction: instruction });
 }
-export async function chat(input, query, prompts = loadPrompts()) {
+export async function chat(input, query, prompts = loadPrompts(), { evaluator = 'refined', learner = 'strategy' } = {}) {
   const { level, topic, messages, criterion } = validate(input);
   const learningType = resolveLearningType(input.learningType);
   const profile = { ...learningTypes[learningType], ...prompts.profile(learningType) };
   const paperAnalysis = level === 'analyze' && learningType === 'quantitative';
   const openingScenario = !messages.length && needsScenarioOpening(level, learningType);
-  const levelRubric = level === 'remember' || level === 'understand' || learningType === 'quantitative' ? prompts.text('chat.rubric.' + level) : profile.tasks[level];
   // Numbered rubric boxes are authoritative, including for older API callers.
   const aspects = criterion && /^\s*1[.)]\s/m.test(criterion) ? checklistItems(criterion) : input.aspects;
   if (!aspects.length || aspects.length > 20) throw new Error('Provide 1–20 checklist items.');
@@ -243,21 +275,7 @@ export async function chat(input, query, prompts = loadPrompts()) {
   const transcript = [{ role: 'user', content: prompts.text('chat.beginSession') + priorContext }, ...conversation(messages)];
   let checked = null;
   if (messages.length && (!paperAnalysis || review)) {
-    const evaluatorSystem = prompts.text('chat.evaluator', { context: context, levelRubric: levelRubric, levelHelp: profile.help[level], quantitativeTask: level === 'apply' && learningType === 'quantitative' ? profile.tasks.apply : '', stageEvidence: !paperAnalysis ? prompts.text('chat.stageEvidence') : '' });
-    const evaluatorContent = [{ type: 'text', text: JSON.stringify(messages.map((m, messageIndex) => ({ messageIndex, role: m.role, content: messageText(m) }))) }];
-    messages.forEach((m, messageIndex) => { if (m.boardImage) evaluatorContent.push({ type: 'text', text: `Whiteboard image for messageIndex ${messageIndex}:` }, boardBlock(m.boardImage)); });
-    const evaluatorMessages = [{ role: 'user', content: evaluatorContent.length === 1 ? evaluatorContent[0].text : evaluatorContent }];
-    const evaluate = system => retryStructuredOutput(async (attempt, signal) => assessment(
-      await repairQuery(query, attempt, signal)(system, evaluatorMessages, tool('evaluate_learning', {
-        ...assessmentProperties,
-        criteria: { ...assessmentProperties.criteria, minItems: aspects.length, maxItems: aspects.length,
-          items: { ...assessmentProperties.criteria.items, properties: { ...assessmentProperties.criteria.items.properties, aspect: { type: 'string', enum: [...new Set(aspects)] } } } },
-      })), aspects, messages, level, -1));
-    checked = await evaluate(evaluatorSystem);
-    if (checked.complete || checked.criteria.some(c => c.status === 'flawed' && c.result === 'correct') || (checked.task.status === 'flawed' && checked.task.result === 'correct')) {
-      const second = await evaluate(prompts.text('chat.secondAssessment', { evaluatorSystem: evaluatorSystem }));
-      checked = reconcile(checked, second);
-    }
+    checked = evaluator === 'legacy' ? await evaluateLegacy(input, query, prompts) : conversationAssessment(await evaluateRefined(input, query, prompts), input);
     if (paperAnalysis) {
       const judgments = [...checked.criteria, checked.task];
       const points = { supported: 100, needs_clarification: 50, flawed: 0, missing: 0 };
@@ -273,17 +291,25 @@ export async function chat(input, query, prompts = loadPrompts()) {
   }
   const responseSystem = prompts.text('chat.response', { context: context, classroomRole: prompts.text('chat.classroomRole'), paperInstructions: needsPaper ? prompts.text('chat.submitPapers') : paperAnalysis ? prompts.text('chat.discussPapers') : '', scenarioInstructions: needsScenarioOpening(level, learningType) ? openingScenario ? prompts.text('chat.openScenario', { scenario: profile.scenarios[level] }) : prompts.text('chat.continueScenario', { task: profile.tasks[level] }) : '', followUp: checked ? followUpFocus(checked, prompts) : prompts.text('chat.levelOpening') });
   const responseTool = tool('respond_to_student', { ...responseProperties, ...(needsPaper ? { paper: paperProperty } : {}) });
+  let learnerModel;
+  if (learner === 'strategy' && checked && !paperAnalysis) {
+    const planned = await generateStrategyQuestion({ ...input, aspects, learningType }, { assessment: checked }, { instructions: responseSystem, messages: transcript, response: responseTool }, query);
+    learnerModel = { state: planned.state, strategyId: planned.strategy?.id ?? null, questionPlan: planned.questionPlan, coverageGap: planned.coverageGap };
+    if (planned.enhanced?.message) return { ...planned.enhanced, expression: responseProperties.expression.enum.includes(planned.enhanced.expression) ? planned.enhanced.expression : 'attentive', learnerModel };
+  }
   let result;
   let paper = null;
+  let questionRejection = '';
   const previousQuestion = (messages.length ? messages : input.priorMessages || []).findLast(m => m.role === 'assistant')?.content;
   const responseDeadline = AbortSignal.timeout(60_000);
   for (let attempt = 0; attempt < (needsPaper ? 3 : 2); attempt++) {
     const retryInstruction = needsPaper ? prompts.text('chat.retryPaper') : prompts.text('chat.retryQuestion', { previousQuestion: JSON.stringify(previousQuestion) });
     try {
-      result = await repairQuery(query, attempt, responseDeadline)(`${responseSystem}\n${targetedQuestionInstructions}${attempt ? `\n${retryInstruction}\nThe previous response failed validation. Replace any generic explanation request with a question explicitly naming the unresolved claim or relationship.` : ''}`, transcript, responseTool);
+      result = await repairQuery(query, attempt, responseDeadline)(`${responseSystem}\n${targetedQuestionInstructions}\n${needsPaper ? '' : questionIntegrityInstructions}${attempt ? `\n${retryInstruction}\nThe previous response failed validation: ${questionRejection}. Ask neutrally about the unresolved claim without supplying its solution.` : ''}`, transcript, responseTool);
       if (typeof result?.message !== 'string' || !result.message.trim() || result.message.length > 12000) throw new InvalidOutputError('The model returned an empty or oversized message. Please retry.');
-      if (!needsPaper) assertTargetedQuestion(result.message);
+      if (!needsPaper) { assertTargetedQuestion(result.message); assertQuestionIntegrity(result.message); }
     } catch (error) {
+      questionRejection = error.message;
       if (responseDeadline.aborted || attempt === (needsPaper ? 2 : 1) || !(error instanceof InvalidOutputError)) throw error;
       continue;
     }
@@ -296,7 +322,7 @@ export async function chat(input, query, prompts = loadPrompts()) {
   }
   if (typeof result?.message !== 'string' || !result.message.trim() || result.message.length > 12000) throw new Error('The model returned an empty message. Please retry.');
   if (!paper && previousQuestion && result.message.trim().toLocaleLowerCase() === previousQuestion.trim().toLocaleLowerCase()) throw new Error('The model repeated its previous question. Please retry.');
-  return { paper, message: paper ? 'I tried three exercises and wrote out my steps. Could you grade each paper Pass or Fail?' : withoutEmDashes(result.message), expression: responseProperties.expression.enum.includes(result.expression) ? result.expression : 'attentive', assessment: checked };
+  return { paper, message: paper ? 'I tried three exercises and wrote out my steps. Could you grade each paper Pass or Fail?' : withoutEmDashes(result.message), expression: responseProperties.expression.enum.includes(result.expression) ? result.expression : 'attentive', assessment: checked, ...(learnerModel ? { learnerModel } : {}) };
 }
 
 export async function conceptsFromStudyTest(file, query, prompts = loadPrompts()) {

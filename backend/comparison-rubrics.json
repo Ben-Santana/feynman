@@ -324,6 +324,969 @@
       "promptVersion": "1ed6b362365e1015fd4ce68ea57a48f664401c3ceee0009263c8d629323a1cde",
       "pipeline": "generateLevelRubric",
       "endpoint": "/api/developer/rubric"
+    },
+    "coverage-controlled-comparison-analyze": {
+      "input": {
+        "topic": "Analyzing a controlled dissolving study explanation",
+        "level": "analyze",
+        "learningType": "experimental"
+      },
+      "items": [
+        "Identifies how dissolving time varies with the tested factor in the study's data.",
+        "Compares measured dissolving times with predictions about how temperature, stirring, or particle size affects rate.",
+        "Identifies results that depart from the predicted dissolving trend.",
+        "Suggests uncontrolled temperature, stirring, or particle size as plausible causes of unexpected results.",
+        "Uses comparisons between controlled trials to support a conclusion about the tested factor's effect on dissolving.",
+        "Distinguishes evidence about dissolving rate from unsupported claims about the maximum amount that can dissolve."
+      ],
+      "generatedAt": "2026-10-18T19:47:18.344Z",
+      "provider": "chatgpt",
+      "model": "gpt-6.1-sol",
+      "promptVersion": "1ed6b362365e1015fd4ce68ea57a48f664401c3ceee0009263c8d629323a1cde",
+      "pipeline": "generateLevelRubric",
+      "endpoint": "/api/developer/rubric"
+    },
+    "coverage-controlled-comparison-apply": {
+      "input": {
+        "topic": "Using simulated controlled insulation measurements",
+        "level": "apply",
+        "learningType": "experimental"
+      },
+      "items": [
+        "Predict which insulation will produce the smallest temperature drop under identical simulated conditions.",
+        "Compare simulated insulation trials with the same starting temperature, ambient temperature, and duration.",
+        "Calculate cooling rates from simulated temperature changes and elapsed times.",
+        "Use measured cooling rates to identify which insulation reduces heat transfer most effectively."
+      ],
+      "generatedAt": "2026-10-18T19:47:18.402Z",
+      "provider": "chatgpt",
+      "model": "gpt-6.1-sol",
+      "promptVersion": "1ed6b362365e1015fd4ce68ea57a48f664401c3ceee0009263c8d629323a1cde",
+      "pipeline": "generateLevelRubric",
+      "endpoint": "/api/developer/rubric"
+    },
+    "coverage-controlled-comparison-understand": {
+      "input": {
+        "topic": "Interpreting a controlled salt-dissolving comparison",
+        "level": "understand",
+        "learningType": "experimental"
+      },
+      "items": [
+        "Explains that a controlled comparison tests how one changed factor affects salt's dissolving time.",
+        "Explains why salt mass, water volume, and stirring are kept constant when testing water temperature.",
+        "Explains why timing ends when no visible salt crystals remain.",
+        "Explains that dissolving time measures how long a fixed amount of salt takes to dissolve, not how much can dissolve."
+      ],
+      "generatedAt": "2026-10-18T19:47:21.949Z",
+      "provider": "chatgpt",
+      "model": "gpt-6.1-sol",
+      "promptVersion": "1ed6b362365e1015fd4ce68ea57a48f664401c3ceee0009263c8d629323a1cde",
+      "pipeline": "generateLevelRubric",
+      "endpoint": "/api/developer/rubric"
+    },
+    "coverage-boundary-case-apply": {
+      "input": {
+        "topic": "Applying resistance at zero potential difference",
+        "level": "apply",
+        "learningType": "quantitative"
+      },
+      "items": [
+        "Selects Ohm’s law to find current through a finite, nonzero resistor at zero potential difference.",
+        "Substitutes V = 0 and the given resistance into I = V/R.",
+        "Calculates the current as 0 A for the given finite, nonzero resistance.",
+        "Interprets zero current at zero potential difference as compatible with a nonzero resistance."
+      ],
+      "generatedAt": "2026-10-18T19:47:24.784Z",
+      "provider": "chatgpt",
+      "model": "gpt-6.1-sol",
+      "promptVersion": "1ed6b362365e1015fd4ce68ea57a48f664401c3ceee0009263c8d629323a1cde",
+      "pipeline": "generateLevelRubric",
+      "endpoint": "/api/developer/rubric"
+    },
+    "coverage-boundary-case-understand": {
+      "input": {
+        "topic": "Interpreting zero travel distance in a work claim",
+        "level": "understand",
+        "learningType": "theoretical"
+      },
+      "items": [
+        "Explains why a force does no mechanical work on an object that does not move.",
+        "Explains why holding a stationary load can require bodily effort despite zero mechanical work on the load.",
+        "Explains why zero net displacement on a round trip does not by itself establish zero work."
+      ],
+      "generatedAt": "2026-10-18T19:47:26.786Z",
+      "provider": "chatgpt",
+      "model": "gpt-6.1-sol",
+      "promptVersion": "1ed6b362365e1015fd4ce68ea57a48f664401c3ceee0009263c8d629323a1cde",
+      "pipeline": "generateLevelRubric",
+      "endpoint": "/api/developer/rubric"
+    },
+    "coverage-remove-condition-understand": {
+      "input": {
+        "topic": "Distinguishing a heater from stored thermal energy",
+        "level": "understand",
+        "learningType": "theoretical"
+      },
+      "items": [
+        "Explains how a heater converts an energy input into internal energy that can warm its surroundings.",
+        "Explains how a warm object can transfer stored internal energy without acting as a powered heater.",
+        "Explains why sustained heating requires an energy supply rather than just an initially hot object.",
+        "Explains the distinction between internal energy stored in an object and heat transferred by a temperature difference."
+      ],
+      "generatedAt": "2026-10-18T19:47:29.882Z",
+      "provider": "chatgpt",
+      "model": "gpt-6.1-sol",
+      "promptVersion": "1ed6b362365e1015fd4ce68ea57a48f664401c3ceee0009263c8d629323a1cde",
+      "pipeline": "generateLevelRubric",
+      "endpoint": "/api/developer/rubric"
+    },
+    "coverage-boundary-case-analyze": {
+      "input": {
+        "topic": "Analyzing a probability rule at a limiting event",
+        "level": "analyze",
+        "learningType": "theoretical"
+      },
+      "items": [
+        "Relates increasing or decreasing event sequences to unions or intersections in a limiting-event scenario.",
+        "Explains why countable additivity makes probabilities converge to the probability of a nested sequence's limiting event.",
+        "Explains why removing event nesting can invalidate a probability-limit argument.",
+        "Explains why a limiting event with probability zero need not be impossible."
+      ],
+      "generatedAt": "2026-10-18T19:47:30.571Z",
+      "provider": "chatgpt",
+      "model": "gpt-6.1-sol",
+      "promptVersion": "1ed6b362365e1015fd4ce68ea57a48f664401c3ceee0009263c8d629323a1cde",
+      "pipeline": "generateLevelRubric",
+      "endpoint": "/api/developer/rubric"
+    },
+    "coverage-remove-condition-apply": {
+      "input": {
+        "topic": "Predicting a state after a clamp is removed",
+        "level": "apply",
+        "learningType": "theoretical"
+      },
+      "items": [
+        "Uses the forces or gradients in a given system to explain its initial response when a clamp is removed.",
+        "Predicts the eventual state after clamp removal from the system’s remaining constraints.",
+        "Applies the same release-of-constraint reasoning to a system with a different initial state."
+      ],
+      "generatedAt": "2026-10-18T19:47:32.142Z",
+      "provider": "chatgpt",
+      "model": "gpt-6.1-sol",
+      "promptVersion": "1ed6b362365e1015fd4ce68ea57a48f664401c3ceee0009263c8d629323a1cde",
+      "pipeline": "generateLevelRubric",
+      "endpoint": "/api/developer/rubric"
+    },
+    "coverage-remove-condition-analyze": {
+      "input": {
+        "topic": "Analyzing motion after propulsion stops",
+        "level": "analyze",
+        "learningType": "theoretical"
+      },
+      "items": [
+        "Relates net force after propulsion stops to changes in velocity using Newton’s second law.",
+        "Explains why an object maintains constant velocity after propulsion stops if no net force acts.",
+        "Explains how friction or drag causes slowing after propulsion stops.",
+        "Predicts how gravity changes an object's velocity after propulsion stops in a given scenario.",
+        "Explains why stopping propulsion does not necessarily stop motion, correcting the force-keeps-motion misconception."
+      ],
+      "generatedAt": "2026-10-18T19:47:34.943Z",
+      "provider": "chatgpt",
+      "model": "gpt-6.1-sol",
+      "promptVersion": "1ed6b362365e1015fd4ce68ea57a48f664401c3ceee0009263c8d629323a1cde",
+      "pipeline": "generateLevelRubric",
+      "endpoint": "/api/developer/rubric"
+    },
+    "coverage-quantity-versus-change-understand": {
+      "input": {
+        "topic": "Separating reservoir level from change in level",
+        "level": "understand",
+        "learningType": "theoretical"
+      },
+      "items": [
+        "Explains the difference between a reservoir's current level and how much its level changes over an interval.",
+        "Explains how the balance of inflow and outflow determines whether the reservoir level rises, falls, or stays steady.",
+        "Explains why a high reservoir level can be falling and a low reservoir level can be rising."
+      ],
+      "generatedAt": "2026-10-18T19:47:37.032Z",
+      "provider": "chatgpt",
+      "model": "gpt-6.1-sol",
+      "promptVersion": "1ed6b362365e1015fd4ce68ea57a48f664401c3ceee0009263c8d629323a1cde",
+      "pipeline": "generateLevelRubric",
+      "endpoint": "/api/developer/rubric"
+    },
+    "coverage-quantity-versus-change-analyze": {
+      "input": {
+        "topic": "Analyzing constant bank balance with ongoing flows",
+        "level": "analyze",
+        "learningType": "theoretical"
+      },
+      "items": [
+        "Relates the bank balance to cumulative deposits and withdrawals in a given scenario.",
+        "Explains how equal total inflows and outflows produce no net balance change over an interval.",
+        "Predicts how the balance changes if withdrawals increase while deposits stay fixed.",
+        "Explains why an unchanged balance between two dates does not imply no transactions occurred."
+      ],
+      "generatedAt": "2026-10-18T19:47:39.961Z",
+      "provider": "chatgpt",
+      "model": "gpt-6.1-sol",
+      "promptVersion": "1ed6b362365e1015fd4ce68ea57a48f664401c3ceee0009263c8d629323a1cde",
+      "pipeline": "generateLevelRubric",
+      "endpoint": "/api/developer/rubric"
+    },
+    "coverage-reconcile-claims-understand": {
+      "input": {
+        "topic": "Reconciling equal density and unequal mass statements",
+        "level": "understand",
+        "learningType": "theoretical"
+      },
+      "items": [
+        "Explains why equal density means equal mass per unit volume, not necessarily equal total mass.",
+        "Explains how m = ρV allows objects with equal density to have unequal masses when their volumes differ.",
+        "Explains why distinguishing density from mass resolves an apparent contradiction between the two statements."
+      ],
+      "generatedAt": "2026-10-18T19:47:40.550Z",
+      "provider": "chatgpt",
+      "model": "gpt-6.1-sol",
+      "promptVersion": "1ed6b362365e1015fd4ce68ea57a48f664401c3ceee0009263c8d629323a1cde",
+      "pipeline": "generateLevelRubric",
+      "endpoint": "/api/developer/rubric"
+    },
+    "coverage-quantity-versus-change-apply": {
+      "input": {
+        "topic": "Using a constant pressure record",
+        "level": "apply",
+        "learningType": "quantitative"
+      },
+      "items": [
+        "Select W = PΔV to calculate work from a constant-pressure process record.",
+        "Extract the pressure and initial and final volumes from the record.",
+        "Calculate work done by the gas using pressure in pascals and volume change in cubic metres.",
+        "Interpret the work's sign as expansion or compression and report its value in joules."
+      ],
+      "generatedAt": "2026-10-18T19:47:43.017Z",
+      "provider": "chatgpt",
+      "model": "gpt-6.1-sol",
+      "promptVersion": "1ed6b362365e1015fd4ce68ea57a48f664401c3ceee0009263c8d629323a1cde",
+      "pipeline": "generateLevelRubric",
+      "endpoint": "/api/developer/rubric"
+    },
+    "coverage-reconcile-claims-apply": {
+      "input": {
+        "topic": "Checking two claims about resistance and current",
+        "level": "apply",
+        "learningType": "quantitative"
+      },
+      "items": [
+        "Select Ohm’s law, V = IR, to test each claim about resistance and current.",
+        "Set up an equation for each claim using the stated circuit conditions.",
+        "Calculate the current or resistance needed to check each claim, with correct units.",
+        "Decide whether each claim is supported by the calculated results."
+      ],
+      "generatedAt": "2026-10-18T19:47:44.976Z",
+      "provider": "chatgpt",
+      "model": "gpt-6.1-sol",
+      "promptVersion": "1ed6b362365e1015fd4ce68ea57a48f664401c3ceee0009263c8d629323a1cde",
+      "pipeline": "generateLevelRubric",
+      "endpoint": "/api/developer/rubric"
+    },
+    "coverage-representation-change-apply": {
+      "input": {
+        "topic": "Plotting a supplied volume-time table",
+        "level": "apply",
+        "learningType": "quantitative"
+      },
+      "items": [
+        "Chooses a line or scatter graph to show how volume changes over time.",
+        "Places time on the horizontal axis and volume on the vertical axis, labeling each with units.",
+        "Chooses uniform axis scales that cover the supplied time and volume values.",
+        "Plots each time–volume pair from the table at the correct coordinates.",
+        "Uses the plotted graph to report a volume at a specified time, with units."
+      ],
+      "generatedAt": "2026-10-18T19:47:48.760Z",
+      "provider": "chatgpt",
+      "model": "gpt-6.1-sol",
+      "promptVersion": "1ed6b362365e1015fd4ce68ea57a48f664401c3ceee0009263c8d629323a1cde",
+      "pipeline": "generateLevelRubric",
+      "endpoint": "/api/developer/rubric"
+    },
+    "coverage-reconcile-claims-analyze": {
+      "input": {
+        "topic": "Analyzing two definitions of a geometric figure",
+        "level": "analyze",
+        "learningType": "theoretical"
+      },
+      "items": [
+        "Explains how the properties in two definitions determine whether they describe the same class of figures.",
+        "Uses a counterexample to identify why one definition may admit figures that the other excludes.",
+        "Explains how removing a condition from a definition changes the class of figures it describes.",
+        "Explains why one figure satisfying both definitions does not prove that the definitions are equivalent."
+      ],
+      "generatedAt": "2026-10-18T19:47:49.361Z",
+      "provider": "chatgpt",
+      "model": "gpt-6.1-sol",
+      "promptVersion": "1ed6b362365e1015fd4ce68ea57a48f664401c3ceee0009263c8d629323a1cde",
+      "pipeline": "generateLevelRubric",
+      "endpoint": "/api/developer/rubric"
+    },
+    "coverage-representation-change-understand": {
+      "input": {
+        "topic": "Reading an existing distance table and graph",
+        "level": "understand",
+        "learningType": "theoretical"
+      },
+      "items": [
+        "Explains how table headings, axis labels, and units give meaning to distance values.",
+        "Explains how a distance recorded in the table corresponds to a point on the graph.",
+        "Explains how the graph makes patterns in the table's distance values easier to see."
+      ],
+      "generatedAt": "2026-10-18T19:47:51.511Z",
+      "provider": "chatgpt",
+      "model": "gpt-6.1-sol",
+      "promptVersion": "1ed6b362365e1015fd4ce68ea57a48f664401c3ceee0009263c8d629323a1cde",
+      "pipeline": "generateLevelRubric",
+      "endpoint": "/api/developer/rubric"
+    },
+    "coverage-representation-change-analyze": {
+      "input": {
+        "topic": "Analyzing equivalent circuit drawings",
+        "level": "analyze",
+        "learningType": "theoretical"
+      },
+      "items": [
+        "Explain how shared nodes determine series and parallel connections in differently drawn circuits.",
+        "Identify node connections that make two circuit drawings electrically equivalent or different.",
+        "Explain how moving a wire to a different node changes current paths in a given circuit.",
+        "Explain why matching component positions or shapes does not establish circuit equivalence."
+      ],
+      "generatedAt": "2026-10-18T19:47:52.208Z",
+      "provider": "chatgpt",
+      "model": "gpt-6.1-sol",
+      "promptVersion": "1ed6b362365e1015fd4ce68ea57a48f664401c3ceee0009263c8d629323a1cde",
+      "pipeline": "generateLevelRubric",
+      "endpoint": "/api/developer/rubric"
+    },
+    "coverage-recall-specific-element-remember": {
+      "input": {
+        "topic": "Recalling a missing circuit component name",
+        "level": "remember",
+        "learningType": "theoretical"
+      },
+      "items": [
+        "Names a resistor, capacitor, cell, or switch from its standard circuit symbol.",
+        "Recalls a component's name from its stated function, such as storing charge or opening and closing a circuit."
+      ],
+      "generatedAt": "2026-10-18T19:47:59.372Z",
+      "provider": "chatgpt",
+      "model": "gpt-6.1-sol",
+      "promptVersion": "1ed6b362365e1015fd4ce68ea57a48f664401c3ceee0009263c8d629323a1cde",
+      "pipeline": "generateLevelRubric",
+      "endpoint": "/api/developer/rubric"
+    },
+    "coverage-clarify-specific-term-understand": {
+      "input": {
+        "topic": "Clarifying what stored means in a memory account",
+        "level": "understand",
+        "learningType": "theoretical"
+      },
+      "items": [
+        "Explains storage as the persistence of information over time in a memory system.",
+        "Explains why stored information need not be an exact, unchanging copy of an experience.",
+        "Explains how storage connects initial encoding with later retrieval.",
+        "Explains why failing to recall something does not by itself prove that it is no longer stored."
+      ],
+      "generatedAt": "2026-10-18T19:47:59.643Z",
+      "provider": "chatgpt",
+      "model": "gpt-6.1-sol",
+      "promptVersion": "1ed6b362365e1015fd4ce68ea57a48f664401c3ceee0009263c8d629323a1cde",
+      "pipeline": "generateLevelRubric",
+      "endpoint": "/api/developer/rubric"
+    },
+    "coverage-clarify-specific-term-remember": {
+      "input": {
+        "topic": "Identifying what a student means by load",
+        "level": "remember",
+        "learningType": "theoretical"
+      },
+      "items": [
+        "Defines mechanical load as a force acting on an object or structure.",
+        "Defines an electrical load as a device or circuit that consumes electrical power.",
+        "Defines cognitive load as the demand placed on working memory."
+      ],
+      "generatedAt": "2026-10-18T19:47:59.732Z",
+      "provider": "chatgpt",
+      "model": "gpt-6.1-sol",
+      "promptVersion": "1ed6b362365e1015fd4ce68ea57a48f664401c3ceee0009263c8d629323a1cde",
+      "pipeline": "generateLevelRubric",
+      "endpoint": "/api/developer/rubric"
+    },
+    "coverage-answer-reason-consistency-analyze": {
+      "input": {
+        "topic": "Analyzing reasoning behind a correct heat-flow direction",
+        "level": "analyze",
+        "learningType": "theoretical"
+      },
+      "items": [
+        "Relates net heat-flow direction to the temperature difference between objects in a given scenario.",
+        "Explains how microscopic energy exchanges produce net heat transfer from hotter to colder objects.",
+        "Explains how reversing the temperature difference reverses net heat flow.",
+        "Explains why greater total internal energy does not necessarily make an object transfer heat to another.",
+        "Explains why equal temperatures mean no net heat flow, not an absence of microscopic energy exchanges."
+      ],
+      "generatedAt": "2026-10-18T19:48:03.949Z",
+      "provider": "chatgpt",
+      "model": "gpt-6.1-sol",
+      "promptVersion": "1ed6b362365e1015fd4ce68ea57a48f664401c3ceee0009263c8d629323a1cde",
+      "pipeline": "generateLevelRubric",
+      "endpoint": "/api/developer/rubric"
+    },
+    "coverage-answer-reason-consistency-apply": {
+      "input": {
+        "topic": "Checking the procedure behind an arithmetic answer",
+        "level": "apply",
+        "learningType": "quantitative"
+      },
+      "items": [
+        "Selects inverse operations, independent recalculation, or estimation to check an arithmetic answer.",
+        "Sets up the chosen check using the original numbers and appropriate operations.",
+        "Correctly performs the arithmetic required by the check.",
+        "States whether the check supports the answer's accuracy or only its approximate size."
+      ],
+      "generatedAt": "2026-10-18T19:48:05.982Z",
+      "provider": "chatgpt",
+      "model": "gpt-6.1-sol",
+      "promptVersion": "1ed6b362365e1015fd4ce68ea57a48f664401c3ceee0009263c8d629323a1cde",
+      "pipeline": "generateLevelRubric",
+      "endpoint": "/api/developer/rubric"
+    },
+    "coverage-answer-reason-consistency-understand": {
+      "input": {
+        "topic": "Probing a reason for a dilution answer",
+        "level": "understand",
+        "learningType": "theoretical"
+      },
+      "items": [
+        "Explains how asking why a solution becomes less concentrated probes the reasoning behind a dilution answer.",
+        "Explains why probing a dilution answer can distinguish conceptual reasoning from a memorized formula.",
+        "Explains how dilution lowers concentration by increasing solution volume while keeping the solute amount constant."
+      ],
+      "generatedAt": "2026-10-18T19:48:07.198Z",
+      "provider": "chatgpt",
+      "model": "gpt-6.1-sol",
+      "promptVersion": "1ed6b362365e1015fd4ce68ea57a48f664401c3ceee0009263c8d629323a1cde",
+      "pipeline": "generateLevelRubric",
+      "endpoint": "/api/developer/rubric"
+    },
+    "coverage-mechanism-tracing-understand": {
+      "input": {
+        "topic": "Connecting a drug target to a cellular effect",
+        "level": "understand",
+        "learningType": "theoretical"
+      },
+      "items": [
+        "Explains how a drug's binding changes the activity of its molecular target.",
+        "Explains how altered target activity leads to a cellular response through downstream processes.",
+        "Explains why target expression or cellular context can change a drug's cellular effect.",
+        "Explains why linking target activity to cellular effects helps distinguish intended effects from side effects."
+      ],
+      "generatedAt": "2026-10-18T19:48:07.790Z",
+      "provider": "chatgpt",
+      "model": "gpt-6.1-sol",
+      "promptVersion": "1ed6b362365e1015fd4ce68ea57a48f664401c3ceee0009263c8d629323a1cde",
+      "pipeline": "generateLevelRubric",
+      "endpoint": "/api/developer/rubric"
+    },
+    "coverage-mechanism-tracing-apply": {
+      "input": {
+        "topic": "Tracing a supplied update dependency",
+        "level": "apply",
+        "learningType": "quantitative"
+      },
+      "items": [
+        "Selects a tracing order consistent with the supplied update rules and dependencies.",
+        "Traces the dependency links from the updated value to the values that depend on it.",
+        "Computes affected values using the supplied update rules and initial values.",
+        "Interprets the trace by identifying which final values change and which remain unchanged."
+      ],
+      "generatedAt": "2026-10-18T19:48:11.706Z",
+      "provider": "chatgpt",
+      "model": "gpt-6.1-sol",
+      "promptVersion": "1ed6b362365e1015fd4ce68ea57a48f664401c3ceee0009263c8d629323a1cde",
+      "pipeline": "generateLevelRubric",
+      "endpoint": "/api/developer/rubric"
+    },
+    "coverage-conservation-accounting-understand": {
+      "input": {
+        "topic": "Accounting for water in drying clothes",
+        "level": "understand",
+        "learningType": "theoretical"
+      },
+      "items": [
+        "Explains how liquid water in wet clothes evaporates into water vapor in the surrounding air.",
+        "Explains why clothes losing water does not mean that water has been destroyed.",
+        "Explains how the decrease in clothes' mass relates to the mass of water transferred to the surroundings.",
+        "Explains why tracking water in both clothes and surroundings is needed to account for all the water."
+      ],
+      "generatedAt": "2026-10-18T19:48:12.288Z",
+      "provider": "chatgpt",
+      "model": "gpt-6.1-sol",
+      "promptVersion": "1ed6b362365e1015fd4ce68ea57a48f664401c3ceee0009263c8d629323a1cde",
+      "pipeline": "generateLevelRubric",
+      "endpoint": "/api/developer/rubric"
+    },
+    "coverage-mechanism-tracing-analyze": {
+      "input": {
+        "topic": "Analyzing an incomplete infection explanation",
+        "level": "analyze",
+        "learningType": "theoretical"
+      },
+      "items": [
+        "Explains how pathogen multiplication and immune responses interact in a discussed infection scenario.",
+        "Identifies a mechanism linking pathogen entry to symptoms left unexplained in the scenario.",
+        "Explains how weakened immune defenses could change the course of the infection.",
+        "Explains why exposure to a pathogen does not always result in infection."
+      ],
+      "generatedAt": "2026-10-18T19:48:12.512Z",
+      "provider": "chatgpt",
+      "model": "gpt-6.1-sol",
+      "promptVersion": "1ed6b362365e1015fd4ce68ea57a48f664401c3ceee0009263c8d629323a1cde",
+      "pipeline": "generateLevelRubric",
+      "endpoint": "/api/developer/rubric"
+    },
+    "coverage-conservation-accounting-analyze": {
+      "input": {
+        "topic": "Analyzing energy accounting in a sealed device",
+        "level": "analyze",
+        "learningType": "theoretical"
+      },
+      "items": [
+        "Explain how heat transfer, work, and internal energy changes balance in a sealed device.",
+        "Identify which energy transfer or conversion causes an observed temperature change in a sealed device.",
+        "Explain how adding thermal insulation changes energy transfer and the device's internal energy over time.",
+        "Explain why sealing a device prevents mass exchange but does not necessarily prevent energy exchange."
+      ],
+      "generatedAt": "2026-10-18T19:48:16.888Z",
+      "provider": "chatgpt",
+      "model": "gpt-6.1-sol",
+      "promptVersion": "1ed6b362365e1015fd4ce68ea57a48f664401c3ceee0009263c8d629323a1cde",
+      "pipeline": "generateLevelRubric",
+      "endpoint": "/api/developer/rubric"
+    },
+    "coverage-conservation-accounting-apply": {
+      "input": {
+        "topic": "Balancing charge at a circuit junction",
+        "level": "apply",
+        "learningType": "quantitative"
+      },
+      "items": [
+        "Select Kirchhoff’s current law to find an unknown current at a circuit junction.",
+        "Write a junction equation with incoming and outgoing currents assigned consistent signs.",
+        "Calculate an unknown branch current from the junction equation.",
+        "Interpret the calculated current’s sign as a direction relative to the assumed direction."
+      ],
+      "generatedAt": "2026-10-18T19:48:16.910Z",
+      "provider": "chatgpt",
+      "model": "gpt-6.1-sol",
+      "promptVersion": "1ed6b362365e1015fd4ce68ea57a48f664401c3ceee0009263c8d629323a1cde",
+      "pipeline": "generateLevelRubric",
+      "endpoint": "/api/developer/rubric"
+    },
+    "coverage-classify-by-features-understand": {
+      "input": {
+        "topic": "Classifying a chemical change by relevant features",
+        "level": "understand",
+        "learningType": "theoretical"
+      },
+      "items": [
+        "Explains why forming new substances distinguishes a chemical change from a physical change.",
+        "Explains why color change, gas formation, or temperature change alone cannot prove a chemical change.",
+        "Explains how reactant and product patterns distinguish synthesis, decomposition, and replacement reactions.",
+        "Explains how classifying reactions helps reveal shared patterns despite differences in the substances involved."
+      ],
+      "generatedAt": "2026-10-18T19:48:18.627Z",
+      "provider": "chatgpt",
+      "model": "gpt-6.1-sol",
+      "promptVersion": "1ed6b362365e1015fd4ce68ea57a48f664401c3ceee0009263c8d629323a1cde",
+      "pipeline": "generateLevelRubric",
+      "endpoint": "/api/developer/rubric"
+    },
+    "coverage-classify-by-features-apply": {
+      "input": {
+        "topic": "Classifying a supplied abstract-data behavior",
+        "level": "apply",
+        "learningType": "theoretical"
+      },
+      "items": [
+        "Classifies a supplied operation trace as stack, queue, set, or map behavior using its input-output pattern.",
+        "Predicts the result of a new operation under the identified abstract data type's rules.",
+        "Maps unfamiliar operation names to an abstract data type using their effects rather than their labels."
+      ],
+      "generatedAt": "2026-10-18T19:48:20.890Z",
+      "provider": "chatgpt",
+      "model": "gpt-6.1-sol",
+      "promptVersion": "1ed6b362365e1015fd4ce68ea57a48f664401c3ceee0009263c8d629323a1cde",
+      "pipeline": "generateLevelRubric",
+      "endpoint": "/api/developer/rubric"
+    },
+    "coverage-classify-by-features-analyze": {
+      "input": {
+        "topic": "Analyzing an invalid grouping of functions",
+        "level": "analyze",
+        "learningType": "theoretical"
+      },
+      "items": [
+        "Explains how domains and input-output rules affect membership in a proposed group of functions.",
+        "Identifies the defining property violated by a function in an invalid grouping.",
+        "Explains how changing a function's domain or rule would affect the validity of its placement.",
+        "Explains why similar-looking formulas need not satisfy the same grouping criterion."
+      ],
+      "generatedAt": "2026-10-18T19:48:24.484Z",
+      "provider": "chatgpt",
+      "model": "gpt-6.1-sol",
+      "promptVersion": "1ed6b362365e1015fd4ce68ea57a48f664401c3ceee0009263c8d629323a1cde",
+      "pipeline": "generateLevelRubric",
+      "endpoint": "/api/developer/rubric"
+    },
+    "coverage-necessary-sufficient-understand": {
+      "input": {
+        "topic": "Interpreting a divisibility condition",
+        "level": "understand",
+        "learningType": "theoretical"
+      },
+      "items": [
+        "Explains in their own words why d | n means n is an integer multiple of the nonzero integer d.",
+        "Explains how divisibility by d relates to having remainder zero when dividing by d.",
+        "Explains how a condition such as 3 | (n + 1) restricts the possible integer values of n."
+      ],
+      "generatedAt": "2026-10-18T19:48:26.226Z",
+      "provider": "chatgpt",
+      "model": "gpt-6.1-sol",
+      "promptVersion": "1ed6b362365e1015fd4ce68ea57a48f664401c3ceee0009263c8d629323a1cde",
+      "pipeline": "generateLevelRubric",
+      "endpoint": "/api/developer/rubric"
+    },
+    "coverage-necessary-sufficient-apply": {
+      "input": {
+        "topic": "Testing sufficiency with a concrete integer",
+        "level": "apply",
+        "learningType": "theoretical"
+      },
+      "items": [
+        "Selects a concrete integer satisfying all conditions in a new sufficiency question.",
+        "Uses two allowed integers with different answers to demonstrate that the conditions are insufficient.",
+        "Predicts whether an added constraint makes the answer identical for every allowed integer."
+      ],
+      "generatedAt": "2026-10-18T19:48:27.545Z",
+      "provider": "chatgpt",
+      "model": "gpt-6.1-sol",
+      "promptVersion": "1ed6b362365e1015fd4ce68ea57a48f664401c3ceee0009263c8d629323a1cde",
+      "pipeline": "generateLevelRubric",
+      "endpoint": "/api/developer/rubric"
+    },
+    "coverage-necessary-sufficient-analyze": {
+      "input": {
+        "topic": "Analyzing reversed medical screening logic",
+        "level": "analyze",
+        "learningType": "theoretical"
+      },
+      "items": [
+        "Explains how prevalence, sensitivity, and specificity jointly affect the probability of disease after a positive test.",
+        "Explains why false positives can outnumber true positives when screening for a rare disease.",
+        "Predicts how higher disease prevalence changes a positive result’s reliability when test accuracy stays fixed.",
+        "Explains why P(positive test | disease) cannot be read as P(disease | positive test) in a screening scenario."
+      ],
+      "generatedAt": "2026-10-18T19:48:30.412Z",
+      "provider": "chatgpt",
+      "model": "gpt-6.1-sol",
+      "promptVersion": "1ed6b362365e1015fd4ce68ea57a48f664401c3ceee0009263c8d629323a1cde",
+      "pipeline": "generateLevelRubric",
+      "endpoint": "/api/developer/rubric"
+    },
+    "coverage-scale-level-distinction-understand": {
+      "input": {
+        "topic": "Interpreting an average from a group",
+        "level": "understand",
+        "learningType": "theoretical"
+      },
+      "items": [
+        "Explains the mean as the amount each member would have if the group's total were shared equally.",
+        "Explains how an average summarizes a group without describing every member.",
+        "Explains why a group's average need not equal any individual member's value.",
+        "Explains how groups with the same average can differ in how spread out their values are."
+      ],
+      "generatedAt": "2026-10-18T19:48:31.479Z",
+      "provider": "chatgpt",
+      "model": "gpt-6.1-sol",
+      "promptVersion": "1ed6b362365e1015fd4ce68ea57a48f664401c3ceee0009263c8d629323a1cde",
+      "pipeline": "generateLevelRubric",
+      "endpoint": "/api/developer/rubric"
+    },
+    "coverage-scale-level-distinction-apply": {
+      "input": {
+        "topic": "Predicting aggregate resistance from reproductive differences",
+        "level": "apply",
+        "learningType": "theoretical"
+      },
+      "items": [
+        "Uses differences in reproductive success to explain a population's resistance after treatment.",
+        "Predicts how the frequency of heritable resistance changes when resistant organisms leave more offspring.",
+        "Applies differential reproduction to explain resistance in an unfamiliar organism–treatment example."
+      ],
+      "generatedAt": "2026-10-18T19:48:32.354Z",
+      "provider": "chatgpt",
+      "model": "gpt-6.1-sol",
+      "promptVersion": "1ed6b362365e1015fd4ce68ea57a48f664401c3ceee0009263c8d629323a1cde",
+      "pipeline": "generateLevelRubric",
+      "endpoint": "/api/developer/rubric"
+    },
+    "coverage-evidence-inference-apply": {
+      "input": {
+        "topic": "Interpreting simulated measurements with uncertainty",
+        "level": "apply",
+        "learningType": "experimental"
+      },
+      "items": [
+        "Predict how increasing independent trials changes uncertainty in the mean using the inverse-square-root relationship.",
+        "Calculate a mean and its standard error from repeated simulated measurements.",
+        "Use a measurement's uncertainty interval to assess compatibility with a theoretical value."
+      ],
+      "generatedAt": "2026-10-18T19:53:12.135Z",
+      "provider": "chatgpt",
+      "model": "gpt-6.1-sol",
+      "promptVersion": "1ed6b362365e1015fd4ce68ea57a48f664401c3ceee0009263c8d629323a1cde",
+      "pipeline": "generateLevelRubric",
+      "endpoint": "/api/developer/rubric"
+    },
+    "coverage-evidence-inference-understand": {
+      "input": {
+        "topic": "Interpreting an observational tutoring association",
+        "level": "understand",
+        "learningType": "experimental"
+      },
+      "items": [
+        "Explains that an observational tutoring study asks whether tutoring participation is associated with academic outcomes.",
+        "Explains why comparing existing tutoring groups observes an association rather than testing random assignment.",
+        "Explains what tutoring participation records and academic outcome scores measure.",
+        "Explains how prior achievement or motivation could produce a tutoring–outcome association without a causal effect."
+      ],
+      "generatedAt": "2026-10-18T19:53:13.678Z",
+      "provider": "chatgpt",
+      "model": "gpt-6.1-sol",
+      "promptVersion": "1ed6b362365e1015fd4ce68ea57a48f664401c3ceee0009263c8d629323a1cde",
+      "pipeline": "generateLevelRubric",
+      "endpoint": "/api/developer/rubric"
+    },
+    "coverage-scale-level-distinction-analyze": {
+      "input": {
+        "topic": "Analyzing a community-average claim",
+        "level": "analyze",
+        "learningType": "theoretical"
+      },
+      "items": [
+        "Explains how subgroup sizes and subgroup means jointly determine a community mean.",
+        "Distinguishes income changes from changes in community membership as causes of a rising mean in a given scenario.",
+        "Explains how adding a few very high incomes affects the community's mean relative to its median.",
+        "Explains why a rising community mean does not establish that most residents' incomes increased."
+      ],
+      "generatedAt": "2026-10-18T19:53:15.661Z",
+      "provider": "chatgpt",
+      "model": "gpt-6.1-sol",
+      "promptVersion": "1ed6b362365e1015fd4ce68ea57a48f664401c3ceee0009263c8d629323a1cde",
+      "pipeline": "generateLevelRubric",
+      "endpoint": "/api/developer/rubric"
+    },
+    "coverage-stochastic-reasoning-understand": {
+      "input": {
+        "topic": "Interpreting an expected count for a die",
+        "level": "understand",
+        "learningType": "theoretical"
+      },
+      "items": [
+        "Explains an expected count as the average number of times a face appears across repeated sets of rolls.",
+        "Explains why a face's expected count equals the number of rolls multiplied by its probability.",
+        "Explains how expected counts provide a baseline for comparing observed die-roll results.",
+        "Explains why an observed count can differ from its expected count even when a die is fair."
+      ],
+      "generatedAt": "2026-10-18T19:53:17.222Z",
+      "provider": "chatgpt",
+      "model": "gpt-6.1-sol",
+      "promptVersion": "1ed6b362365e1015fd4ce68ea57a48f664401c3ceee0009263c8d629323a1cde",
+      "pipeline": "generateLevelRubric",
+      "endpoint": "/api/developer/rubric"
+    },
+    "coverage-evidence-inference-analyze": {
+      "input": {
+        "topic": "Analyzing generalization from a convenience sample",
+        "level": "analyze",
+        "learningType": "experimental"
+      },
+      "items": [
+        "Identifies patterns in simulated outcomes across subgroups of a convenience sample.",
+        "Compares the sample's outcome estimate with a population benchmark expected under representative sampling.",
+        "Identifies groups whose observed sample shares differ from their known population shares.",
+        "Proposes a plausible recruitment mechanism that could explain an observed sample–population discrepancy.",
+        "Uses recruitment details and observed subgroup outcomes to justify limits on population generalization.",
+        "Distinguishes evidence of sample imbalance from speculation about the direction of outcome bias."
+      ],
+      "generatedAt": "2026-10-18T19:53:19.380Z",
+      "provider": "chatgpt",
+      "model": "gpt-6.1-sol",
+      "promptVersion": "1ed6b362365e1015fd4ce68ea57a48f664401c3ceee0009263c8d629323a1cde",
+      "pipeline": "generateLevelRubric",
+      "endpoint": "/api/developer/rubric"
+    },
+    "coverage-stochastic-reasoning-apply": {
+      "input": {
+        "topic": "Applying a sampling model to distinguish expected counts from guaranteed outcomes",
+        "level": "apply",
+        "learningType": "quantitative"
+      },
+      "items": [
+        "Select a binomial or hypergeometric model based on whether sampling is independent or without replacement.",
+        "Use the sample size and success probability to calculate the expected count E[X] = np.",
+        "Calculate the probability of a specified count using the selected sampling model.",
+        "Interpret the expected count as a long-run average, not a count guaranteed in one sample.",
+        "Use the model's possible counts to determine whether a stated outcome is guaranteed."
+      ],
+      "generatedAt": "2026-10-18T22:18:28.413Z",
+      "provider": "chatgpt",
+      "model": "gpt-6.1-sol",
+      "promptVersion": "1ed6b362365e1015fd4ce68ea57a48f664401c3ceee0009263c8d629323a1cde",
+      "pipeline": "generateLevelRubric",
+      "endpoint": "/api/developer/rubric"
+    },
+    "coverage-stochastic-reasoning-analyze": {
+      "input": {
+        "topic": "Analyzing variation in a specified random simulation",
+        "level": "analyze",
+        "learningType": "theoretical"
+      },
+      "items": [
+        "Explain how sample size affects the spread of simulated sample proportions when trials are independent.",
+        "Trace differences between simulation runs to random draws when the model and settings are unchanged.",
+        "Explain how more simulation repetitions improve the precision of an estimated event probability.",
+        "Explain why an unlikely simulated outcome does not, by itself, show that the simulation model is wrong."
+      ],
+      "generatedAt": "2026-10-18T19:53:24.716Z",
+      "provider": "chatgpt",
+      "model": "gpt-6.1-sol",
+      "promptVersion": "1ed6b362365e1015fd4ce68ea57a48f664401c3ceee0009263c8d629323a1cde",
+      "pipeline": "generateLevelRubric",
+      "endpoint": "/api/developer/rubric"
+    },
+    "coverage-method-applicability-understand": {
+      "input": {
+        "topic": "Explaining an assumption behind an average-speed shortcut",
+        "level": "understand",
+        "learningType": "theoretical"
+      },
+      "items": [
+        "Explains average speed as total distance divided by total elapsed time.",
+        "Explains why the arithmetic mean of two speeds gives average speed when travel times are equal.",
+        "Explains why checking the equal-time assumption prevents incorrect use of the arithmetic-mean shortcut.",
+        "Explains why equal distances at different speeds do not imply equal travel times."
+      ],
+      "generatedAt": "2026-10-18T19:53:26.849Z",
+      "provider": "chatgpt",
+      "model": "gpt-6.1-sol",
+      "promptVersion": "1ed6b362365e1015fd4ce68ea57a48f664401c3ceee0009263c8d629323a1cde",
+      "pipeline": "generateLevelRubric",
+      "endpoint": "/api/developer/rubric"
+    },
+    "coverage-method-applicability-analyze": {
+      "input": {
+        "topic": "Analyzing an unjustified inverse calculation",
+        "level": "analyze",
+        "learningType": "theoretical"
+      },
+      "items": [
+        "Explains how domain restrictions and one-to-one behavior determine whether an inverse calculation is valid.",
+        "Identifies the lost information that makes reversing a given calculation ambiguous.",
+        "Explains how restricting the input domain changes the possible inverse results in a scenario.",
+        "Refutes the claim that reversing each step must recover a unique original input using a counterexample."
+      ],
+      "generatedAt": "2026-10-18T19:53:30.747Z",
+      "provider": "chatgpt",
+      "model": "gpt-6.1-sol",
+      "promptVersion": "1ed6b362365e1015fd4ce68ea57a48f664401c3ceee0009263c8d629323a1cde",
+      "pipeline": "generateLevelRubric",
+      "endpoint": "/api/developer/rubric"
+    },
+    "coverage-scope-and-reference-understand": {
+      "input": {
+        "topic": "Specifying the observer in a conveyor claim",
+        "level": "understand",
+        "learningType": "theoretical"
+      },
+      "items": [
+        "Explains how an observer’s reference frame determines whether an object on a conveyor is moving or at rest.",
+        "Explains why a conveyor motion claim can be ambiguous when the observer is not specified.",
+        "Explains how belt-relative motion and ground-relative motion can differ for the same object."
+      ],
+      "generatedAt": "2026-10-18T19:53:32.065Z",
+      "provider": "chatgpt",
+      "model": "gpt-6.1-sol",
+      "promptVersion": "1ed6b362365e1015fd4ce68ea57a48f664401c3ceee0009263c8d629323a1cde",
+      "pipeline": "generateLevelRubric",
+      "endpoint": "/api/developer/rubric"
+    },
+    "coverage-method-applicability-apply": {
+      "input": {
+        "topic": "Selecting a method for unequal-time travel",
+        "level": "apply",
+        "learningType": "quantitative"
+      },
+      "items": [
+        "Selects speed–distance–time equations or a time-weighted average for the requested travel quantity.",
+        "Sets up equations for unequal travel intervals using each interval's own speed and duration.",
+        "Calculates the requested distance, time, or average speed using consistent units.",
+        "Interprets the calculated quantity in the trip's context, distinguishing average speed from individual interval speeds."
+      ],
+      "generatedAt": "2026-10-18T19:53:33.946Z",
+      "provider": "chatgpt",
+      "model": "gpt-6.1-sol",
+      "promptVersion": "1ed6b362365e1015fd4ce68ea57a48f664401c3ceee0009263c8d629323a1cde",
+      "pipeline": "generateLevelRubric",
+      "endpoint": "/api/developer/rubric"
+    },
+    "coverage-scope-and-reference-apply": {
+      "input": {
+        "topic": "Using classical relative velocity for a moving walkway",
+        "level": "apply",
+        "learningType": "quantitative"
+      },
+      "items": [
+        "Select v_person,ground = v_person,walkway + v_walkway,ground for a moving-walkway problem.",
+        "Assign velocity signs consistently for walking with or against the walkway.",
+        "Calculate the person's ground velocity from the given relative velocities.",
+        "Use the ground velocity to calculate travel time or distance when requested.",
+        "Interpret the calculated velocity's sign as the person's direction relative to the ground."
+      ],
+      "generatedAt": "2026-10-18T19:53:35.010Z",
+      "provider": "chatgpt",
+      "model": "gpt-6.1-sol",
+      "promptVersion": "1ed6b362365e1015fd4ce68ea57a48f664401c3ceee0009263c8d629323a1cde",
+      "pipeline": "generateLevelRubric",
+      "endpoint": "/api/developer/rubric"
+    },
+    "coverage-scope-and-reference-analyze": {
+      "input": {
+        "topic": "Analyzing interaction classification under a system boundary",
+        "level": "analyze",
+        "learningType": "theoretical"
+      },
+      "items": [
+        "Explains how the interacting objects’ positions relative to a system boundary determine internal or external status.",
+        "Explains why internal force pairs cannot change the system’s total momentum.",
+        "Explains how excluding one interacting object changes an interaction from internal to external.",
+        "Corrects the claim that a force’s type alone determines whether it is internal or external."
+      ],
+      "generatedAt": "2026-10-18T19:53:40.677Z",
+      "provider": "chatgpt",
+      "model": "gpt-6.1-sol",
+      "promptVersion": "1ed6b362365e1015fd4ce68ea57a48f664401c3ceee0009263c8d629323a1cde",
+      "pipeline": "generateLevelRubric",
+      "endpoint": "/api/developer/rubric"
     }
   }
 }

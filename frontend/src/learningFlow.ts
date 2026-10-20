@@ -7,10 +7,11 @@ export type Level = 'remember' | 'understand' | 'apply' | 'analyze'
 export type ConceptRubric = Record<Level, string>
 export type Message = { role: 'assistant' | 'user'; content: string; paper?: Paper; review?: Review; boardImage?: string; passedLevel?: Level }
 export type Judgment = { status: 'supported' | 'needs_clarification' | 'flawed' | 'missing'; result: 'correct' | 'incorrect' | 'undetermined' | 'not_applicable'; evidence: { messageIndex: number; quote: string }[] }
-export type Assessment = { complete: boolean; reason: string; criteria: (Judgment & { aspect: string })[]; task: Judgment }
+export type Assessment = { complete: boolean; reason: string; criteria: (Judgment & { aspect: string })[]; task: Judgment; refined?: Record<string, unknown> }
+export type LearnerModel = { state: { understands: string[]; potentialMisconceptions: string[]; missingConcepts: string[]; uncertainty: string[]; diagnosticObjective: string; evidence: { messageIndex: number; quote: string }[] }; strategyId: string | null; questionPlan?: unknown; coverageGap?: unknown }
 export type Session = { messages: Message[]; draft: string; assessment: Assessment | null; expression?: EmotionId }
-export type Concept = Session & { id: string; name: string; target: Level; rubric: ConceptRubric; assessments?: Partial<Record<Level, Assessment>>; passed: number; stageStart: number; finalSummary?: string; analysisGrade?: number }
-export type ChatResult = { message: string; paper?: Paper; assessment: Assessment | null; expression: EmotionId; finalSummary?: string; analysisGrade?: number }
+export type Concept = Session & { id: string; name: string; target: Level; rubric: ConceptRubric; assessments?: Partial<Record<Level, Assessment>>; learnerModel?: LearnerModel; passed: number; stageStart: number; finalSummary?: string; analysisGrade?: number }
+export type ChatResult = { message: string; paper?: Paper; assessment: Assessment | null; expression: EmotionId; finalSummary?: string; analysisGrade?: number; learnerModel?: LearnerModel }
 
 export const levelIds: Level[] = ['remember', 'understand', 'apply', 'analyze']
 export const conceptOpening = (name: string): Message => ({ role: 'assistant', content: `Teach me about ${name}.` })
@@ -41,6 +42,7 @@ export function advanceConcept(concept: Concept, messages: Message[], result: Ch
     stageStart: continuing ? messages.length : concept.stageStart,
     messages: showResponse ? [...messages, { role: 'assistant', content: response.message, ...(passed > concept.passed ? { passedLevel: levelIds[concept.passed] } : {}), ...(response.paper ? { paper: response.paper } : {}) }] : messages,
     draft: '', assessment: result.assessment, assessments: { ...concept.assessments, ...(result.assessment ? { [levelIds[concept.passed]]: result.assessment } : {}) }, expression: result.expression,
+    learnerModel: continuing ? undefined : result.learnerModel,
     ...(result.finalSummary ? { finalSummary: result.finalSummary, analysisGrade: result.analysisGrade } : {}),
   }
 }
