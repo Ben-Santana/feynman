@@ -9,7 +9,7 @@ import { createApiServer } from './server.js';
 import { testAuthorization, testAccountService } from './accessTestHelper.js';
 import { readFileSync } from 'node:fs';
 
-function fakeQuery({ invalidEvidence = false, complete = false, caseId = 'inertia' } = {}) {
+function fakeQuery({ complete = false, caseId = 'inertia' } = {}) {
   const fixture = comparisonCases.find(item => item.id === caseId);
   return async (instructions, messages, response) => {
     if (response.name === 'evaluate_learning') {
@@ -17,7 +17,6 @@ function fakeQuery({ invalidEvidence = false, complete = false, caseId = 'inerti
       const judgment = { status: complete ? 'supported' : 'flawed', result: complete ? 'correct' : 'incorrect', evidence: [{ messageIndex: 3, quote: fixture.messages[3].content }] };
       return { reason: 'Reasoning needs clarification.', nextQuestionFocus: 'Motion after the push.', criteria: aspects.map(aspect => ({ aspect, ...judgment })), task: judgment };
     }
-    if (response.name === 'diagnose_understanding') return { understands: ['Motion continues initially'], potentialMisconceptions: ['Stored push gets used up'], missingConcepts: ['net force'], uncertainty: ['Meaning of force'], diagnosticObjective: 'Distinguish force from velocity', evidence: [{ messageIndex: invalidEvidence ? 0 : 3, quote: invalidEvidence ? fixture.messages[0].content : fixture.messages[3].content }] };
     if (response.name === 'select_strategy') return { strategyId: 'remove-condition', rationale: 'Probe the state after the initiating condition ends.', plan: {
       targetMessageIndex: 3, targetQuote: fixture.messages[3].content, rubricItem: fixture.aspects[0],
       objective: 'Distinguish continued motion from a continued interaction.', scenario: 'The object moves on a horizontal frictionless surface after contact ends.',
@@ -25,7 +24,6 @@ function fakeQuery({ invalidEvidence = false, complete = false, caseId = 'inerti
       construction: 'Ask about one consequence after contact ends.', prerequisitesSatisfied: 'The student discusses the state after the push.', limitations: ['A prediction alone is ambiguous.'],
       responseSignals: [{ hypothesis: 'Stored push', responsePattern: 'The object slows because the push expires.', interpretation: 'Supports the stored-push hypothesis if friction is excluded.' }, { hypothesis: 'No net influence', responsePattern: 'Velocity remains constant.', interpretation: 'Needs a specific explanation before establishing understanding.' }],
     } };
-    if (response.name === 'validate_strategy_application') return { usable: true, reason: 'The diagnostic structure and topic are preserved.' };
     if (response.name === 'respond_to_student') return { message: instructions.includes('Apply the following diagnostic strategy') ? 'On a frictionless surface, what happens to the puck after the push ends?' : 'Could you explain what you mean by stored force?', expression: 'confused' };
     throw new Error(`Unexpected ${response.name}`);
   };
@@ -137,15 +135,15 @@ test('generator excludes full diagnostics, drafted plan, interpretations, and ba
   const markers = ['PRIVATE_DIAGNOSTIC_SUMMARY', 'PRIVATE_SELECTION_RATIONALE', 'PRIVATE_DRAFT_QUESTION', 'PRIVATE_PREREQUISITE_REPORT', 'PRIVATE_LIMITATION', 'PRIVATE_RESPONSE_INTERPRETATION'];
   const result = await compareQuestions('inertia', async (instructions, messages, response, options) => {
     const output = await fallback(instructions, messages, response, options);
-    if (response.name === 'diagnose_understanding') return { ...output, uncertainty: [markers[0]] };
     if (response.name === 'select_strategy') return { ...output, rationale: markers[1], plan: { ...output.plan, construction: markers[2], prerequisitesSatisfied: markers[3], limitations: [markers[4]], responseSignals: output.plan.responseSignals.map(signal => ({ ...signal, interpretation: markers[5] })) } };
     return output;
   });
   const generator = result.calls.find(call => call.branch === 'strategy learner');
-  const checks = result.calls.filter(call => call.name === 'validate_strategy_application');
+  const checks = result.calls.filter(call => call.name === 'select_strategy');
   for (const marker of markers) assert.ok(!generator.request.instructions.includes(marker), marker);
-  assert.ok(checks.some(call => call.request.messages[0].content.includes(markers[2])));
-  assert.ok(checks.some(call => call.request.messages[0].content.includes(markers[5])));
+  assert.equal(result.selection.plan.construction, markers[2]);
+  assert.equal(result.selection.plan.responseSignals[0].interpretation, markers[5]);
+  assert.equal(checks.length, 1);
   assert.ok(!generator.request.instructions.includes('Learning-type framework'));
   assert.deepEqual(Object.keys(result.generationContext), ['topic', 'level', 'learningType', 'rubricItem', 'studentClaim', 'diagnosticObjective', 'strategy', 'setting']);
   assert.deepEqual(Object.keys(result.generationContext.strategy), ['id', 'title', 'constructionRules']);
@@ -179,58 +177,34 @@ test('Understand restrictions apply to planning, generation, and checking but le
   for (const call of result.calls.filter(call => ['select_strategy', 'validate_strategy_application'].includes(call.name) || call.branch === 'strategy learner')) assert.ok(call.request.instructions.includes(policy), call.branch);
 });
 
-test('Understand numerical question is rejected and replaced with a meaning question', async () => {
-  const fallback = fakeQuery({ caseId: 'ece-parallel-voltage' });
-  let attempts = 0;
-  const result = await compareQuestions('ece-parallel-voltage', async (instructions, messages, response, options) => {
-    if (response.name === 'respond_to_student' && instructions.includes('Apply the following diagnostic strategy')) {
-      assert.match(instructions, /Do not request numerical results/);
-      return { message: ++attempts === 1 ? 'With a 12 V source, what voltage would a voltmeter read across the resistor?' : 'Which two points are you comparing when you describe the voltage across that branch?', expression: 'confused' };
-    }
-    if (response.name === 'validate_strategy_application') {
-      assert.match(instructions, /including simple single-step work and numerical voltmeter readings/);
-      const { question } = JSON.parse(messages[0].content);
-      return { usable: !question?.includes('voltmeter read'), reason: question?.includes('voltmeter read') ? 'Requests a numerical result at Understand.' : 'Asks about the meaning of branch voltage.' };
-    }
-    return fallback(instructions, messages, response, options);
-  });
-  assert.equal(attempts, 2);
-  assert.match(result.enhanced.message, /Which two points/);
-  assert.equal(result.coverageGap, null);
+test('Understand instructions reach selection and generation without a reviewer call', async () => {
+ const fallback = fakeQuery({ caseId: 'ece-parallel-voltage' });
+ const result = await compareQuestions('ece-parallel-voltage', async (instructions, messages, tool, options) => {
+   assert.notEqual(tool.name, 'validate_strategy_application');
+   assert.notEqual(tool.name, 'diagnose_understanding');
+   if (tool.name === 'select_strategy' || instructions.includes('Apply the following diagnostic strategy')) assert.ok(instructions.includes(strategyLevelInstructions('understand')));
+   return fallback(instructions, messages, tool, options);
+ });
+ assert.equal(result.coverageGap, null);
+ assert.equal(result.calls.filter(c => c.name === 'select_strategy').length, 1);
 });
 
-test('Understand numerical plan falls back before question generation', async () => {
-  const fallback = fakeQuery({ caseId: 'ece-parallel-voltage' });
-  const result = await compareQuestions('ece-parallel-voltage', async (instructions, messages, response, options) => {
-    if (response.name === 'select_strategy') {
-      const output = await fallback(instructions, messages, response, options);
-      return { ...output, plan: { ...output.plan, construction: 'Calculate the voltage by substituting into the formula.' } };
-    }
-    if (response.name === 'validate_strategy_application') return { usable: false, reason: 'Formula substitution is not permitted at Understand.' };
-    return fallback(instructions, messages, response, options);
-  });
-  assert.equal(result.coverageGap.stage, 'plan_validation');
-  assert.equal(result.calls.filter(call => call.name === 'respond_to_student').length, 1);
+test('an ungrounded selected plan falls back before strategy generation', async () => {
+ const fallback = fakeQuery();
+ const result = await compareQuestions('inertia', async (instructions, messages, tool, options) => {
+   const output = await fallback(instructions, messages, tool, options);
+   return tool.name === 'select_strategy' ? { ...output, plan: { ...output.plan, targetQuote: 'A claim absent from the learner transcript.' } } : output;
+ });
+ assert.equal(result.coverageGap.stage, 'selection');
+ assert.equal(result.calls.filter(c => c.branch === 'strategy learner').length, 0);
 });
 
-test('confusing longer-handle question is rejected and replaced without changing the default branch', async () => {
-  const fallback = fakeQuery({ caseId: 'indirect-torque' });
-  const confusing = 'With the same bolt and the same hand push perpendicular to either handle, what does your phrase “larger force” mean for the hand’s push compared with its turning effect about the bolt’s central axis?';
-  let attempts = 0;
-  const result = await compareQuestions('indirect-torque', async (instructions, messages, response, options) => {
-    if (response.name === 'respond_to_student' && instructions.includes('Apply the following diagnostic strategy')) {
-      assert.ok(instructions.includes(clearQuestionInstructions));
-      return { message: ++attempts === 1 ? confusing : 'You said the hand’s push stays the same. What do you mean by “the force gets larger”?', expression: 'attentive' };
-    }
-    if (response.name === 'validate_strategy_application') {
-      assert.match(instructions, /Judge clarity for this student's demonstrated vocabulary/);
-      return { usable: JSON.parse(messages[0].content).question !== confusing, reason: 'Avoid embedded comparisons and unfamiliar terminology.' };
-    }
-    return fallback(instructions, messages, response, options);
-  });
-  assert.equal(attempts, 2);
-  assert.match(result.enhanced.message, /What do you mean by/);
-  assert.ok(!result.calls.find(call => call.branch === 'default learner').request.instructions.includes(clearQuestionInstructions));
+test('clarity guidance remains in strategy generation without a second model judging it', async () => {
+ const result = await compareQuestions('indirect-torque', fakeQuery({ caseId: 'indirect-torque' }));
+ const generator = result.calls.find(c => c.branch === 'strategy learner');
+ assert.ok(generator.request.instructions.includes(clearQuestionInstructions));
+ assert.equal(result.calls.filter(c => c.name === 'validate_strategy_application').length, 0);
+ assert.equal(result.calls.filter(c => c.branch === 'strategy learner').length, 1);
 });
 
 test('clear strategy questions can include enough context to exceed the former word limit', async () => {
@@ -245,7 +219,6 @@ test('clear strategy questions can include enough context to exceed the former w
       assert.ok(!instructions.includes('one short'));
       return { message: question, expression: 'attentive' };
     }
-    if (response.name === 'validate_strategy_application') return { usable: true, reason: 'Familiar wording and context clarify one diagnostic target.' };
     return fallback(instructions, messages, response, options);
   });
   assert.equal(attempts, 1);
@@ -253,9 +226,15 @@ test('clear strategy questions can include enough context to exceed the former w
   assert.equal(result.coverageGap, null);
   assert.ok(!result.calls.find(call => call.branch === 'default learner').request.instructions.includes(clearQuestionInstructions));
 });
-test('diagnostic quotes cannot credit assistant text', async () => {
-  await assert.rejects(compareQuestions('inertia', fakeQuery({ invalidEvidence: true })), /Diagnostic evidence/);
+test('diagnosis reuses only the rubric assessment and does not request diagnostic output', async () => {
+ const result = await compareQuestions('inertia', fakeQuery());
+ assert.equal(result.calls.filter(c => c.name === 'diagnose_understanding').length, 0);
+ assert.deepEqual(result.state.evidence, result.baseline.assessment.criteria[0].evidence);
+ assert.equal(result.state.diagnosticObjective, result.baseline.assessment.nextQuestionFocus);
+ const selection = result.calls.find(c => c.name === 'select_strategy');
+ assert.deepEqual(JSON.parse(selection.request.messages[0].content).rubricAssessment, result.baseline.assessment);
 });
+
 test('invalid case fails before any model call', async () => {
   await assert.rejects(compareQuestions('__proto__', () => { throw new Error('should not run'); }), /valid comparison case/);
 });
@@ -345,23 +324,24 @@ test('a manufactured database ID cannot become an applied strategy', async () =>
   assert.match(result.coverageGap.reason, /never manufacture/);
 });
 
-test('unusable adapted plan falls back before any strategy question is generated', async () => {
-  const fallback = fakeQuery();
-  const result = await compareQuestions('inertia', (instructions, messages, response, options) => response.name === 'validate_strategy_application'
-    ? { usable: false, reason: 'The plan imports an unrelated assumption.' }
-    : fallback(instructions, messages, response, options));
-  assert.equal(result.coverageGap.stage, 'plan_validation');
-  assert.equal(result.calls.filter(call => call.name === 'respond_to_student').length, 1);
+test('a structurally invalid plan falls back without a semantic plan review', async () => {
+ const fallback = fakeQuery();
+ const result = await compareQuestions('inertia', async (instructions, messages, tool, options) => {
+   const output = await fallback(instructions, messages, tool, options);
+   return tool.name === 'select_strategy' ? { ...output, plan: { ...output.plan, prerequisitesSatisfied: '' } } : output;
+ });
+ assert.equal(result.coverageGap.stage, 'selection');
+ assert.equal(result.calls.filter(c => c.name === 'respond_to_student').length, 1);
 });
 
-test('persistent semantic question rejection cannot publish a false strategy application', async () => {
-  const fallback = fakeQuery();
-  const result = await compareQuestions('inertia', (instructions, messages, response, options) => response.name === 'validate_strategy_application'
-    ? { usable: !JSON.parse(messages[0].content).question, reason: 'Generated question does not implement the plan.' }
-    : fallback(instructions, messages, response, options));
-  assert.equal(result.coverageGap.stage, 'question_validation');
-  assert.equal(result.enhanced.message, result.baseline.message);
-  assert.equal(result.strategy, null);
+test('persistent malformed strategy questions use the rubric fallback without a reviewer', async () => {
+ const fallback = fakeQuery();
+ const result = await compareQuestions('inertia', (instructions, messages, tool, options) => instructions.includes('Apply the following diagnostic strategy')
+   ? { message: '', expression: 'confused' } : fallback(instructions, messages, tool, options));
+ assert.equal(result.coverageGap.stage, 'question_validation');
+ assert.equal(result.enhanced.message, result.baseline.message);
+ assert.equal(result.strategy, null);
+ assert.equal(result.calls.filter(c => c.name === 'validate_strategy_application').length, 0);
 });
 
 test('every comparison uses its saved level-pipeline rubric without runtime regeneration', () => {

@@ -11,7 +11,6 @@ function evaluatorResponse(messages, { status = 'supported', invalidQuote = fals
   const student = material.transcript.findLast(m => m.role === 'user');
   return { reason: 'Current evidence checked.', nextEvidenceObjective: status === 'supported' ? '' : 'Distinguish motion from a continuing interaction.', judgments: material.definitions.map(d => ({ criterionId: d.id, status, result: 'correct', reasoning: 'valid', opportunity: 'fair', reason: 'Checked the exact learner claim.', abstentionReason: '', observations: [{ messageId: student.messageId, quote: invalidQuote ? 'Invented evidence.' : student.content }], contradictions: [] })) };
 }
-const diagnostic = request => ({ understands: [], potentialMisconceptions: ['A stored push may be treated as a consumable cause.'], missingConcepts: ['Continuing interaction versus motion'], uncertainty: ['This is a hypothesis.'], diagnosticObjective: 'Distinguish a continuing interaction from motion.', evidence: [{ messageIndex: 1, quote: request.messages[1].content }] });
 function plan(request) {
   return { strategyId: 'remove-condition', rationale: 'Examine persistence after contact ends.', plan: { targetMessageIndex: 1, targetQuote: request.messages[1].content, rubricItem: request.aspects[0], objective: 'Distinguish continued motion from continuing contact.', scenario: 'A puck moves on a horizontal frictionless surface after the hand lets go.', assumptions: ['No horizontal external interaction'], heldFixed: ['Surface and puck'], varied: ['Contact with the hand'], construction: 'Ask about the claimed cause after contact ends.', prerequisitesSatisfied: 'The learner discusses motion after a push.', limitations: ['One answer is not a stable belief.'], responseSignals: [{ hypothesis: 'Stored push', responsePattern: 'Push runs out.', interpretation: 'Investigate the stored-push hypothesis.' }, { hypothesis: 'No continuing influence', responsePattern: 'Motion continues.', interpretation: 'Ask for evidence of the relationship.' }] } };
 }
@@ -36,21 +35,18 @@ test('ordinary learner applies the shared strategy pipeline to an incomplete ref
   const result = await chat(request, async (instructions, messages, tool) => {
     calls.push(tool.name);
     if (tool.name === 'evaluate_refined') return evaluatorResponse(messages, { status: 'flawed' });
-    if (tool.name === 'diagnose_understanding') {
-      assert.equal(JSON.parse(messages[0].content).rubricAssessment.complete, false);
-      return diagnostic(request);
-    }
     if (tool.name === 'select_strategy') return plan(request);
-    if (tool.name === 'validate_strategy_application') return { usable: true, reason: 'Preserves the learner claim without giving its correction.' };
     assert.equal(tool.name, 'respond_to_student');
     assert.match(instructions, /Apply the following diagnostic strategy/);
     return { message: 'After the hand loses contact with the puck, what could make its speed change on this frictionless surface?', expression: 'confused' };
   });
   assert.equal(result.assessment.complete, false);
   assert.equal(result.learnerModel.strategyId, 'remove-condition');
-  assert.deepEqual(result.learnerModel.state.evidence, diagnostic(request).evidence);
+  assert.deepEqual(result.learnerModel.state.evidence, [{ messageIndex: 1, quote: request.messages[1].content }]);
   assert.equal(calls.filter(c => c === 'respond_to_student').length, 1, 'Do not generate an unused baseline question');
-  assert.equal(calls.filter(c => c === 'validate_strategy_application').length, 2);
+  assert.deepEqual(calls, ['evaluate_refined', 'select_strategy', 'respond_to_student']);
+  assert.deepEqual(result.learnerModel.state.understands, []);
+  assert.ok(result.learnerModel.state.potentialMisconceptions[0].includes(request.aspects[0]));
 });
 
 test('all rubric items remain mandatory and strategy abstention generates one ordinary fallback', async () => {
@@ -62,7 +58,6 @@ test('all rubric items remain mandatory and strategy abstention generates one or
       value.judgments[1] = { ...value.judgments[1], status: 'missing', observations: [] };
       return value;
     }
-    if (tool.name === 'diagnose_understanding') return diagnostic(request);
     if (tool.name === 'select_strategy') return { strategyId: 'none', rationale: 'No suitable construction for this evidence.', plan: null };
     assert.equal(tool.name, 'respond_to_student');
     learnerCalls++;
@@ -79,7 +74,6 @@ test('all rubric items remain mandatory and strategy abstention generates one or
 test('fabricated citations cannot advance a regular conversation', async () => {
   const result = await chat(input(), async (_, messages, tool) => {
     if (tool.name === 'evaluate_refined') return evaluatorResponse(messages, { invalidQuote: true });
-    if (tool.name === 'diagnose_understanding') return diagnostic(input());
     if (tool.name === 'select_strategy') return { strategyId: 'none', rationale: 'Need evidence.', plan: null };
     return { message: 'What interaction acts on the puck after contact ends?', expression: 'confused' };
   });
