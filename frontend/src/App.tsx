@@ -14,6 +14,7 @@ import { defaultAppearance, type CharacterAppearance } from './characterAppearan
 import { loadCloudAppearance, saveCloudAppearance } from './cloudAppearance'
 import { accountFetch, accountSignal, type Account, type AccountAuthMode } from './accounts'
 import { AdminAnalyticsPage } from './components/AdminAnalyticsPage'
+import { AdminSalgSurveyPage } from './components/AdminSalgSurveyPage'
 import { LearningSurveyDialog } from './components/LearningSurveyDialog'
 import { useLearningSurvey } from './useLearningSurvey'
 import { AdminPage } from './components/AdminPage'
@@ -103,7 +104,8 @@ export default function App({ account, onProfileUpdated, authMode }: { account: 
   const isDeveloperPage = page === '/developer'
   const adminCourseMatch = /^\/admin\/courses(?:\/([^/]+))?$/.exec(page)
   const isAdminCoursesPage = Boolean(adminCourseMatch)
-  const isAnalyticsPage = page === '/admin/analytics'
+  const isSalgSurveyPage = page === '/admin/analytics/salg-survey'
+  const isAnalyticsPage = page === '/admin/analytics' || isSalgSurveyPage
   const moduleMatch = /^\/courses\/([^/]+)\/modules\/([^/]+)\/edit$/.exec(page)
   const moduleCourseId = moduleMatch?.[1]
   const moduleId = moduleMatch?.[2]
@@ -583,7 +585,7 @@ export default function App({ account, onProfileUpdated, authMode }: { account: 
 
   function renderPage() {
     if (page === '/profile' || page === '/settings') return <SettingsPage account={account} authMode={authMode} onProfileUpdated={onProfileUpdated} appearance={appearance} />
-    if (isAnalyticsPage) return account.role === 'admin' ? <main><AdminAnalyticsPage /></main> : <main><p>Admin access required.</p></main>
+    if (isAnalyticsPage) return account.role === 'admin' ? <main>{isSalgSurveyPage ? <AdminSalgSurveyPage onNavigate={navigateFromSidebar} /> : <AdminAnalyticsPage onNavigate={navigateFromSidebar} />}</main> : <main><p>Admin access required.</p></main>
     if (isChatPage && account.role === 'student' && (!survey.ready || survey.error || (survey.status && !survey.status.submittedAt && !(started && sessionComplete(concepts))))) return <main className="survey-required"><h1>Learning survey</h1>{survey.error ? <p role="alert">{survey.error}</p> : <p>{survey.ready ? 'Complete the survey before continuing to another topic.' : 'Checking survey status…'}</p>}<button onClick={() => void survey.guard()}> {survey.status && !survey.status.submittedAt ? 'Complete survey' : 'Retry'}</button><button onClick={() => navigate('/sessions')}>Back to sessions</button></main>
     if (page === '/admin') return account.role === 'admin' ? <main><AdminPage /></main> : <main className="account-login"><p>Admin access required.</p><button onClick={() => navigate('/sessions')}>Back to sessions</button></main>
     if (isAdminCoursesPage) return account.role === 'admin' ? <main><AdminCoursesPage key={account.id} courseId={adminCourseMatch?.[1]} onNavigate={navigateFromSidebar} /></main> : <main className="account-login"><p>Admin access required.</p><button onClick={() => navigate('/sessions')}>Back to sessions</button></main>

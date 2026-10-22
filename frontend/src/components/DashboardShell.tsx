@@ -43,7 +43,7 @@ export function DashboardShell({ account, activePage = '/dashboard', onNavigate,
           <p className="dashboard-nav-heading">Administration</p>
           {navigationButton('Manage accounts', 'accounts', () => onNavigate('/admin'), activePage === '/admin')}
           {navigationButton('View courses', 'courses', () => onNavigate('/admin/courses'), activePage === '/admin/courses' || activePage.startsWith('/admin/courses/'))}
-          {navigationButton('Analytics', 'analytics', () => onNavigate('/admin/analytics'), activePage === '/admin/analytics')}
+          {navigationButton('Analytics', 'analytics', () => onNavigate('/admin/analytics'), activePage === '/admin/analytics' || activePage.startsWith('/admin/analytics/'))}
           {navigationButton('Developer tools', 'developer', () => onNavigate('/developer'), activePage === '/developer')}
         </div>}
       </nav>
