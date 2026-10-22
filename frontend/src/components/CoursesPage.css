@@ -1,4 +1,5 @@
 .courses-page { width: min(100%, 1120px); margin: auto; padding: 48px; }
+.course-library-page { display: flex; flex-direction: column; min-height: 100dvh; }
 .courses-page h1 { margin: 0; font: 500 clamp(1.75rem, 3vw, 2.25rem)/1.2 "Fredoka", system-ui, sans-serif; }
 .courses-page h2 { margin: 0; font-size: 1.25rem; font-weight: 500; }
 .courses-page h3 { margin: 0; font-size: 0.9375rem; font-weight: 500; overflow-wrap: anywhere; }
@@ -207,3 +208,18 @@
 @media (prefers-reduced-motion: reduce) { .course-card, .course-title-button svg, .course-edit-dialog::backdrop { transition: none; backdrop-filter: none; } }
 @media (prefers-reduced-motion: reduce) { .course-concept-progress-track .level-slider-fill { transition: none; } }
 @media (prefers-reduced-motion: reduce) { .course-enrollment-toggle, .course-enrollment-labels { transition: none !important; } }
+
+.course-library-toolbar { margin-bottom: 28px; }
+.course-library-filters { display: grid; grid-template-columns: minmax(160px, 1fr) minmax(180px, 260px); gap: 16px; }
+.course-library-filters label, .course-subject-label { font-size: .75rem; color: var(--muted-foreground); }
+.courses-page .course-star-button { display: inline-flex; align-items: center; justify-content: center; gap: 6px; min-height: 34px; padding: 6px 10px; color: var(--muted-foreground); font-size: .75rem; }
+.course-star-button svg { flex: none; width: 17px; height: 17px; }
+.course-card-wrap > .course-star-button { position: absolute; right: 14px; bottom: 16px; }
+.course-card-wrap:has(> .course-star-button) .course-card-body { padding-right: 78px; }
+.course-sharing-dialog > form > p { color: var(--muted-foreground); font-size: .8125rem; line-height: 1.6; }
+.course-sharing-dialog .course-edit-footer { flex-wrap: wrap; }
+@media (max-width: 600px) { .course-library-filters { grid-template-columns: minmax(0, 1fr); } }
+
+.course-header-community { display: flex; align-items: center; gap: 12px; margin-left: auto; min-width: 0; }
+.course-header-community > span { overflow-wrap: anywhere; }
+.course-header-community .course-star-button { flex: none; }

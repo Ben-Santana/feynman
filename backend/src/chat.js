@@ -72,12 +72,12 @@ export function validate(body) {
     }
     if (m.paper !== undefined) {
       if (learningType !== 'quantitative' || body.level !== 'analyze' || m.role !== 'assistant' || !m.paper || typeof m.paper.id !== 'string' || !m.paper.id || typeof m.paper.markdown !== 'string' || !m.paper.markdown.trim() || m.paper.markdown.length > 30000 || (m.paper.papers !== undefined && (!Array.isArray(m.paper.papers) || m.paper.papers.length !== 3 || m.paper.papers.some(p => !p || typeof p.id !== 'string' || !p.id || typeof p.markdown !== 'string' || !p.markdown.trim() || !Array.isArray(p.steps) || p.steps.length < 2 || p.steps.length > 10)))) throw new Error('Invalid classroom paper.');
-      latestPaper = m.paper.id;
+      latestPaper = m.paper;
     }
     if (m.review !== undefined) {
       const review = m.review;
-      if (learningType !== 'quantitative' || m.role !== 'user' || !review || !latestPaper || review.paperId !== latestPaper || typeof review.explanation !== 'string' || review.explanation.length > 10000) throw new Error('Invalid paper review.');
-      const papers = body.messages.findLast(item => item.paper)?.paper?.papers;
+      if (learningType !== 'quantitative' || m.role !== 'user' || !review || !latestPaper || review.paperId !== latestPaper.id || typeof review.explanation !== 'string' || review.explanation.length > 10000) throw new Error('Invalid paper review.');
+      const papers = latestPaper.papers;
       if (papers?.length) {
         if (!Array.isArray(review.grades) || review.grades.length !== papers.length || review.grades.some((grade, index) => !grade || grade.paperId !== papers[index].id || !['pass', 'fail'].includes(grade.grade) || !Array.isArray(grade.selectedSteps) || grade.selectedSteps.some(n => !Number.isInteger(n) || n < 1 || n > papers[index].steps?.length) || (grade.grade === 'fail' && !grade.selectedSteps.length) || (grade.grade === 'pass' && grade.selectedSteps.length))) throw new Error('Sort every paper; a Fail grade requires a marked step.');
       } else if (!['pass', 'fail'].includes(review.grade) || (review.grade === 'fail' && (!Array.isArray(review.selectedSteps) || !review.selectedSteps.length || review.selectedSteps.some(n => !Number.isInteger(n) || n < 1 || n > 10)))) throw new Error('A Fail grade requires at least one marked step on the current paper.');

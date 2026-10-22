@@ -1,7 +1,9 @@
 import { useEffect, useState } from 'react'
 import type { Account } from '../accounts'
 import { accountSignal } from '../accounts'
-import { decideEnrollment, deleteCourse, deleteModule, leaveCourse, loadCourse, loadCourses, setCoursePin, startModule, type Course, type Enrollment, type CourseModule, type ModuleSession, type ModuleProgress, type StudentProgress, type CoursePerson } from '../courseStore'
+import { decideEnrollment, deleteCourse, deleteModule, leaveCourse, loadCourse, loadCourses, setCoursePin, setCourseStar, startModule, courseSubjects, COURSE_SUBJECTS, type CourseCollection, type Course, type Enrollment, type CourseModule, type ModuleSession, type ModuleProgress, type StudentProgress, type CoursePerson } from '../courseStore'
+import { createCourseStarUpdates } from '../courseStars'
+import { useToast } from './useToast'
 import { defaultAppearance } from '../characterAppearance'
 import { Bloub } from './Bloub'
 import { sessionComplete } from '../learningFlow'
@@ -11,12 +13,18 @@ import { DeleteMenu } from './DeleteMenu'
 import { LoadingScreen } from './AccountLoading'
 import { CourseProgressDialog, type CourseProgressSelection } from './CourseProgressDialog'
 import { JoinCourseDialog } from './JoinCourseDialog'
+import { LibraryEmptyState } from './LibraryEmptyState'
+import { Select } from './Select'
 import './CoursesPage.css'
 
+const subjectOptions = [{ value: '', label: 'All subjects' }, ...COURSE_SUBJECTS.map(value => ({ value, label: value }))]
+
 type CourseDetail = { course: Course; enrollment?: Enrollment; modules: CourseModule[]; progress: StudentProgress[]; ownProgress: ModuleProgress[]; people: CoursePerson[] }
-export function CoursesPage({ account, courseId, sessions, onNavigate, onOpenAssignment }: {
-  account: Account; courseId?: string; sessions: ModuleSession[]; onNavigate: (path: string) => void; onOpenAssignment: (record: ModuleSession) => void
+export function CoursesPage({ account, courseId, collection = 'enrolled', sessions, onNavigate, onOpenAssignment, onBeforeTopic }: {
+  onBeforeTopic: () => Promise<boolean>; account: Account; courseId?: string; collection?: CourseCollection; sessions: ModuleSession[]; onNavigate: (path: string) => void; onOpenAssignment: (record: ModuleSession) => void
 }) {
+  const [subject, setSubject] = useState('')
+  const [search, setSearch] = useState('')
   const [courses, setCourses] = useState<Course[]>([])
   const [enrollments, setEnrollments] = useState<Enrollment[]>([])
   const [detail, setDetail] = useState<CourseDetail | null>(null)
@@ -27,18 +35,38 @@ export function CoursesPage({ account, courseId, sessions, onNavigate, onOpenAss
   const [showJoinDialog, setShowJoinDialog] = useState(false)
   const [view, setView] = useState<'modules' | 'people'>('modules')
   const [progressSelection, setProgressSelection] = useState<CourseProgressSelection | null>(null)
+  const toast = useToast()
+  const [starUpdates] = useState(() => {
+    const signal = accountSignal()
+    return createCourseStarUpdates((id, starred) => {
+      signal.throwIfAborted()
+      return setCourseStar(id, starred)
+    }, (id, state) => {
+      if (signal.aborted) return
+      setCourses(previous => previous.map(course => course.id === id ? { ...course, ...state } : course))
+      setDetail(previous => previous?.course.id === id ? { ...previous, course: { ...previous.course, ...state } } : previous)
+    }, reason => {
+      if (!signal.aborted) toast(reason instanceof Error ? reason.message : 'Could not save the star. Please retry.')
+    })
+  })
+  useEffect(() => { starUpdates.setActive(true); return () => { starUpdates.setActive(false) } }, [starUpdates])
   const instructor = account.role === 'instructor'
   useEffect(() => {
     let disposed = false
     const refresh = () => setVersion(value => value + 1)
     window.addEventListener('focus', refresh)
     queueMicrotask(() => { if (!disposed) { setLoading(true); setError('') } })
+    const starVersion = starUpdates.version
+    function reconcileStars(loaded: Course, current?: Course) {
+      const course = current && starVersion !== starUpdates.version ? { ...loaded, starred: current.starred, star_count: current.star_count } : loaded
+      return starUpdates.overlay(course)
+    }
     const request = courseId ? loadCourse(courseId).then(value => {
-      if (!disposed) setDetail(previous => previous && (previous.course.appearance_revision ?? 0) > (value.course.appearance_revision ?? 0) ? { ...value, course: previous.course } : value)
-    }) : loadCourses().then(value => { if (!disposed) { setCourses(value.courses); setEnrollments(value.enrollments) } })
+      if (!disposed) setDetail(previous => ({ ...value, course: reconcileStars(previous && (previous.course.appearance_revision ?? 0) > (value.course.appearance_revision ?? 0) ? previous.course : value.course, previous?.course) }))
+    }) : loadCourses().then(value => { if (!disposed) { setCourses(previous => value.courses.map(course => reconcileStars(course, previous.find(current => current.id === course.id)))); setEnrollments(value.enrollments) } })
     void request.catch(reason => { if (!disposed && !accountSignal().aborted) setError(reason.message) }).finally(() => { if (!disposed) setLoading(false) })
     return () => { disposed = true; window.removeEventListener('focus', refresh) }
-  }, [courseId, version])
+  }, [courseId, version, starUpdates])
   async function act(action: () => Promise<void>) {
     if (busy) return
     const signal = accountSignal()
@@ -47,14 +75,14 @@ export function CoursesPage({ account, courseId, sessions, onNavigate, onOpenAss
     catch (reason) { if (!signal.aborted) setError(reason instanceof Error ? reason.message : 'Could not save changes. Please retry.') }
     finally { if (!signal.aborted) setBusy(false) }
   }
-  function courseUpdated(course: Course) { setDetail(previous => previous ? { ...previous, course } : previous); setVersion(value => value + 1) }
+  function courseUpdated(course: Course) { setCourses(previous => previous.map(value => value.id === course.id ? { ...value, ...course } : value)); setDetail(previous => previous ? { ...previous, course: { ...previous.course, ...course } } : previous); setVersion(value => value + 1) }
   const canLeave = (enrollment?: Enrollment) => account.role === 'student' && (enrollment?.status === 'enrolled' || enrollment?.status === 'pending')
   const leaveLabel = (enrollment?: Enrollment) => enrollment?.status === 'pending' ? 'Cancel request' : 'Leave course'
   function leave(course: Course, enrollment?: Enrollment) {
     if (busy || !canLeave(enrollment)) return
     const message = enrollment?.status === 'pending'
       ? `Cancel your request to join “${course.name}”?`
-      : `Leave “${course.name}”? You will lose access to its modules. Your saved progress will be kept, but you must rejoin to continue. Rejoining may require instructor approval.`
+      : `Leave “${course.name}”? Your assignment progress will be kept, but you must rejoin to continue assignments. Rejoining may require instructor approval.${course.is_public ? ' You can still take personal copies of its public topics.' : ''}`
     if (!window.confirm(message)) return
     void act(async () => {
       const signal = accountSignal()
@@ -68,42 +96,56 @@ export function CoursesPage({ account, courseId, sessions, onNavigate, onOpenAss
   const statusLabel = (status?: string) => status === 'pending' ? 'Pending approval' : status === 'rejected' ? 'Request rejected' : 'Enrolled'
   const ownCourse = detail?.course.instructor_id === account.id && instructor
   const pendingCount = detail?.progress.filter(student => student.status === 'pending').length ?? 0
+  const member = Boolean(ownCourse || detail?.enrollment?.status === 'enrolled')
+  const visibleCourses = courses.filter(course => collection === 'community' ? course.is_public : collection === 'starred' ? course.is_public && course.starred : course.instructor_id === account.id || enrollments.some(enrollment => enrollment.course_id === course.id))
+    .filter(course => (!subject || courseSubjects(course).includes(subject)) && course.name.toLowerCase().includes(search.trim().toLowerCase()))
   if (loading && (courseId ? !detail : courses.length === 0)) return <LoadingScreen label="Loading courses" />
-  return <section className={`courses-page${courseId ? ' course-detail-page' : ''}`} aria-labelledby="courses-title">
+  return <section className={`courses-page${courseId ? ' course-detail-page' : ' course-library-page'}`} aria-labelledby="courses-title">
     {courseId && <nav className="course-breadcrumb" aria-label="Course navigation"><button type="button" onClick={() => onNavigate('/courses')}><svg viewBox="0 0 20 20" aria-hidden="true" fill="none" stroke="currentColor" strokeWidth="1.5"><path d="m12 5-5 5 5 5" /></svg>Courses</button>{detail && canLeave(detail.enrollment) && <button type="button" className="course-leave-button" disabled={busy} onClick={() => leave(detail.course, detail.enrollment)}>{leaveLabel(detail.enrollment)}</button>}</nav>}
-    {!courseId ? <div className="dashboard-session-heading"><h1 id="courses-title">Courses</h1>{account.role !== 'admin' && <button className="dashboard-new-session" onClick={() => instructor ? onNavigate('/courses/new') : setShowJoinDialog(true)}>{instructor ? 'Create course' : 'Join course'}</button>}</div> : detail ? <CourseHeader course={detail.course} canEdit={Boolean(ownCourse)} disabled={busy} onUpdated={courseUpdated} /> : <h1 id="courses-title">Course</h1>}
+    {!courseId ? <div className="dashboard-session-heading"><h1 id="courses-title">{collection === 'community' ? 'Community' : collection === 'starred' ? 'Starred' : 'My Courses'}</h1>{account.role !== 'admin' && <button className="dashboard-new-session" onClick={() => instructor ? onNavigate('/courses/new') : setShowJoinDialog(true)}>{instructor ? 'Create course' : 'Join course'}</button>}</div> : detail ? <CourseHeader course={detail.course} canEdit={Boolean(ownCourse)} disabled={busy} onUpdated={courseUpdated} onStar={() => starUpdates.toggle(detail.course)} /> : <h1 id="courses-title">Course</h1>}
     {error && <div className="course-error" role="alert"><p>{error}</p><button onClick={() => setVersion(value => value + 1)}>Retry loading</button></div>}
     {!courseId ? <>
       {showJoinDialog && account.role === 'student' && <JoinCourseDialog onClose={() => setShowJoinDialog(false)} onJoined={enrollment => { setShowJoinDialog(false); onNavigate(`/courses/${enrollment.course_id}`) }} />}
-      <div className="course-card-grid">{[...courses].sort((a, b) => Number(Boolean(b.pinned)) - Number(Boolean(a.pinned))).map(course => <CourseCard key={course.id} course={course}
-        status={instructor ? course.enrollment_mode === 'open' ? 'Open enrollment' : 'Approval required' : statusLabel(enrollments.find(value => value.course_id === course.id)?.status)}
+      <div className="course-library-toolbar">
+        <div className="course-library-filters"><label>Search courses<input type="search" value={search} onChange={event => setSearch(event.target.value)} placeholder="Search courses" /></label><Select label="Subject" value={subject} options={subjectOptions} onChange={setSubject} /></div>
+      </div>
+      <div className="course-card-grid">{[...visibleCourses].sort((a, b) => Number(Boolean(b.pinned)) - Number(Boolean(a.pinned))).map(course => <CourseCard key={course.id} course={course}
+        status={course.instructor_id === account.id ? 'Teaching' : enrollments.some(value => value.course_id === course.id) ? statusLabel(enrollments.find(value => value.course_id === course.id)?.status) : 'Public course'}
+        onStar={collection === 'enrolled' ? undefined : () => starUpdates.toggle(course)}
+        onSharingUpdated={instructor && course.instructor_id === account.id ? courseUpdated : undefined}
         canDelete={instructor && course.instructor_id === account.id} busy={busy} onOpen={() => onNavigate(`/courses/${course.id}`)}
         onLeave={canLeave(enrollments.find(value => value.course_id === course.id)) ? () => leave(course, enrollments.find(value => value.course_id === course.id)) : undefined}
         leaveLabel={leaveLabel(enrollments.find(value => value.course_id === course.id))}
         onPin={() => void act(async () => { await setCoursePin(course.id, !course.pinned); setCourses(previous => previous.map(value => value.id === course.id ? { ...value, pinned: !course.pinned } : value)) })}
         onDelete={() => {
-          if (!window.confirm(`Delete “${course.name}”? Its modules, enrollments, and assignment conversations and progress will be permanently deleted for all students.`)) return
+          if (!window.confirm(`Delete “${course.name}”? Its topics, enrollments, and assignment conversations and progress will be permanently deleted for all students.`)) return
           void act(async () => { await deleteCourse(course.id); setCourses(previous => previous.filter(value => value.id !== course.id)) })
         }}
-      />)}</div>{!courses.length && !error && <p className="course-empty">No courses yet.</p>}
+      />)}</div>{!visibleCourses.length && !error && <LibraryEmptyState
+        kind={collection === 'starred' ? 'starred' : 'courses'}
+        title={search || subject ? 'No matching courses' : collection === 'starred' ? 'No starred courses' : collection === 'community' ? 'No public courses yet' : 'No courses yet'}
+        description={search || subject ? 'Try a different search or subject.' : collection === 'starred' ? 'Star courses in Community to find them here.' : undefined}
+        action={search || subject ? { label: 'Clear filters', onClick: () => { setSearch(''); setSubject('') } } : collection === 'starred' ? { label: 'Browse community', onClick: () => onNavigate('/courses/community') } : instructor ? { label: 'Create course', onClick: () => onNavigate('/courses/new') } : collection === 'enrolled' && account.role === 'student' ? { label: 'Join course', onClick: () => setShowJoinDialog(true) } : undefined}
+      />}
     </> : detail && <>
-      {!ownCourse && detail.enrollment?.status !== 'enrolled' && <p className="course-pending-notice" role="status">{detail.enrollment?.status === 'pending' ? 'Waiting for instructor approval.' : 'Your enrollment request was rejected.'}</p>}
-      {(ownCourse || detail.enrollment?.status === 'enrolled') && <>
+      {!member && detail.course.is_public && <p className="course-pending-notice">Taking a topic creates a personal copy. You are not enrolled, and the teacher cannot see your progress.</p>}
+      {!detail.course.is_public && !ownCourse && detail.enrollment?.status !== 'enrolled' && <p className="course-pending-notice" role="status">{detail.enrollment?.status === 'pending' ? 'Waiting for instructor approval.' : 'Your enrollment request was rejected.'}</p>}
+      {(member || detail.course.is_public) && <>
         <div className="course-content-heading">
-          <div className="course-view-switch" role="group" aria-label="Course view"><button type="button" aria-pressed={view === 'modules'} onClick={() => setView('modules')}>Modules<span>{detail.modules.length}</span></button><button type="button" aria-pressed={view === 'people'} onClick={() => setView('people')}>{ownCourse ? 'Students' : 'People'}<span>{ownCourse ? detail.progress.filter(student => student.status === 'enrolled').length : detail.people.length}</span>{ownCourse && pendingCount > 0 && <span className="course-pending-count">{pendingCount} pending</span>}</button></div>
-          {ownCourse && view === 'modules' && <button className="course-primary-action" disabled={busy} onClick={() => onNavigate(`/courses/${courseId}/modules/${crypto.randomUUID()}/edit?new=1`)}><span aria-hidden="true">＋</span>New module</button>}
+          <div className="course-view-switch" role="group" aria-label="Course view"><button type="button" aria-pressed={view === 'modules'} onClick={() => setView('modules')}>Topics<span>{detail.modules.length}</span></button>{member && <button type="button" aria-pressed={view === 'people'} onClick={() => setView('people')}>{ownCourse ? 'Students' : 'People'}<span>{ownCourse ? detail.progress.filter(student => student.status === 'enrolled').length : detail.people.length}</span>{ownCourse && pendingCount > 0 && <span className="course-pending-count">{pendingCount} pending</span>}</button>}</div>
+          {ownCourse && view === 'modules' && <button className="course-primary-action" disabled={busy} onClick={() => onNavigate(`/courses/${courseId}/modules/${crypto.randomUUID()}/edit?new=1`)}><span aria-hidden="true">＋</span>New topic</button>}
         </div>
-        {view === 'modules' ? <section aria-labelledby="course-modules-title"><h2 id="course-modules-title" className="sr-only">Modules</h2><div className="course-list">{detail.modules.map(module => {
+        {view === 'modules' || !member ? <section aria-labelledby="course-modules-title"><h2 id="course-modules-title" className="sr-only">Topics</h2><div className="course-list">{detail.modules.map(module => {
           const session = sessions.find(value => value.assignment?.moduleId === module.id)
           const cloudProgress = detail.ownProgress?.find(value => value.moduleId === module.id)
           const started = Boolean(session || cloudProgress)
           const complete = Boolean(session && sessionComplete(session.concepts)) || cloudProgress?.complete
           const moduleCopy = <>
             <span className="course-module-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5"><rect x="5" y="3" width="14" height="18" rx="2" /><path d="M9 8h6M9 12h6M9 16h4" /></svg></span>
-            <span className="course-module-copy"><span className="course-row-title">{module.title || 'Untitled module'}</span><span className="course-row-meta">{module.published_at ? ownCourse ? 'Published' : complete ? 'Complete' : started ? 'In progress' : 'Not started' : 'Draft'}</span></span>
+            <span className="course-module-copy"><span className="course-row-title">{module.title || 'Untitled topic'}</span><span className="course-row-meta">{module.published_at ? ownCourse ? 'Published' : complete ? 'Complete' : started ? 'In progress' : 'Not started' : 'Draft'}</span></span>
           </>
-          return <DeleteMenu key={module.id} label={module.title || 'Untitled module'} action="Delete module" disabled={busy} onDelete={ownCourse ? () => {
-            if (!window.confirm(`Delete “${module.title || 'Untitled module'}”? This permanently deletes the module and its student conversations and progress.`)) return
+          return <DeleteMenu key={module.id} label={module.title || 'Untitled topic'} action="Delete topic" disabled={busy} onDelete={ownCourse ? () => {
+            if (!window.confirm(`Delete “${module.title || 'Untitled topic'}”? This permanently deletes the topic and its student conversations and progress.`)) return
             void act(async () => {
               await deleteModule(module.id, module.revision)
               setDetail(previous => previous ? { ...previous, modules: previous.modules.filter(value => value.id !== module.id), progress: previous.progress.map(student => ({ ...student, modules: student.modules.filter(value => value.moduleId !== module.id) })) } : previous)
@@ -111,10 +153,10 @@ export function CoursesPage({ account, courseId, sessions, onNavigate, onOpenAss
             })
           } : undefined}>{ownCourse && module.published_at ? <button type="button" className="course-module course-row-button" key={module.id} onClick={() => setProgressSelection({ courseId: courseId!, kind: 'module', id: module.id })}>{moduleCopy}<span className="course-row-arrow" aria-hidden="true">›</span></button> : <article className="course-module" key={module.id}>
             {moduleCopy}
-            {ownCourse ? !module.published_at && <button disabled={busy} onClick={() => onNavigate(`/courses/${courseId}/modules/${module.id}/edit`)}>Edit draft</button> : <button disabled={busy} onClick={() => void act(async () => { onOpenAssignment(await startModule(module.id)) })}>{complete ? 'View summary' : started ? 'Continue' : 'Start module'}</button>}
+            {ownCourse ? !module.published_at && <button disabled={busy} onClick={() => onNavigate(`/courses/${courseId}/modules/${module.id}/edit`)}>Edit draft</button> : <button disabled={busy} onClick={() => void act(async () => { if (!complete && !await onBeforeTopic()) return; onOpenAssignment(await startModule(module.id, !member)) })}>{complete ? 'View summary' : started ? 'Continue' : 'Teach topic'}</button>}
           </article>}
           </DeleteMenu>
-        })}</div>{!detail.modules.length && <div className="course-content-empty"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.3" aria-hidden="true"><rect x="5" y="3" width="14" height="18" rx="2" /><path d="M9 8h6M9 12h6" /></svg><p>No modules yet.</p></div>}</section> : !ownCourse ? <section aria-labelledby="course-people-title"><h2 id="course-people-title" className="sr-only">People</h2>
+        })}</div>{!detail.modules.length && <div className="course-content-empty"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.3" aria-hidden="true"><rect x="5" y="3" width="14" height="18" rx="2" /><path d="M9 8h6M9 12h6" /></svg><p>No topics yet.</p></div>}</section> : !ownCourse ? <section aria-labelledby="course-people-title"><h2 id="course-people-title" className="sr-only">People</h2>
           <ul className="course-list course-people-list">{detail.people.map(person => <li className="course-student course-person" key={person.id}>
             <span className="course-student-avatar" aria-hidden="true"><Bloub static facingForward appearance={person.appearance} /></span>
             <span className="course-student-identity"><span className="course-row-title">{person.name}</span><span className="course-row-meta">{person.role === 'instructor' ? 'Teacher' : 'Student'}{person.id === account.id ? ' · You' : ''}</span></span>

@@ -1,13 +1,14 @@
 import { useEffect, useEffectEvent, useRef, useState } from 'react'
 import { accountSignal } from '../accounts'
+import { CourseStarButton } from './CourseStarButton'
 import { CourseCover } from './CourseCover'
-import { loadCourse, updateCourseDetails, type Course } from '../courseStore'
+import { courseSubjects, loadCourse, updateCourseDetails, type Course } from '../courseStore'
 import { CourseEditDialog } from './CourseEditDialog'
 import { CourseEnrollmentToggle } from './CourseEnrollmentToggle'
 import { useToast } from './useToast'
 
 
-export function CourseHeader({ course, canEdit, disabled, onUpdated }: { course: Course; canEdit: boolean; disabled: boolean; onUpdated: (course: Course) => void }) {
+export function CourseHeader({ course, canEdit, disabled, onUpdated, onStar }:  { course: Course; canEdit: boolean; disabled: boolean; onUpdated: (course: Course) => void; onStar?: () => void }) {
   const [editingTitle, setEditingTitle] = useState(false)
   const [title, setTitle] = useState(course.name)
   const [error, setError] = useState('')
@@ -83,7 +84,9 @@ export function CourseHeader({ course, canEdit, disabled, onUpdated }: { course:
     </div>
     {saving && <p className="course-title-save-status" role="status">Saving…</p>}
     {error && <p className="course-title-error" id="course-title-error" role="alert">{error} <button type="button" disabled={saving} onClick={() => void retryTitle()}>Retry</button></p>}
-    {canEdit && <div className="course-header-meta"><span className="course-header-code">Course code <strong>{course.code}</strong><button type="button" aria-label="Copy course code" onClick={() => void navigator.clipboard.writeText(course.code).then(() => toast('Course code copied.')).catch(() => toast('Could not copy the course code.'))}><svg viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="1.4" aria-hidden="true"><rect x="7" y="7" width="10" height="10" rx="2" /><path d="M12 7V5a2 2 0 0 0-2-2H5a2 2 0 0 0-2 2h2" /></svg></button></span><span className="course-header-dot" aria-hidden="true">·</span><CourseEnrollmentToggle course={course} disabled={disabled || saving || editingTitle || editOpen} onUpdated={onUpdated} /></div>}
+    <div className="course-header-meta">{canEdit && <><span className="course-header-code">Course code <strong>{course.code}</strong><button type="button" aria-label="Copy course code" onClick={() => void navigator.clipboard.writeText(course.code).then(() => toast('Course code copied.')).catch(() => toast('Could not copy the course code.'))}><svg viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="1.4" aria-hidden="true"><rect x="7" y="7" width="10" height="10" rx="2" /><path d="M12 7V5a2 2 0 0 0-2-2H5a2 2 0 0 0-2 2h2" /></svg></button></span><span className="course-header-dot" aria-hidden="true">·</span><CourseEnrollmentToggle course={course} disabled={disabled || saving || editingTitle || editOpen} onUpdated={onUpdated} /></>}
+      <div className="course-header-community"><span>{course.is_public ? `Public · ${courseSubjects(course).join(' · ')}` : 'Private course'}</span>{onStar && <CourseStarButton course={course} busy={disabled} onClick={onStar} />}</div>
+    </div>
     {editOpen && <CourseEditDialog course={course} onClose={() => setEditOpen(false)} onSaved={updated => { onUpdated(updated); setEditOpen(false); toast('Banner saved.'); queueMicrotask(() => editButton.current?.focus()) }} />}
   </header>
 }

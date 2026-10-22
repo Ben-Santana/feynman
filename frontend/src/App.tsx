@@ -13,6 +13,9 @@ import { CharacterStudio } from './components/CharacterStudio'
 import { defaultAppearance, type CharacterAppearance } from './characterAppearance'
 import { loadCloudAppearance, saveCloudAppearance } from './cloudAppearance'
 import { accountFetch, accountSignal, type Account, type AccountAuthMode } from './accounts'
+import { AdminAnalyticsPage } from './components/AdminAnalyticsPage'
+import { LearningSurveyDialog } from './components/LearningSurveyDialog'
+import { useLearningSurvey } from './useLearningSurvey'
 import { AdminPage } from './components/AdminPage'
 import { AdminCoursesPage } from './components/AdminCoursesPage'
 import { Bloub } from './components/Bloub'
@@ -100,6 +103,7 @@ export default function App({ account, onProfileUpdated, authMode }: { account: 
   const isDeveloperPage = page === '/developer'
   const adminCourseMatch = /^\/admin\/courses(?:\/([^/]+))?$/.exec(page)
   const isAdminCoursesPage = Boolean(adminCourseMatch)
+  const isAnalyticsPage = page === '/admin/analytics'
   const moduleMatch = /^\/courses\/([^/]+)\/modules\/([^/]+)\/edit$/.exec(page)
   const moduleCourseId = moduleMatch?.[1]
   const moduleId = moduleMatch?.[2]
@@ -118,7 +122,7 @@ export default function App({ account, onProfileUpdated, authMode }: { account: 
   const saveStatus = useSyncExternalStore(subscribeSaveStatus, getSaveStatus)
   const [resolvingSave, setResolvingSave] = useState(false)
   const navigate = useCallback((path: string, replace = false) => {
-    if (isModuleEditor && path.split('?')[0] !== page && moduleDirty.current && !window.confirm('Leave the module editor? Unsaved changes will be kept on this device.')) return
+    if (isModuleEditor && path.split('?')[0] !== page && moduleDirty.current && !window.confirm('Leave the topic editor? Unsaved changes will be kept on this device.')) return
     void flushSessionSaves().catch(() => {})
     window.history[replace ? 'replaceState' : 'pushState'](null, '', path)
     setPage(path.split('?')[0]); window.dispatchEvent(new PopStateEvent('popstate'))
@@ -126,7 +130,7 @@ export default function App({ account, onProfileUpdated, authMode }: { account: 
   const isChatPage = page === '/chat'
   const isSessionsPage = page === '/sessions'
   const isSummaryPage = page === '/summary'
-  const isDashboardPage = !isAdminCoursesPage && !isCourseCreatePage && !isCoursesPage && !isModuleEditor && !isChatPage && !isSessionsPage && !isSummaryPage && !['/profile', '/settings', '/character', '/admin', '/developer'].includes(page)
+  const isDashboardPage = !isAnalyticsPage && !isAdminCoursesPage && !isCourseCreatePage && !isCoursesPage && !isModuleEditor && !isChatPage && !isSessionsPage && !isSummaryPage && !['/profile', '/settings', '/character', '/admin', '/developer'].includes(page)
   const [sessionId, setSessionId] = useState('')
   const [title, setTitle] = useState('')
   const [learningType, setLearningType] = useState<LearningType | null>(null)
@@ -141,6 +145,7 @@ export default function App({ account, onProfileUpdated, authMode }: { account: 
   const [aiByName, setAiByName] = useState(true)
   const [rubricInstructions, setRubricInstructions] = useState('')
   const [savedSessions, setSavedSessions] = useState<SavedSession<Concept, Session>[]>([])
+  const survey = useLearningSurvey(account, `${page}:${saveStatus.state}:${savedSessions.filter(record => record.started && sessionComplete(record.concepts)).map(record => record.id).join(',')}`)
   const [deletingSession, setDeletingSession] = useState(false)
   const sessionDeleteLock = useRef(false)
   const sessionsRef = useRef<SavedSession<Concept, Session>[]>([])
@@ -257,7 +262,7 @@ export default function App({ account, onProfileUpdated, authMode }: { account: 
       setModuleRevision(recovery?.revision ?? saved.revision)
       moduleSavedSignature.current = JSON.stringify({ id: moduleId, title: draft.title.trim(), concepts: saved.record.concepts, started: false, activeId: null, updatedAt: 0, learningType: draft.learningType, setupStep: draft.step, files: draft.files, selectedTargets: draft.selectedTargets, aiByName: draft.aiByName, rubricInstructions: draft.rubricInstructions })
       moduleDirty.current = Boolean(recovery)
-      if (recovery) setModuleNotice('Unsaved module changes restored. Save the draft to keep them.')
+      if (recovery) setModuleNotice('Unsaved topic changes restored. Save the draft to keep them.')
       setModuleReady(true)
     })().catch(reason => { if (!disposed) setError(reason.message) })
     return () => { disposed = true; moduleDirty.current = false }
@@ -274,7 +279,7 @@ export default function App({ account, onProfileUpdated, authMode }: { account: 
     const draft = { record, revision: moduleRevision }
     const signal = accountSignal()
     moduleRecoveryQueue.current = moduleRecoveryQueue.current.catch(() => {}).then(() => { signal.throwIfAborted(); return saveModuleRecovery(id, draft) })
-    void moduleRecoveryQueue.current.catch(() => setModuleNotice('Browser recovery is unavailable. Save the module before leaving.'))
+    void moduleRecoveryQueue.current.catch(() => setModuleNotice('Browser recovery is unavailable. Save the topic before leaving.'))
   }, [isModuleEditor, moduleReady, moduleId, moduleRevision, sessionId, title, concepts, learningType, setupStep, files, selectedTargets, aiByName, rubricInstructions, moduleRecord])
   useEffect(() => {
     if (!isModuleEditor) return
@@ -283,7 +288,7 @@ export default function App({ account, onProfileUpdated, authMode }: { account: 
     return () => window.removeEventListener('beforeunload', warn)
   }, [isModuleEditor])
   async function reloadModule() {
-    if (!moduleId || moduleSaving || !window.confirm('Reload the saved module and discard this device’s changes?')) return
+    if (!moduleId || moduleSaving || !window.confirm('Reload the saved topic and discard this device’s changes?')) return
     const signal = accountSignal()
     await moduleRecoveryQueue.current.catch(() => {})
     signal.throwIfAborted()
@@ -321,7 +326,7 @@ export default function App({ account, onProfileUpdated, authMode }: { account: 
         setSessionId('')
         navigate(`/courses/${moduleCourseId}`)
       } else setModuleNotice('Draft saved.')
-    } catch (reason) { if (!signal.aborted) setError(reason instanceof Error ? reason.message : 'Could not save the module.') }
+    } catch (reason) { if (!signal.aborted) setError(reason instanceof Error ? reason.message : 'Could not save the topic.') }
     finally { if (!signal.aborted) setModuleSaving(false) }
   }
   useEffect(() => {
@@ -358,16 +363,17 @@ export default function App({ account, onProfileUpdated, authMode }: { account: 
     } catch (reason) { if (!signal.aborted) setError((reason as Error).message) }
     finally { sessionDeleteLock.current = false; if (!signal.aborted) setDeletingSession(false) }
   }
-  function openSession(record: SavedSession<Concept, Session>) {
+  async function openSession(record: SavedSession<Concept, Session>) {
     if (busy) return
+    if (!(record.started && sessionComplete(record.concepts)) && !await survey.guard()) return
     const restored = restoreLearning(record)
     if (!restored) return
     const draft = restoreDraft(record)
     setConcepts(restored.concepts); setStarted(restored.started); setActive(restored.activeId || ''); setSessionId(record.id); setTitle(draft.title); setSetupStep(draft.step); setFiles(draft.files); setSelectedTargets(draft.selectedTargets); setAiByName(draft.aiByName); setRubricInstructions(draft.rubricInstructions); setLearningType(draft.learningType); setPendingLearningType(null); setError('')
     navigate(`/${record.started && sessionComplete(restored.concepts) ? 'summary' : 'chat'}?session=${encodeURIComponent(record.id)}`)
   }
-  function createSession() {
-    if (busy) return
+  async function createSession() {
+    if (busy || !await survey.guard()) return
     const id = crypto.randomUUID()
     setConcepts([newConcept()]); setActive(''); setStarted(false); setSessionId(id); setTitle(''); setSetupStep('title'); setFiles([]); setSelectedTargets({}); setAiByName(true); setRubricInstructions(''); setLearningType(null); setPendingLearningType(null); setValidationError(null); setError('')
     navigate(`/chat?session=${encodeURIComponent(id)}`)
@@ -577,6 +583,8 @@ export default function App({ account, onProfileUpdated, authMode }: { account: 
 
   function renderPage() {
     if (page === '/profile' || page === '/settings') return <SettingsPage account={account} authMode={authMode} onProfileUpdated={onProfileUpdated} appearance={appearance} />
+    if (isAnalyticsPage) return account.role === 'admin' ? <main><AdminAnalyticsPage /></main> : <main><p>Admin access required.</p></main>
+    if (isChatPage && account.role === 'student' && (!survey.ready || survey.error || (survey.status && !survey.status.submittedAt && !(started && sessionComplete(concepts))))) return <main className="survey-required"><h1>Learning survey</h1>{survey.error ? <p role="alert">{survey.error}</p> : <p>{survey.ready ? 'Complete the survey before continuing to another topic.' : 'Checking survey status…'}</p>}<button onClick={() => void survey.guard()}> {survey.status && !survey.status.submittedAt ? 'Complete survey' : 'Retry'}</button><button onClick={() => navigate('/sessions')}>Back to sessions</button></main>
     if (page === '/admin') return account.role === 'admin' ? <main><AdminPage /></main> : <main className="account-login"><p>Admin access required.</p><button onClick={() => navigate('/sessions')}>Back to sessions</button></main>
     if (isAdminCoursesPage) return account.role === 'admin' ? <main><AdminCoursesPage key={account.id} courseId={adminCourseMatch?.[1]} onNavigate={navigateFromSidebar} /></main> : <main className="account-login"><p>Admin access required.</p><button onClick={() => navigate('/sessions')}>Back to sessions</button></main>
     if (isDeveloperPage && account.role !== 'admin') return <main className="account-login"><p>Admin access required.</p><button onClick={() => navigate('/sessions')}>Back to sessions</button></main>
@@ -584,8 +592,8 @@ export default function App({ account, onProfileUpdated, authMode }: { account: 
     if (!hydrated) return <main className="bg-background text-foreground"><LoadingScreen label="Loading learning" /></main>
     if (page === '/character') return <main className="bg-background text-foreground"><CharacterStudio appearance={appearance} onChange={commitAppearance} saveStatus={appearanceSaveStatus} saveError={appearanceSaveError} onDone={() => navigate('/dashboard')} /></main>
     if (isCourseCreatePage) return <CourseCreatePage account={account} onNavigate={navigateFromSidebar} />
-    if (isCoursesPage) return <main><CoursesPage key={page} account={account} courseId={page === '/courses' ? undefined : page.split('/')[2]} sessions={savedSessions} onNavigate={navigateFromSidebar} onOpenAssignment={record => { sessionsRef.current = [record, ...sessionsRef.current.filter(value => value.id !== record.id)]; setSavedSessions(sessionsRef.current); openSession(record) }} /></main>
-    if (isModuleEditor && (!moduleReady || sessionId !== moduleId)) return <main className={error ? 'courses-page' : 'bg-background text-foreground'}>{error ? <><p role="alert">{error}</p><button onClick={() => navigate(`/courses/${moduleCourseId}`)}>Back to course</button></> : <LoadingScreen label="Loading module" />}</main>
+    if (isCoursesPage) return <main><CoursesPage key={page} account={account} collection={page === '/courses/community' ? 'community' : page === '/courses/starred' ? 'starred' : 'enrolled'} courseId={['/courses', '/courses/community', '/courses/starred'].includes(page) ? undefined : page.split('/')[2]} sessions={savedSessions} onBeforeTopic={survey.guard} onNavigate={navigateFromSidebar} onOpenAssignment={record => { sessionsRef.current = [record, ...sessionsRef.current.filter(value => value.id !== record.id)]; setSavedSessions(sessionsRef.current); openSession(record) }} /></main>
+    if (isModuleEditor && (!moduleReady || sessionId !== moduleId)) return <main className={error ? 'courses-page' : 'bg-background text-foreground'}>{error ? <><p role="alert">{error}</p><button onClick={() => navigate(`/courses/${moduleCourseId}`)}>Back to course</button></> : <LoadingScreen label="Loading topic" />}</main>
     if (isDashboardPage) return <main className="bg-background text-foreground"><DashboardPage key={account.id} account={account} appearance={appearance} sessions={savedSessions} onOpenSession={openSession} onDeleteSession={deleteSession} deletingSession={deletingSession} onCreateSession={createSession} onNavigate={navigateFromSidebar} onCustomizeAvatar={() => navigate('/character')} error={error} /></main>
     if (isDeveloperPage) return <main className="bg-background text-foreground"><DeveloperPage characterName={appearance.name} onDirtyChange={onDeveloperDirtyChange} /></main>
     if (!isSessionsPage && !isSummaryPage && !started && setupStep === 'loading') return <main className="bg-background text-foreground"><LoadingScreen label="Creating your rubric" delayMs={0} /></main>
@@ -606,10 +614,10 @@ export default function App({ account, onProfileUpdated, authMode }: { account: 
         {isModuleEditor && <div className="module-editor-feedback"><span role="status">{moduleNotice}</span>{error && <><p role="alert">{error}</p><button disabled={moduleSaving} onClick={() => void reloadModule().catch(reason => setError(reason.message))}>Reload saved draft</button></>}</div>}
         <section inert={isModuleEditor && moduleSaving} className={`chat-section ${started ? 'chat-section-started' : 'chat-section-setup'} ${boardOpen ? 'board-open' : 'board-closed'} ${!started && setupStep === 'class-type' ? 'class-type-section' : ''}`} aria-label="Learning chat"><aside className="chat-avatar" aria-label="Your classroom student">{started && <div id="classroom-whiteboard" className="whiteboard-container" onPointerEnter={event => { if (event.pointerType === 'mouse') setBoardHovered(true) }} onPointerLeave={() => setBoardHovered(false)}><TooltipButton type="button" className="whiteboard-toggle" tooltip={boardOpen ? 'Collapse whiteboard' : 'Open whiteboard'} aria-label={boardOpen ? 'Collapse whiteboard' : 'Open whiteboard'} aria-expanded={boardOpen} aria-controls="whiteboard-drawing" onClick={() => setBoardOpen(open => !open)}><svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><rect x="3" y="3" width="18" height="18" rx="4" /></svg></TooltipButton><div id="whiteboard-drawing" className="whiteboard-drawing" aria-hidden={!boardOpen} inert={!boardOpen}><Whiteboard key={active} ref={whiteboard} open={boardOpen} /></div></div>}{started && <div ref={avatarCharacter} className="avatar-character"><Bloub key={active} appearance={appearance} showControls={false} followPointer={!busy && boardOpen && boardHovered} expression={busy ? 'confused' : boardOpen && boardHovered ? 'attentive' : done ? 'excited' : session.expression || 'attentive'} /><ThoughtCloud thinking={busy} transferring={arrivingReply?.conceptId === active} /></div>}</aside>
           <div className="chat-panel">
-            {!started && <div className="setup-progress" role="progressbar" aria-label={isModuleEditor ? 'Module setup progress' : 'Session setup progress'} aria-valuemin={0} aria-valuemax={100} aria-valuenow={setupProgress} aria-valuetext={setupProgressLabel}>
+            {!started && <div className="setup-progress" role="progressbar" aria-label={isModuleEditor ? 'Topic setup progress' : 'Session setup progress'} aria-valuemin={0} aria-valuemax={100} aria-valuenow={setupProgress} aria-valuetext={setupProgressLabel}>
               <span className="setup-progress-fill" style={{ transform: `scaleX(${setupProgress / 100})` }} />
             </div>}
-            {!started ? setupStep === 'title' ? <SetupTitleForm heading={isModuleEditor ? 'Module title' : 'What will you learn?'} inputId="session-title" inputLabel={isModuleEditor ? 'Module title' : 'Give this session a title'} value={title} onChange={value => { setTitle(value); setValidationError(null) }} onSubmit={() => { if (!title.trim()) { showValidation('title', 'session-title', 'Give this session a title.'); return } setValidationError(null); setSetupStep('class-type'); setError('') }} actionLabel={isModuleEditor ? 'Choose learning type →' : 'Find my learning style →'} placeholder="e.g. Electricity and circuits" invalid={validationError?.fieldId === 'session-title'} validationAttempt={validationError?.step === 'title' ? validationError.attempt : 0} feedback={validationTooltip('title')} error={error} /> : setupStep === 'class-type' ? <LearningTypeSelector key={sessionId} value={learningType} onContinue={changeLearningType} /> : setupStep === 'concepts' ? <form className="setup-slide setup-concepts" noValidate onSubmit={event => { event.preventDefault(); void continueToRubric() }}><div className="setup-columns"><div className={`setup-concept-side${concepts.length > 1 ? ' setup-concept-side-removable' : ''}`}><div className="setup-concept-heading"><h3>Concepts</h3><h3>Learning Level</h3></div><div className="concept-list">{concepts.map((concept, index) => <div className="concept-card" key={concept.id}><label className="sr-only" htmlFor={`setup-name-${concept.id}`}>Concept {index + 1} name</label><input id={`setup-name-${concept.id}`} value={concept.name} onChange={event => updateConcept(concept.id, { name: event.target.value })} maxLength={300} placeholder="Concept name" aria-invalid={validationError?.fieldId === `setup-name-${concept.id}`} className={validationError?.fieldId === `setup-name-${concept.id}` ? 'validation-field' : undefined} /><LevelSlider id={`setup-target-${concept.id}`} name={concept.name || `concept ${index + 1}`} value={selectedTargets[concept.id] ?? 'remember'} onChange={level => setSelectedTargets(targets => ({ ...targets, [concept.id]: level }))} />{concepts.length > 1 && <button type="button" className="concept-remove" aria-label={`Remove concept ${index + 1}`} onClick={() => { setValidationError(null); setConcepts(items => items.filter(item => item.id !== concept.id)) }}>×</button>}</div>)}</div>{concepts.length < 20 && <button type="button" className="concept-add" onClick={() => setConcepts(items => [...items, newConcept()])}>＋ Add concept</button>}</div><div className="setup-file-side"><h3>AI Autofill</h3><label className="setup-drop" onDragOver={event => event.preventDefault()} onDrop={event => { event.preventDefault(); addFiles(Array.from(event.dataTransfer.files)) }}><span>Drop files here or click to upload</span><small>Up to 5 MB total</small><input type="file" multiple onChange={event => { addFiles(Array.from(event.target.files || [])); event.target.value = '' }} /></label>{files.length > 0 && <><ul className="setup-files">{files.map((file, index) => <li key={`${file.name}-${index}`}><span>{file.name}</span><button type="button" aria-label={`Remove ${file.name}`} onClick={() => setFiles(items => items.filter((_, i) => i !== index))}>×</button></li>)}</ul></>}</div></div><div className="setup-actions"><div className="setup-actions-right"><RubricAutoGenerateToggle checked={aiByName} regenerate={hasRubric} onChange={setAiByName} instructions={rubricInstructions} onInstructionsChange={setRubricInstructions} /><button type="button" className="setup-secondary setup-autofill" disabled={uploading || !files.length} onClick={() => void suggestConcepts()}>{uploading ? <LoadingAnimation label="Autofilling concepts" compact delayMs={0} /> : '← Autofill concepts'}</button><div className="validation-action"><button key={validationError?.step === 'concepts' ? validationError.attempt : 0} className={`send-button ${validationError?.step === 'concepts' ? 'validation-shake' : ''}`} disabled={uploading}>{aiByName ? hasRubric ? 'Re-generate rubric →' : 'Generate rubric →' : 'Continue to rubric →'}</button>{validationTooltip('concepts')}</div></div></div>{error && <p className="chat-error" role="alert">{error}</p>}</form> : setupStep === 'loading' ? <LoadingScreen label="Creating your rubric" delayMs={0} /> : <form className="chat-setup" noValidate onSubmit={event => { event.preventDefault(); startLearning() }}><div className="rubric-scroll">
+            {!started ? setupStep === 'title' ? <SetupTitleForm heading={isModuleEditor ? 'Topic title' : 'What will you learn?'} inputId="session-title" inputLabel={isModuleEditor ? 'Topic title' : 'Give this session a title'} value={title} onChange={value => { setTitle(value); setValidationError(null) }} onSubmit={() => { if (!title.trim()) { showValidation('title', 'session-title', 'Give this session a title.'); return } setValidationError(null); setSetupStep('class-type'); setError('') }} actionLabel={isModuleEditor ? 'Choose learning type →' : 'Find my learning style →'} placeholder="e.g. Electricity and circuits" invalid={validationError?.fieldId === 'session-title'} validationAttempt={validationError?.step === 'title' ? validationError.attempt : 0} feedback={validationTooltip('title')} error={error} /> : setupStep === 'class-type' ? <LearningTypeSelector key={sessionId} value={learningType} onContinue={changeLearningType} /> : setupStep === 'concepts' ? <form className="setup-slide setup-concepts" noValidate onSubmit={event => { event.preventDefault(); void continueToRubric() }}><div className="setup-columns"><div className={`setup-concept-side${concepts.length > 1 ? ' setup-concept-side-removable' : ''}`}><div className="setup-concept-heading"><h3>Concepts</h3><h3>Learning Level</h3></div><div className="concept-list">{concepts.map((concept, index) => <div className="concept-card" key={concept.id}><label className="sr-only" htmlFor={`setup-name-${concept.id}`}>Concept {index + 1} name</label><input id={`setup-name-${concept.id}`} value={concept.name} onChange={event => updateConcept(concept.id, { name: event.target.value })} maxLength={300} placeholder="Concept name" aria-invalid={validationError?.fieldId === `setup-name-${concept.id}`} className={validationError?.fieldId === `setup-name-${concept.id}` ? 'validation-field' : undefined} /><LevelSlider id={`setup-target-${concept.id}`} name={concept.name || `concept ${index + 1}`} value={selectedTargets[concept.id] ?? 'remember'} onChange={level => setSelectedTargets(targets => ({ ...targets, [concept.id]: level }))} />{concepts.length > 1 && <button type="button" className="concept-remove" aria-label={`Remove concept ${index + 1}`} onClick={() => { setValidationError(null); setConcepts(items => items.filter(item => item.id !== concept.id)) }}>×</button>}</div>)}</div>{concepts.length < 20 && <button type="button" className="concept-add" onClick={() => setConcepts(items => [...items, newConcept()])}>＋ Add concept</button>}</div><div className="setup-file-side"><h3>AI Autofill</h3><label className="setup-drop" onDragOver={event => event.preventDefault()} onDrop={event => { event.preventDefault(); addFiles(Array.from(event.dataTransfer.files)) }}><span>Drop files here or click to upload</span><small>Up to 5 MB total</small><input type="file" multiple onChange={event => { addFiles(Array.from(event.target.files || [])); event.target.value = '' }} /></label>{files.length > 0 && <><ul className="setup-files">{files.map((file, index) => <li key={`${file.name}-${index}`}><span>{file.name}</span><button type="button" aria-label={`Remove ${file.name}`} onClick={() => setFiles(items => items.filter((_, i) => i !== index))}>×</button></li>)}</ul></>}</div></div><div className="setup-actions"><div className="setup-actions-right"><RubricAutoGenerateToggle checked={aiByName} regenerate={hasRubric} onChange={setAiByName} instructions={rubricInstructions} onInstructionsChange={setRubricInstructions} /><button type="button" className="setup-secondary setup-autofill" disabled={uploading || !files.length} onClick={() => void suggestConcepts()}>{uploading ? <LoadingAnimation label="Autofilling concepts" compact delayMs={0} /> : '← Autofill concepts'}</button><div className="validation-action"><button key={validationError?.step === 'concepts' ? validationError.attempt : 0} className={`send-button ${validationError?.step === 'concepts' ? 'validation-shake' : ''}`} disabled={uploading}>{aiByName ? hasRubric ? 'Re-generate rubric →' : 'Generate rubric →' : 'Continue to rubric →'}</button>{validationTooltip('concepts')}</div></div></div>{error && <p className="chat-error" role="alert">{error}</p>}</form> : setupStep === 'loading' ? <LoadingScreen label="Creating your rubric" delayMs={0} /> : <form className="chat-setup" noValidate onSubmit={event => { event.preventDefault(); startLearning() }}><div className="rubric-scroll">
             <table className="rubric-grid">
               <colgroup><col style={{ width: '17%' }} />{levels.map(level => <col key={level.id} />)}<col style={{ width: 40 }} /></colgroup>
               <thead><tr>
@@ -623,7 +631,7 @@ export default function App({ account, onProfileUpdated, authMode }: { account: 
                 <td className="rubric-actions-cell">{concepts.length > 1 && <button type="button" className="concept-remove" aria-label={`Remove concept ${index + 1}`} onClick={() => { setValidationError(null); setConcepts(items => items.filter(item => item.id !== concept.id)) }}>−</button>}</td>
               </tr>)}</tbody>
             </table>
-          </div>{concepts.length < 20 && <button type="button" className="concept-add" onClick={() => setConcepts(items => [...items, newConcept()])}><span aria-hidden="true">＋</span> Add concept</button>}<div className="chat-actions"><div className="validation-action"><button key={validationError?.step === 'rubric' ? validationError.attempt : 0} className={`send-button ${validationError?.step === 'rubric' ? 'validation-shake' : ''}`}>{moduleSaving ? 'Publishing…' : isModuleEditor ? 'Publish module' : 'Start session'}</button>{validationTooltip('rubric')}</div></div>{error && <p className="chat-error" role="alert">{error}</p>}</form> : <><div ref={messageList} className="chat-messages" role="log" aria-label="Conversation" aria-live="polite">{[...session.messages, ...(pendingMessage ? [pendingMessage] : [])].map((message, index) => {
+          </div>{concepts.length < 20 && <button type="button" className="concept-add" onClick={() => setConcepts(items => [...items, newConcept()])}><span aria-hidden="true">＋</span> Add concept</button>}<div className="chat-actions"><div className="validation-action"><button key={validationError?.step === 'rubric' ? validationError.attempt : 0} className={`send-button ${validationError?.step === 'rubric' ? 'validation-shake' : ''}`}>{moduleSaving ? 'Publishing…' : isModuleEditor ? 'Publish topic' : 'Start session'}</button>{validationTooltip('rubric')}</div></div>{error && <p className="chat-error" role="alert">{error}</p>}</form> : <><div ref={messageList} className="chat-messages" role="log" aria-label="Conversation" aria-live="polite">{[...session.messages, ...(pendingMessage ? [pendingMessage] : [])].map((message, index) => {
             if (message.passedLevel && currentConcept && targetCount(message.passedLevel) === targetCount(currentConcept.target)) return null
             const reviewedMessage = message.role === 'assistant' ? session.messages[index - 1] : undefined
             const reviewedPaper = reviewedMessage?.review ? session.messages.find(item => item.paper?.id === reviewedMessage.review?.paperId)?.paper : undefined
@@ -637,7 +645,9 @@ export default function App({ account, onProfileUpdated, authMode }: { account: 
     {(saveStatus.state === 'error' || saveStatus.state === 'conflict') && <div className="learning-save-notice" role="alert"><p>{saveStatus.message}</p>
       {saveStatus.state === 'error' ? <button onClick={() => void flushSessionSaves().catch(reason => setError(reason.message))}>Retry saving</button> : <><button disabled={resolvingSave} onClick={() => void resolveSave(false)}>Reload server version</button>{!savedSessions.find(record => record.id === saveStatus.sessionId)?.assignment && <button disabled={resolvingSave} onClick={() => void resolveSave(true)}>Save a copy</button>}</>}
     </div>}
+    {survey.error && !isChatPage && <p className="account-error" role="alert">{survey.error}</p>}
     {renderPage()}
+    {survey.status && !survey.status.submittedAt && <LearningSurveyDialog open={survey.open} status={survey.status} onLater={() => { survey.close(); if (isChatPage && !(started && sessionComplete(concepts))) navigate('/sessions') }} onSubmitted={survey.submitted} />}
   </>
-  return isAdminCoursesPage || isCourseCreatePage || isCoursesPage || isModuleEditor || (isChatPage && !started) || isDashboardPage || isSessionsPage || page === '/profile' || page === '/settings' || page === '/character' || page === '/admin' || isDeveloperPage ? <DashboardShell account={account} activePage={isDashboardPage ? '/dashboard' : isChatPage && !started ? '/sessions' : page} onNavigate={navigateFromSidebar} onCustomizeAvatar={() => navigateFromSidebar('/character')}>{content}</DashboardShell> : content
+  return isAnalyticsPage || isAdminCoursesPage || isCourseCreatePage || isCoursesPage || isModuleEditor || (isChatPage && !started) || isDashboardPage || isSessionsPage || page === '/profile' || page === '/settings' || page === '/character' || page === '/admin' || isDeveloperPage ? <DashboardShell account={account} activePage={isDashboardPage ? '/dashboard' : isChatPage && !started ? '/sessions' : page} onNavigate={navigateFromSidebar} onCustomizeAvatar={() => navigateFromSidebar('/character')}>{content}</DashboardShell> : content
 }

@@ -2,6 +2,7 @@ import { useId, useState, type ReactNode } from 'react'
 import type { Concept, Session } from '../learningFlow'
 import { sessionComplete } from '../learningFlow'
 import type { SavedSession } from '../learningStore'
+import { LibraryEmptyState } from './LibraryEmptyState'
 
 type SessionRecord = SavedSession<Concept, Session>
 export function SessionsPage({ sessions, onCreateSession, renderSession, error }: {
@@ -27,9 +28,11 @@ export function SessionsPage({ sessions, onCreateSession, renderSession, error }
       </div>
       <div className="dashboard-session-search"><label className="sr-only" htmlFor={searchId}>Search sessions</label><svg viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" aria-hidden="true"><circle cx="8.5" cy="8.5" r="5.5" /><path d="m13 13 4 4" /></svg><input id={searchId} type="search" placeholder="Search sessions" value={search} onChange={event => setSearch(event.target.value)} /></div>
     </div>}
-    <div className="sessions-list dashboard-session-list">
-      {filteredSessions.length ? filteredSessions.map(renderSession) : sessions.length > 0 && <p className="dashboard-session-empty" role="status">{search.trim() ? 'No matching sessions.' : filter === 'completed' ? 'No completed sessions yet.' : 'No current sessions.'}</p>}
-    </div>
+    {filteredSessions.length ? <div className="sessions-list dashboard-session-list">{filteredSessions.map(renderSession)}</div> : !error && <LibraryEmptyState
+      kind="sessions"
+      title={search.trim() ? 'No matching sessions' : !sessions.length ? 'No sessions yet' : filter === 'completed' ? 'No completed sessions yet' : 'No current sessions'}
+      action={search.trim() ? { label: 'Clear search', onClick: () => setSearch('') } : filter === 'completed' && sessions.length ? { label: 'View current sessions', onClick: () => setFilter('current') } : { label: 'Start session', onClick: onCreateSession }}
+    />}
     {error && <p className="chat-error" role="alert">{error}</p>}
   </section>
 }

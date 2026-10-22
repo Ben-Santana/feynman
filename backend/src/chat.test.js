@@ -355,6 +355,30 @@ test('Analyze requires every paper to be sorted and marks for failed papers', as
   assert.equal(result.assessment, null);
 });
 
+test('paper reviews are validated against their own paper set after a retry', () => {
+  const paperSet = id => ({
+    id, markdown: 'Paper set',
+    papers: [1, 2, 3].map(number => ({ id: `${id}-${number}`, markdown: 'Worked paper', steps: workedPaper.steps })),
+  });
+  const first = paperSet('first');
+  const retry = paperSet('retry');
+  const review = paper => ({
+    paperId: paper.id, explanation: '',
+    grades: paper.papers.map(entry => ({ paperId: entry.id, grade: 'fail', selectedSteps: [2] })),
+  });
+  const messages = [
+    { role: 'assistant', content: 'Check these papers.', paper: first },
+    { role: 'user', content: 'Graded.', review: review(first) },
+    { role: 'assistant', content: 'Try these papers.', paper: retry },
+    { role: 'user', content: 'Graded again.', review: review(retry) },
+  ];
+  const body = input({ level: 'analyze', learningType: 'quantitative', messages });
+  assert.doesNotThrow(() => validate(body));
+  const mismatched = review(retry);
+  mismatched.grades = review(first).grades;
+  assert.throws(() => validate({ ...body, messages: [...messages.slice(0, -1), { ...messages.at(-1), review: mismatched }] }), /Sort every paper/);
+});
+
 test('AI rubric generation requests structured checklist arrays and preserves individual items', async () => {
   const result = await generateRubric({ concepts: [{ name: 'Capacitors', target: 'remember' }] }, async (system, _messages, responseTool) => {
     assert.match(system, /distinct checklist items/);

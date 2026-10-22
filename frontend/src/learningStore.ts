@@ -216,7 +216,7 @@ export function createLearningStore({ client = supabase, getAccount = requireAcc
     }
   }
   async function deleteSession<T, S>(record: SavedSession<T, S>): Promise<void> {
-    if (record.assignment) throw new Error('Assigned modules cannot be deleted.')
+    if (record.assignment) throw new Error('Assigned topics cannot be deleted.')
     const userId = bindOwner()
     await flushSessionSaves()
     if (conflicts.has(record.id)) throw new Error('Resolve this session’s save conflict before deleting it.')
@@ -231,7 +231,7 @@ export function createLearningStore({ client = supabase, getAccount = requireAcc
   async function resolveSessionConflict(id: string, keepCopy: boolean): Promise<RecordSession | null> {
     const userId = bindOwner(), signal = getSignal()
     const local = pending.get(id)
-    if (keepCopy && local?.record.assignment) throw new Error('Assigned modules cannot be copied. Reload the server version to resolve this conflict.')
+    if (keepCopy && local?.record.assignment) throw new Error('Assigned topics cannot be copied. Reload the server version to resolve this conflict.')
     if (keepCopy && local && !local.deleting) {
       const copy = { ...local.record, id: crypto.randomUUID(), title: `${local.record.title} (copy)`, updatedAt: Date.now() }
       boundary(userId, signal)

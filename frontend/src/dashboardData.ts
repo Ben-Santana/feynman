@@ -25,9 +25,9 @@ export function dashboardData(account: Account, sessions: ModuleSession[], data:
     const course = courses.find(course => course.id === module.course_id)
     if (!course) continue
     if (account.role === 'instructor' && !module.published_at) {
-      todos.push({ id: `module-${module.id}`, title: module.title || 'Untitled module', context: course.name, action: 'Edit draft', path: `/courses/${course.id}/modules/${module.id}/edit`, updatedAt: Date.parse(module.created_at) })
+      todos.push({ id: `module-${module.id}`, title: module.title || 'Untitled topic', context: course.name, action: 'Edit draft', path: `/courses/${course.id}/modules/${module.id}/edit`, updatedAt: Date.parse(module.created_at) })
     } else if (account.role === 'student' && enrolled.has(course.id) && module.published_at && !sessions.some(session => session.assignment?.moduleId === module.id)) {
-      todos.push({ id: `module-${module.id}`, title: module.title, context: course.name, action: 'View module', path: `/courses/${course.id}`, updatedAt: Date.parse(module.published_at) })
+      todos.push({ id: `module-${module.id}`, title: module.title, context: course.name, action: 'View topic', path: `/courses/${course.id}`, updatedAt: Date.parse(module.published_at) })
     }
   }
   const recentClasses = courses.map(course => ({

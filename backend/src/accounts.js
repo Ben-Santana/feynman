@@ -29,6 +29,14 @@ export function createAccountService(env = process.env, clientFactory = createCl
     return clientFactory(url, env.SUPABASE_SECRET_KEY, options);
   }
   return {
+    async assertLearningSurvey(req, account) {
+      if (account.role !== 'student') return;
+      requireConfig();
+      const client = clientFactory(url, key, { ...options, global: { headers: { Authorization: req.headers.authorization } } });
+      const { data, error } = await client.rpc('learning_survey_status');
+      if (error) throw new AccountError('Could not check the learning survey. Apply the latest database migration and retry.', 503);
+      if (data && !data.submittedAt) throw new AccountError('Complete the learning survey before your next topic.', 403);
+    },
     async authenticate(req, { allowPending = false } = {}) {
       requireConfig();
       const match = /^Bearer ([^\s]+)$/.exec(req.headers.authorization || '');

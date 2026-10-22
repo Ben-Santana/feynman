@@ -122,6 +122,23 @@ sessions. No new environment variables are required. This version has one
 instructor per course and does not include due dates, prerequisites, course
 archiving.
 
+Apply `supabase/migrations/202610210001_community_courses.sql` after the existing
+migrations to enable the **Community library**. Courses stay private by default.
+Teachers can make a course public and choose STEM subject tags during creation or
+from the Make public dialog. Signed-in, approved users can search and filter public
+courses and take published topics as personal sessions. This never enrolls them
+or exposes their progress to the teacher; course codes, drafts, and the roster
+remain private. Personal copies survive unsharing or deletion of the source.
+Course stars persist per account, with aggregate counts visible on public courses. **Courses** contains **Enrolled** (or **Teaching**), **Starred**,
+and **Community** views, also available in the sidebar.
+
+Apply `supabase/migrations/202610220001_course_subject_tags.sql` for multiple
+subject tags and public-only stars. Existing subjects are preserved as tags.
+On a private course, **Make public** in the teacher's course card menu opens a tag picker;
+at least one tag and confirmation are required. Public course card menus offer **Edit
+sharing** to update tags or make the course private. Stars are hidden and cannot
+be added while a course is private; existing stars return if it is republished.
+
 Apply `supabase/migrations/202610190001_course_card_actions.sql` for course card
 menus and pins saved per account. Pinned courses appear first. Instructors can
 delete their own courses after confirmation; deletion removes the course,
@@ -189,3 +206,23 @@ Chat messages preserve plain text and render math with `$...$`, `$$...$$`, `\(..
 In Developer tools → Chat workshop, use **Save test** to keep the active test in this browser, including its rubric, conversation, draft, assessment, and model-call log. Reopen it from **Saved tests** to inspect or continue it. Use **Save changes** after further replies; starting or clearing a test does not delete saved copies. Saves use account-scoped IndexedDB separately from cloud learning sessions.
 
 New evaluator comparisons use the lean contract and leave experimental shadow review off by default. Choose **Four-way ablation** to opt into review and compare the existing first pass, existing confirmed result, lean refined primary, and hypothetical refined-plus-shadow result. See [ablation controls and contracts](backend/docs/evaluator-ablation.md). Ordinary sessions use one lean refined primary, deterministic evidence and completion safeguards, and no shadow or legacy confirmation call. See [normal conversation behavior](backend/docs/conversation-refinement.md).
+
+### Learning survey and analytics
+
+Apply `supabase/migrations/202610220002_learning_survey.sql` after the existing
+migrations. Students receive the supplied SALG survey after their first completed
+topic (all concepts reach their selected target levels). The migration also adds
+a pending survey for students with an existing completed topic.
+
+Students can choose **Later**, but must submit every rating and written response
+before starting or resuming another topic. The requirement survives reloads,
+account changes, and deletion of the completed session. It is enforced by database
+write checks and the learning API as well as the UI. Submitting the survey unlocks
+future topics; students are surveyed once.
+
+Admins can open **Administration → Analytics** for submitted/pending counts,
+completion rate, per-question response distributions, means excluding Not Applicable,
+and written responses. **Download individual responses (CSV)** exports one row per
+student with all answers, student identity, topic, timestamps, and survey version.
+Survey responses are available only to admins; students can access only their own
+survey status and submit their own pending response.

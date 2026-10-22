@@ -5,9 +5,13 @@ import { sessionComplete, type Concept, type Level, type Session } from './learn
 import type { DashboardModule } from './dashboardData'
 import { normalizeAppearance, type CharacterAppearance } from './characterAppearance'
 
+export const COURSE_SUBJECTS = ['General STEM', 'Mathematics', 'Physics', 'Chemistry', 'Biology', 'Computer Science', 'Electrical Engineering', 'Mechanical Engineering', 'Civil Engineering', 'Chemical Engineering', 'Biomedical Engineering', 'Aerospace Engineering', 'Materials Science', 'Environmental Science', 'Earth Science', 'Astronomy', 'Statistics', 'Data Science', 'Robotics', 'Other'] as const
+export type CourseCollection = 'enrolled' | 'starred' | 'community'
+
 export type EnrollmentMode = 'open' | 'approval'
 export type EnrollmentStatus = 'pending' | 'enrolled' | 'rejected'
-export type Course = { id: string; instructor_id: string; name: string; code: string; enrollment_mode: EnrollmentMode; created_at: string; banner?: CourseBanner; appearance_revision?: number; bannerUrl?: string | null; pinned?: boolean }
+export type Course = { id: string; instructor_id: string; name: string; code: string; enrollment_mode: EnrollmentMode; created_at: string; banner?: CourseBanner; appearance_revision?: number; bannerUrl?: string | null; pinned?: boolean; is_public?: boolean; subject?: string; subjects?: string[]; starred?: boolean; star_count?: number }
+export const courseSubjects = (course: Course): string[] => course.subjects ?? [course.subject ?? 'General STEM']
 export type Enrollment = { course_id: string; student_id: string; status: EnrollmentStatus }
 export type CourseModule = { id: string; course_id: string; title: string; document: CloudSession['document']; revision: number; published_at: string | null; created_at: string }
 export type StudentProgress = { studentId: string; name: string; email: string; status: EnrollmentStatus; modules: { moduleId: string; started: boolean; concepts: { id: string; name: string; target: Level; passed: number }[] }[] }
@@ -27,33 +31,44 @@ async function rpc<T>(name: string, args: Record<string, unknown>): Promise<T> {
 }
 export async function loadCourses() {
   const signal = accountSignal()
-  const [courses, enrollments, pins] = await Promise.all([
+  const [courses, enrollments, pins, community, stars, counts] = await Promise.all([
     supabase().from('courses').select('*').order('created_at', { ascending: false }).abortSignal(signal),
     supabase().from('course_enrollments').select('*').eq('student_id', requireAccount().id).abortSignal(signal),
     supabase().from('course_pins').select('course_id').eq('user_id', requireAccount().id).abortSignal(signal),
+    rpc<Course[]>('community_courses', {}),
+    supabase().from('course_stars').select('course_id').eq('user_id', requireAccount().id).abortSignal(signal),
+    rpc<Record<string, number>>('course_star_counts', {}),
   ])
   signal.throwIfAborted()
   if (courses.error || enrollments.error) throw new Error('Could not load courses. Apply the courses migration if this is a new setup, then retry.')
   if (pins.error) throw new Error('Could not load pinned courses. Apply the latest course migrations, then retry.')
+  if (stars.error) throw new Error('Could not load starred courses. Please retry.')
+  const starredIds = new Set(stars.data.map(star => star.course_id))
+  const allCourses = new Map(community.map(course => [course.id, course]))
+  for (const course of courses.data as Course[]) allCourses.set(course.id, course)
   const pinnedIds = new Set(pins.data.map(pin => pin.course_id))
-  const resolved = await Promise.all((courses.data as Course[]).map(course => resolveCourseBanner({ ...course, pinned: pinnedIds.has(course.id) })))
+  const resolved = await Promise.all([...allCourses.values()].sort((a, b) => Date.parse(b.created_at) - Date.parse(a.created_at)).map(course => resolveCourseBanner({ ...course, pinned: pinnedIds.has(course.id), starred: starredIds.has(course.id), star_count: counts[course.id] ?? 0 })))
   signal.throwIfAborted()
   return { courses: resolved, enrollments: enrollments.data as Enrollment[] }
 }
 export async function loadDashboardCourses() {
   const signal = accountSignal()
-  const [courses, enrollments, modules] = await Promise.all([
+  const [courses, enrollments] = await Promise.all([
     supabase().from('courses').select('id,instructor_id,name,code,enrollment_mode,created_at,banner').order('created_at', { ascending: false }).abortSignal(signal),
     supabase().from('course_enrollments').select('course_id,student_id,status').eq('student_id', requireAccount().id).abortSignal(signal),
-    supabase().from('course_modules').select('id,course_id,title,published_at,created_at').order('created_at', { ascending: false }).abortSignal(signal),
   ])
   signal.throwIfAborted()
   if (courses.error || enrollments.error) throw new Error('Could not load classes. Please retry.')
+  const modules = courses.data.length
+    ? await supabase().from('course_modules').select('id,course_id,title,published_at,created_at').in('course_id', courses.data.map(course => course.id)).order('created_at', { ascending: false }).abortSignal(signal)
+    : { data: [], error: null }
+  signal.throwIfAborted()
   if (modules.error) throw new Error('Could not load class tasks. Please retry.')
   const resolved = await Promise.all((courses.data as Course[]).map(resolveCourseBanner))
   signal.throwIfAborted()
   return { courses: resolved, enrollments: enrollments.data as Enrollment[], modules: modules.data as DashboardModule[] }
 }
+
 export async function loadCourse(id: string) {
   const signal = accountSignal()
   const { courses, enrollments } = await loadCourses()
@@ -61,17 +76,18 @@ export async function loadCourse(id: string) {
   if (!course) throw new Error('Course not found.')
   const instructor = course.instructor_id === requireAccount().id && requireAccount().role === 'instructor'
   const enrollment = enrollments.find(value => value.course_id === id)
-  if (!instructor && enrollment?.status !== 'enrolled') return { course, enrollment, modules: [] as CourseModule[], progress: [] as StudentProgress[], ownProgress: [] as ModuleProgress[], people: [] as CoursePerson[] }
+  if (!instructor && enrollment?.status !== 'enrolled' && !course.is_public) return { course, enrollment, modules: [] as CourseModule[], progress: [] as StudentProgress[], ownProgress: [] as ModuleProgress[], people: [] as CoursePerson[] }
   const [modules, progress, people] = await Promise.all([
     supabase().from('course_modules').select('*').eq('course_id', id).order('published_at').order('created_at').order('id').abortSignal(signal),
     instructor ? rpc<StudentProgress[]>('course_progress', { target_course: id }) : Promise.resolve([]),
-    rpc<CoursePerson[]>('course_people', { target_course: id }),
+    instructor || enrollment?.status === 'enrolled' ? rpc<CoursePerson[]>('course_people', { target_course: id }) : Promise.resolve([]),
   ])
   signal.throwIfAborted()
-  if (modules.error) throw new Error('Could not load modules. Please retry.')
+  if (modules.error) throw new Error('Could not load topics. Please retry.')
   const ownProgress: ModuleProgress[] = []
   if (!instructor) {
-    const links = await supabase().from('course_assignments').select('module_id,session_id').eq('student_id', requireAccount().id).abortSignal(signal)
+    const enrolled = enrollment?.status === 'enrolled'
+    const links = await supabase().from(enrolled ? 'course_assignments' : 'community_topic_copies').select('module_id,session_id').eq(enrolled ? 'student_id' : 'owner_id', requireAccount().id).abortSignal(signal)
     if (links.error) throw new Error('Could not load assignment progress. Please retry.')
     const relevant = links.data.filter(link => modules.data.some(module => module.id === link.module_id))
     if (relevant.length) {
@@ -86,7 +102,9 @@ export async function loadCourse(id: string) {
   signal.throwIfAborted()
   return { course, enrollment, modules: modules.data as CourseModule[], progress, ownProgress, people: people.map(person => ({ ...person, appearance: normalizeAppearance(person.appearance) })) }
 }
-export const createCourse = (name: string, mode: EnrollmentMode) => rpc<Course>('create_course', { course_name: name, enrollment: mode })
+export const createCourse = (name: string, mode: EnrollmentMode, shared = false, subjects = ['General STEM']) => rpc<Course>('create_tagged_course', { course_name: name, enrollment: mode, shared, course_subjects: subjects })
+export const setCourseSharing = (course: Course, shared: boolean, subjects: string[]) => rpc<Course>('set_course_subjects', { target_course: course.id, shared, course_subjects: subjects, expected_revision: course.appearance_revision ?? 1 })
+export const setCourseStar = (id: string, starred: boolean) => rpc<void>('set_course_star', { target_course: id, starred })
 export const setCoursePin = (id: string, pinned: boolean) => rpc<void>('set_course_pin', { target_course: id, pinned })
 export const deleteCourse = (id: string) => rpc<void>('delete_course', { target_course: id })
 export const joinCourse = (code: string) => rpc<Enrollment>('join_course', { course_code: code.trim().toUpperCase() })
@@ -111,18 +129,18 @@ export async function loadModuleDraft(courseId: string, id: string) {
   const signal = accountSignal()
   const { data, error } = await supabase().from('course_modules').select('*').eq('course_id', courseId).eq('id', id).abortSignal(signal).single()
   signal.throwIfAborted()
-  if (error || !data) throw new Error('Could not load the module. Please retry.')
+  if (error || !data) throw new Error('Could not load the topic. Please retry.')
   const module = data as CourseModule
-  if (module.published_at) throw new Error('Published modules cannot be edited.')
+  if (module.published_at) throw new Error('Published topics cannot be edited.')
   const record = await decodeSession<Concept, Session>({ owner_id: requireAccount().id, id, title: module.title, document: module.document, revision: module.revision, updated_at: module.created_at })
   return { record, revision: module.revision }
 }
-export async function startModule(id: string) {
+export async function startModule(id: string, personal = false) {
   const signal = accountSignal()
   await flushSessionSaves()
   signal.throwIfAborted()
-  if (getSaveStatus().state === 'conflict') throw new Error('Resolve the session save conflict before opening a module.')
-  const row = await rpc<CloudSession>('start_course_module', { target_module: id })
+  if (getSaveStatus().state === 'conflict') throw new Error('Resolve the session save conflict before opening a topic.')
+  const row = await rpc<CloudSession>(personal ? 'take_community_topic' : 'start_course_module', { target_module: id })
   signal.throwIfAborted()
   return decodeSession<Concept, Session>(row, true)
 }

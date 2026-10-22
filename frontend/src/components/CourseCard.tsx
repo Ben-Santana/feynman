@@ -1,15 +1,18 @@
 import { useEffect, useId, useLayoutEffect, useRef, useState } from 'react'
 import { createPortal } from 'react-dom'
-import type { Course } from '../courseStore'
+import { courseSubjects, type Course } from '../courseStore'
+import { CourseSharingDialog } from './CourseSharingSettings'
+import { CourseStarButton } from './CourseStarButton'
 import { CourseCover } from './CourseCover'
 
 function PinIcon() {
   return <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="m12 2 6 6-3 1-3 4-2-2-5 5-1-1 5-5-2-2 4-3 1-3Z" /></svg>
 }
 
-export function CourseCard({ course, status, canDelete, busy, onOpen, onPin, onDelete, onLeave, leaveLabel }: {
-  course: Course; status: string; canDelete: boolean; busy: boolean; onOpen: () => void; onPin: () => void; onDelete: () => void; onLeave?: () => void; leaveLabel?: string
+export function CourseCard({ course, status, canDelete, busy, onOpen, onPin, onDelete, onLeave, leaveLabel, onStar, onSharingUpdated }: {
+  onSharingUpdated?: (course: Course) => void; onStar?: () => void; course: Course; status: string; canDelete: boolean; busy: boolean; onOpen: () => void; onPin: () => void; onDelete: () => void; onLeave?: () => void; leaveLabel?: string
 }) {
+  const [sharingOpen, setSharingOpen] = useState(false)
   const [position, setPosition] = useState<{ left: number; top: number } | null>(null)
   const trigger = useRef<HTMLButtonElement>(null)
   const menu = useRef<HTMLDivElement>(null)
@@ -53,7 +56,9 @@ export function CourseCard({ course, status, canDelete, busy, onOpen, onPin, onD
     }
   }, [position])
 
-  return <div className="course-card-wrap" onContextMenu={event => {
+  function closeSharing() { setSharingOpen(false); queueMicrotask(() => trigger.current?.focus()) }
+
+  return <><div className="course-card-wrap" onContextMenu={event => {
     event.preventDefault()
     if (!busy) setPosition({ left: event.clientX, top: event.clientY })
   }} onKeyDown={event => {
@@ -64,8 +69,9 @@ export function CourseCard({ course, status, canDelete, busy, onOpen, onPin, onD
   }}>
     <button type="button" className="course-card" onClick={onOpen}>
       {course.banner?.type !== 'none' && <CourseCover banner={course.banner} imageUrl={course.bannerUrl} />}
-      <span className="course-card-body"><strong>{course.name}</strong><span>{status}</span></span>
+      <span className="course-card-body"><strong>{course.name}</strong><span>{status}</span>{course.is_public && <span>{courseSubjects(course).join(' · ')}</span>}</span>
     </button>
+    {course.is_public && onStar && <CourseStarButton course={course} busy={busy} onClick={onStar} />}
     {course.pinned && <span className="course-card-pinned" title="Pinned" role="img" aria-label="Pinned"><PinIcon /></span>}
     <button ref={trigger} type="button" className="course-menu-trigger" aria-label={`Options for ${course.name}`} aria-haspopup="menu" aria-expanded={Boolean(position)} aria-controls={position ? menuId : undefined} disabled={busy} onClick={() => position ? close() : openFromButton()} onKeyDown={event => {
       if (event.key === 'ArrowDown' || event.key === 'ArrowUp') { event.preventDefault(); openFromButton() }
@@ -80,8 +86,11 @@ export function CourseCard({ course, status, canDelete, busy, onOpen, onPin, onD
       }
     }}>
       <button type="button" role="menuitem" disabled={busy} onClick={() => { close(true); onPin() }}><PinIcon />{course.pinned ? 'Unpin course' : 'Pin course'}</button>
+      {onSharingUpdated && <button type="button" role="menuitem" disabled={busy} onClick={() => { close(true); setSharingOpen(true) }}><svg viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><circle cx="10" cy="10" r="7" /><ellipse cx="10" cy="10" rx="3" ry="7" /><path d="M3 10h14" /></svg>{course.is_public ? 'Edit sharing' : 'Make public'}</button>}
       {onLeave && <button type="button" role="menuitem" className="course-menu-delete" disabled={busy} onClick={() => { close(true); onLeave() }}><svg viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="M8 3H3v14h5M7 10h10m-4-4 4 4-4 4" /></svg>{leaveLabel ?? 'Leave course'}</button>}
       {canDelete && <button type="button" role="menuitem" className="course-menu-delete" disabled={busy} onClick={() => { close(true); onDelete() }}><svg viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" aria-hidden="true"><path d="M3 5h14M8 2h4l1 3M5 5l1 12h8l1-12M8 8v6m4-6v6" /></svg>Delete course</button>}
     </div>, document.body)}
   </div>
+    {sharingOpen && onSharingUpdated && <CourseSharingDialog course={course} onClose={closeSharing} onSaved={updated => { onSharingUpdated(updated); closeSharing() }} />}
+  </>
 }

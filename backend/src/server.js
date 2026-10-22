@@ -55,6 +55,7 @@ export function createApiServer({ query, hosted = false, env = process.env, prom
       const url = new URL(req.url, 'http://localhost');
       const consentRoute = url.pathname === '/api/account/consent';
       const account = await accountService.authenticate(req, { allowPending: (url.pathname === '/api/account' && req.method === 'GET') || consentRoute });
+      if (req.method === 'POST' && ['/api/chat', '/api/concepts', '/api/concept-suggestions', '/api/rubric'].includes(url.pathname)) await accountService.assertLearningSurvey?.(req, account);
       if (url.pathname === '/api/account' && req.method === 'GET') return send(200, account);
       const adminConsent = /^\/api\/admin\/users\/([^/]+)\/consent$/.exec(url.pathname);
       if ((consentRoute || adminConsent) && req.method === 'GET') {

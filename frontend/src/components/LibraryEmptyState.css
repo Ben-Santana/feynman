@@ -1,0 +1,9 @@
+.library-empty-state { display: flex; flex: none; min-height: 300px; text-align: center; }
+.library-empty-panel { display: flex; flex: 1; flex-direction: column; align-items: center; justify-content: center; gap: 16px; min-width: 0; padding: 40px 24px; border: 1px solid var(--dashboard-line, var(--border)); border-radius: 12px; background: transparent; }
+.library-empty-icon { flex: none; width: 24px; height: 24px; color: var(--muted-foreground); opacity: .65; }
+.library-empty-copy { max-width: 300px; }
+.library-empty-state .library-empty-title { margin: 0; color: var(--foreground); font-family: inherit; font-size: .875rem; font-weight: 500; line-height: 1.5; text-wrap: balance; }
+.library-empty-state .library-empty-description { margin: 6px 0 0; color: var(--muted-foreground); font-size: .8125rem; line-height: 1.6; text-wrap: pretty; }
+.library-empty-panel .library-empty-action { display: inline-flex; align-items: center; justify-content: center; gap: 8px; padding: 7px 11px; border: 1px solid var(--dashboard-line, var(--border)); border-radius: 7px; background: transparent; color: var(--foreground); font: inherit; font-size: .75rem; font-weight: 500; cursor: pointer; }
+.library-empty-panel .library-empty-action:hover { background: var(--surface); }
+.library-empty-action svg { width: 14px; height: 14px; }

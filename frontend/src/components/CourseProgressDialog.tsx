@@ -55,14 +55,14 @@ export function CourseProgressDialog({ selection, modules, students, onClose }: 
     <div className="course-edit-heading"><h2 id="course-progress-title">{student?.name ?? module?.title}</h2><button type="button" className="course-dialog-close" aria-label="Close progress" onClick={close} autoFocus><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" aria-hidden="true"><path d="m6 6 12 12M18 6 6 18" /></svg></button></div>
     {student ? <>
       <p className="course-progress-meta">{student.email}</p>
-      {student.status === 'enrolled' ? <><p className="course-progress-total">{completeCount} / {published.length} modules complete</p>
+      {student.status === 'enrolled' ? <><p className="course-progress-total">{completeCount} / {published.length} topics complete</p>
         <div className="course-progress-list">{published.map(value => {
           const progress = student.modules.find(item => item.moduleId === value.id)
           return <section className="course-progress-card" key={value.id}><div className="course-progress-card-heading"><h3>{value.title}</h3><span className="course-progress-status" data-complete={status(progress) === 'Complete'}>{status(progress)}</span></div><ConceptProgress progress={progress} /></section>
-        })}</div>{!published.length && <p>No published modules yet.</p>}
+        })}</div>{!published.length && <p>No published topics yet.</p>}
       </> : <p>{student.status === 'pending' ? 'Pending approval' : 'Request rejected'}</p>}
     </> : module ? <>
-      <div className="course-progress-tabs" role="group" aria-label="Module details"><button type="button" aria-pressed={view === 'students'} onClick={() => setView('students')}>Student progress</button><button type="button" aria-pressed={view === 'rubric'} onClick={() => setView('rubric')}>Rubric</button></div>
+      <div className="course-progress-tabs" role="group" aria-label="Topic details"><button type="button" aria-pressed={view === 'students'} onClick={() => setView('students')}>Student progress</button><button type="button" aria-pressed={view === 'rubric'} onClick={() => setView('rubric')}>Rubric</button></div>
       {view === 'rubric' ? <ModuleRubric module={module} /> : <><p className="course-progress-total">{completeCount} / {enrolled.length} students complete</p>
         <div className="course-progress-list">{enrolled.map(value => {
           const progress = value.modules.find(item => item.moduleId === module.id)

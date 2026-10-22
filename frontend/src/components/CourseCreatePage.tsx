@@ -1,12 +1,15 @@
 import { useEffect, useRef, useState } from 'react'
 import { accountSignal, type Account } from '../accounts'
 import { createCourse, type EnrollmentMode } from '../courseStore'
+import { CourseSubjectTags } from './CourseSubjectTags'
 import { BackButton } from './BackButton'
 import { SetupTitleForm } from './SetupTitleForm'
 import './CourseCreatePage.css'
 
 export function CourseCreatePage({ account, onNavigate }: { account: Account; onNavigate: (path: string) => void }) {
   const [name, setName] = useState('')
+  const [shared, setShared] = useState(false)
+  const [subjects, setSubjects] = useState<string[]>(['General STEM'])
   const [mode, setMode] = useState<EnrollmentMode>('open')
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState('')
@@ -22,10 +25,11 @@ export function CourseCreatePage({ account, onNavigate }: { account: Account; on
       document.getElementById('course-name')?.focus()
       return
     }
+    if (shared && !subjects.length) { setError('Choose at least one subject.'); return }
     const signal = accountSignal()
     requestLock.current = true; setSaving(true); setError('')
     try {
-      const course = await createCourse(name.trim(), mode)
+      const course = await createCourse(name.trim(), mode, shared, subjects.length ? subjects : ['General STEM'])
       signal.throwIfAborted()
       if (mounted.current) onNavigate(`/courses/${course.id}`)
     } catch (reason) {
@@ -42,9 +46,15 @@ export function CourseCreatePage({ account, onNavigate }: { account: Account; on
       <div className="chat-panel">
         <SetupTitleForm heading="Create course" headingLevel={1} inputId="course-name" inputLabel="Course name" value={name} onChange={value => { setName(value); setInvalidName(false); setError('') }} onSubmit={() => void submit()} actionLabel={saving ? 'Creating…' : 'Create course →'} placeholder="e.g. Physics 101" disabled={saving} invalid={invalidName} error={error}>
           <fieldset className="course-create-enrollment" disabled={saving}>
+            <legend>Community sharing</legend>
+            <label className="course-create-option"><input type="checkbox" checked={shared} onChange={event => setShared(event.target.checked)} /><span><strong>Make course public</strong><small>Anyone in the community can take published topics without enrolling. Their progress stays private.</small></span></label>
+
+          </fieldset>
+          {shared && <CourseSubjectTags value={subjects} onChange={value => { setSubjects(value); setError('') }} disabled={saving} />}
+          <fieldset className="course-create-enrollment" disabled={saving}>
             <legend>Enrollment</legend>
             <label className="course-create-option"><input type="radio" name="course-enrollment" value="open" checked={mode === 'open'} onChange={() => setMode('open')} /><span><strong>Open</strong><small>Students join immediately.</small></span></label>
-            <label className="course-create-option"><input type="radio" name="course-enrollment" value="approval" checked={mode === 'approval'} onChange={() => setMode('approval')} /><span><strong>Approval required</strong><small>Approve students before they can access modules.</small></span></label>
+            <label className="course-create-option"><input type="radio" name="course-enrollment" value="approval" checked={mode === 'approval'} onChange={() => setMode('approval')} /><span><strong>Approval required</strong><small>Approve students before they join your course.</small></span></label>
           </fieldset>
         </SetupTitleForm>
       </div>

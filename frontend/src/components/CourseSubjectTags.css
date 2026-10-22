@@ -1,0 +1,7 @@
+.course-subject-tags { min-width: 0; padding: 0; margin: 22px 0 0; border: 0; }
+.course-subject-tags legend { padding: 0; margin-bottom: 12px; font-size: .8125rem; font-weight: 500; }
+.course-subject-options { display: flex; flex-wrap: wrap; gap: 8px; }
+.course-subject-options button.course-subject-tag { display: inline-flex; align-items: center; gap: 5px; padding: 7px 11px; min-height: 34px; border: 1px solid var(--border); border-radius: 20px; background: var(--background); color: var(--muted-foreground); font: inherit; font-size: .75rem; cursor: pointer; }
+.course-subject-options button.course-subject-tag[aria-pressed="true"] { border-color: var(--primary); background: color-mix(in srgb, var(--primary) 8%, var(--background)); color: var(--primary-hover); }
+.course-subject-tag:focus-visible { outline: 2px solid var(--primary); outline-offset: 2px; }
+.course-subject-options button:disabled { opacity: .55; cursor: wait; }

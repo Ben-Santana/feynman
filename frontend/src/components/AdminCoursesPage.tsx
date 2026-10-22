@@ -43,7 +43,7 @@ function LoadError({ error, retry }: { error: string; retry: () => void }) {
 
 function ModulePreview({ module }: { module: AdminModule }) {
   return <details className="admin-module">
-    <summary><span><strong>{module.title || 'Untitled module'}</strong><span className="admin-module-meta">{module.concepts.length} {module.concepts.length === 1 ? 'concept' : 'concepts'} · Revision {module.revision}</span></span><span className={`admin-module-status${module.published_at ? ' is-published' : ''}`}>{module.published_at ? 'Published' : 'Draft'}</span></summary>
+    <summary><span><strong>{module.title || 'Untitled topic'}</strong><span className="admin-module-meta">{module.concepts.length} {module.concepts.length === 1 ? 'concept' : 'concepts'} · Revision {module.revision}</span></span><span className={`admin-module-status${module.published_at ? ' is-published' : ''}`}>{module.published_at ? 'Published' : 'Draft'}</span></summary>
     <div className="admin-module-preview">
       <dl className="admin-course-facts">
         <div><dt>Learning type</dt><dd>{module.learningType ? learningTypes[module.learningType]?.label || module.learningType : 'Not selected'}</dd></div>
@@ -74,9 +74,9 @@ function CourseView({ courseId, onBack }: { courseId: string; onBack: () => void
         <div><dt>Enrollment</dt><dd>{data.course.enrollment_mode === 'open' ? 'Open' : 'Approval required'}</dd></div>
         <div><dt>Created</dt><dd><time dateTime={data.course.created_at}>{dateLabel(data.course.created_at)}</time></dd></div>
       </dl>
-      <div className="admin-modules-heading"><h2>Modules <span>{data.modules.length}</span></h2><span>View only</span></div>
+      <div className="admin-modules-heading"><h2>Topics <span>{data.modules.length}</span></h2><span>View only</span></div>
       <div className="admin-modules">{data.modules.map(module => <ModulePreview key={module.id} module={module} />)}</div>
-      {!data.modules.length && <p className="admin-empty">No modules yet.</p>}
+      {!data.modules.length && <p className="admin-empty">No topics yet.</p>}
     </>}
   </>
 }
@@ -107,7 +107,7 @@ function CourseDirectory({ page, query, setPage, onNavigate }: { page: number; q
   return <div className="admin-directory">
     <ul className="admin-course-list">{data.courses.map(course => <li key={course.id}>
       <button type="button" className="admin-course-row" onClick={() => onNavigate(`/admin/courses/${course.id}`)}>
-        <span className="admin-course-identity"><strong>{course.name}</strong><span>{course.instructor.name || course.instructor.email} · {course.code}</span><span>{course.module_count} {course.module_count === 1 ? 'module' : 'modules'} · {course.enrollment_mode === 'open' ? 'Open enrollment' : 'Approval required'}</span></span>
+        <span className="admin-course-identity"><strong>{course.name}</strong><span>{course.instructor.name || course.instructor.email} · {course.code}</span><span>{course.module_count} {course.module_count === 1 ? 'topic' : 'topics'} · {course.enrollment_mode === 'open' ? 'Open enrollment' : 'Approval required'}</span></span>
         <span aria-hidden="true">→</span>
       </button>
     </li>)}</ul>
