@@ -29,7 +29,7 @@ test('ordinary conversation uses one refined primary and never legacy confirmati
   assert.equal(result.assessment.criteria[0].evidence[0].messageIndex, 1);
 });
 
-test('ordinary learner applies the shared strategy pipeline to an incomplete refined assessment', async () => {
+test('explicit strategy learner applies the shared strategy pipeline to an incomplete refined assessment', async () => {
   const request = input();
   const calls = [];
   const result = await chat(request, async (instructions, messages, tool) => {
@@ -39,7 +39,7 @@ test('ordinary learner applies the shared strategy pipeline to an incomplete ref
     assert.equal(tool.name, 'respond_to_student');
     assert.match(instructions, /Apply the following diagnostic strategy/);
     return { message: 'After the hand loses contact with the puck, what could make its speed change on this frictionless surface?', expression: 'confused' };
-  });
+  }, undefined, { learner: 'strategy' });
   assert.equal(result.assessment.complete, false);
   assert.equal(result.learnerModel.strategyId, 'remove-condition');
   assert.deepEqual(result.learnerModel.state.evidence, [{ messageIndex: 1, quote: request.messages[1].content }]);
@@ -62,7 +62,7 @@ test('all rubric items remain mandatory and strategy abstention generates one or
     assert.equal(tool.name, 'respond_to_student');
     learnerCalls++;
     return { message: 'What does zero net force tell you about the puck’s motion?', expression: 'attentive' };
-  });
+  }, undefined, { learner: 'strategy' });
   assert.equal(result.assessment.complete, false);
   assert.equal(result.assessment.criteria.length, 2);
   assert.equal(result.assessment.criteria[1].status, 'missing');

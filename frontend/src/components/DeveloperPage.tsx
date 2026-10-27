@@ -1,4 +1,8 @@
 import { accountFetch } from '../accounts'
+import { requireAccount } from '../accounts'
+import { subscribePlayground } from '../playgroundStore'
+import { LearningActions } from './LearningActions'
+import { learningActionMessage, type LearningAction } from '../learningActions'
 import { ChatComposer } from './ChatComposer'
 import { loadPlayground, savePlayground } from '../learningStore'
 import { ChatText } from './ChatText'
@@ -167,8 +171,10 @@ function ChatPlayground({ dirtyPrompts, characterName }: { dirtyPrompts: boolean
   const saveLock = useRef(false)
   useEffect(() => {
     let active = true
-    loadPlayground<SavedTest>().then(tests => { if (active) { setSavedTests(tests); setSavedReady(true) } }).catch(() => { if (active) setSaveNotice('Could not load saved tests. Reload to retry.') })
-    return () => { active = false }
+    const refresh = () => { void loadPlayground<SavedTest>().then(tests => { if (active) { setSavedTests(tests); setSavedReady(true) } }).catch(() => { if (active) setSaveNotice('Could not load saved tests. Reload to retry.') }) }
+    refresh()
+    const unsubscribe = subscribePlayground(requireAccount().id, refresh)
+    return () => { active = false; unsubscribe() }
   }, [])
   const [learningType, setLearningType] = useState<LearningType>('quantitative')
   const [level, setLevel] = useState<Level>('analyze')
@@ -182,6 +188,8 @@ function ChatPlayground({ dirtyPrompts, characterName }: { dirtyPrompts: boolean
   const [pending, setPending] = useState<Message | null>(null)
   const [callTurns, setCallTurns] = useState<CallTurn[]>([])
   const [result, setResult] = useState<ChatResult | null>(null)
+  const [reviewVersion, setReviewVersion] = useState(0)
+  const [revisingReview, setRevisingReview] = useState(false)
   const [busy, setBusy] = useState(false)
   const [generatingRubric, setGeneratingRubric] = useState(false)
   const [rubricError, setRubricError] = useState('')
@@ -193,7 +201,7 @@ function ChatPlayground({ dirtyPrompts, characterName }: { dirtyPrompts: boolean
   const log = useRef<HTMLDivElement>(null)
   const finished = Boolean(result?.assessment?.complete || result?.finalSummary)
   const paper = messages.findLast(message => message.paper)?.paper
-  const review = paper ? messages.find(message => message.review?.paperId === paper.id)?.review : undefined
+  const review = paper ? messages.findLast(message => message.review?.paperId === paper.id)?.review : undefined
   const awaitingReview = Boolean(run?.learningType === 'quantitative' && run.level === 'analyze' && paper && !review)
   const aspects = checklistItems(criterion)
   const working = busy || generatingRubric || savingTest
@@ -222,14 +230,14 @@ function ChatPlayground({ dirtyPrompts, characterName }: { dirtyPrompts: boolean
     if (!run || working || !savedReady || saveLock.current) return
     saveLock.current = true; setSavingTest(true); setSaveNotice('')
     const entry: SavedTest = { id: savedId || crypto.randomUUID(), updatedAt: Date.now(), run, messages, draft, callTurns, result }
-    const next = [entry, ...savedTests.filter(test => test.id !== entry.id)]
     try {
-      await savePlayground(next)
+      const next = await savePlayground([entry])
       setSavedTests(next); setSavedId(entry.id); setSaveNotice('Saved in this browser, including the call log. Save again after further replies.')
     } catch { setSaveNotice('Could not save this test. Your open conversation is still available.') }
     finally { saveLock.current = false; setSavingTest(false) }
   }
   function openTest(test: SavedTest) {
+    setRevisingReview(false)
     setComposerVersion(version => version + 1)
     setSavedId(test.id); setRun(test.run); setLearningType(test.run.learningType); setLevel(test.run.level); setTopic(test.run.topic)
     setCriteria(current => ({ ...current, [test.run.level]: test.run.criterion }))
@@ -260,18 +268,19 @@ function ChatPlayground({ dirtyPrompts, characterName }: { dirtyPrompts: boolean
       const response = await turn(config, [])
       setComposerVersion(version => version + 1)
       setSavedId(''); setSaveNotice('')
+      setRevisingReview(false)
       setRun(config); setMessages([{ role: 'assistant', content: response.message, ...(response.paper ? { paper: response.paper } : {}) }]); setResult(response); setDraft('')
     } catch (reason) { setError(errorText(reason)) }
     finally { lock.current = false; setBusy(false) }
   }
-  async function send(submittedReview?: Review): Promise<boolean> {
-    if (!run || lock.current || finished || (!submittedReview && !draft.trim())) return false
-    const user: Message = { role: 'user', content: submittedReview ? `I graded your papers: ${submittedReview.grades?.map((grade, index) => `paper ${index + 1}: ${grade.grade}${grade.selectedSteps.length ? ` (marked steps ${grade.selectedSteps.join(', ')})` : ''}`).join('; ')}.` : draft.trim(), ...(submittedReview ? { review: submittedReview } : {}) }
+  async function send(submittedReview?: Review, action?: LearningAction): Promise<boolean> {
+    if (!run || lock.current || finished || (!submittedReview && !action && !draft.trim())) return false
+    const user: Message = { role: 'user', content: submittedReview ? `I graded your papers: ${submittedReview.grades?.map((grade, index) => `paper ${index + 1}: ${grade.grade}${grade.selectedSteps.length ? ` (marked steps ${grade.selectedSteps.join(', ')})` : ''}`).join('; ')}.` : draft.trim(), ...(submittedReview ? { review: submittedReview } : {}), ...(action ? learningActionMessage(action) : {}) }
     const transcript = [...messages, user]
     lock.current = true; setBusy(true); setPending(user); setError('')
     try {
       const response = await turn(run, transcript)
-      setMessages([...transcript, { role: 'assistant', content: response.message, ...(response.paper ? { paper: response.paper } : {}) }]); setResult(response); setDraft('')
+      setMessages([...transcript, { role: 'assistant', content: response.message, ...(response.assistance ? { assistance: true } : {}), ...(response.independentCheck ? { independentCheck: true } : {}), ...(response.paper ? { paper: response.paper } : {}) }]); setResult(response); setDraft(''); setRevisingReview(false)
       return true
     } catch (reason) { setError(errorText(reason)); return false }
     finally { lock.current = false; setBusy(false); setPending(null) }
@@ -303,12 +312,14 @@ function ChatPlayground({ dirtyPrompts, characterName }: { dirtyPrompts: boolean
       <div className="developer-conversation">
         {run && <header className="developer-conversation-heading"><div><h2>{run.topic}</h2><p>{nameLevel(run.level)} · {learningTypes[run.learningType].label}</p></div><button type="button" className="developer-button-secondary" disabled={working} onClick={() => { setSavedId(''); setSaveNotice(''); setRun(null); setCallTurns([]); setMessages([]); setResult(null); setDraft(''); setError('') }}>Clear test</button></header>}
         <div ref={log} className="developer-chat-log" role="log" aria-label="Test conversation" aria-live="polite">
-          {[...messages, ...(pending ? [pending] : [])].map((message, index) => <div key={index} className={`chat-message ${message.role} ${message.paper ? 'developer-message-with-paper' : ''}`}><div className="chat-message-copy"><span>{message.role === 'user' ? 'You' : characterName}</span><div className="chat-message-text"><ChatText>{message.content}</ChatText></div></div>{message.paper && <PaperReview characterName={characterName} key={message.paper.id} paper={message.paper} review={messages.find(item => item.review?.paperId === message.paper?.id)?.review} busy={working} error={error} onSubmit={send} />}</div>)}
+          {[...messages, ...(pending ? [pending] : [])].map((message, index) => <div key={index} className={`chat-message ${message.role} ${message.paper ? 'developer-message-with-paper' : ''}`}><div className="chat-message-copy"><span>{message.assistance ? 'Prerequisite review' : message.role === 'user' ? 'You' : characterName}</span><div className="chat-message-text"><ChatText>{message.content}</ChatText></div></div>{message.paper && <PaperReview characterName={characterName} key={`${message.paper.id}-${reviewVersion}`} paper={message.paper} review={revisingReview ? undefined : messages.findLast(item => item.review?.paperId === message.paper?.id)?.review} busy={working} error={error} onSubmit={send} />}</div>)}
           {busy && <LoadingAnimation label={run ? 'Thinking' : 'Starting your test'} delayMs={0} />}
-          {result?.finalSummary && <div className="developer-report"><strong>Learning report{result.analysisGrade !== undefined ? ` · ${result.analysisGrade}%` : ''}</strong><p>{result.finalSummary}</p></div>}
+          {result?.finalSummary && <div className="developer-report"><strong>Learning report{result.analysisGrade !== undefined ? ` · Rubric mastery ${result.analysisGrade}%` : ''}</strong><p>{result.finalSummary}</p></div>}
         </div>
         {run && (finished ? <div className="developer-test-ended" role="status">{result?.assessment?.complete ? `${nameLevel(run.level)} complete.` : 'Assessment finished.'} Start a new test to try again.</div> : awaitingReview ? <div className="developer-test-ended">Grade all three papers to continue.</div> : <ChatComposer key={composerVersion} className="developer-composer" value={draft} onChange={setDraft} onSend={() => { void send() }} busy={working} />)}
         {error && <p className="developer-error" role="alert">{error}</p>}
+        {run && !finished && <LearningActions busy={working} needsCheck={Boolean(messages.at(-1)?.assistance)} canFinish={Boolean(review && result?.assessment)} canRevise={Boolean(review)} onAction={action => { void send(undefined, action) }} onRevise={() => { setReviewVersion(value => value + 1); setRevisingReview(true) }} />}
+        {working && <p role="status">Checking evidence and preparing a response…</p>}
       </div>
       <section className="developer-terminal" aria-label="Conversation JSON log">
         <header><span><span aria-hidden="true">›_</span> Call log</span><span>{callTurns.length} turns · {callTurns.reduce((count, turn) => count + turn.calls.length, 0)} model calls</span></header>

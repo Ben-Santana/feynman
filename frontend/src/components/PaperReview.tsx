@@ -41,6 +41,7 @@ export function PaperReview({ paper, review, busy, error, onSubmit, characterNam
   const reviewedGrades = review?.grades || (review?.grade ? [{ paperId: paper.id, grade: review.grade, selectedSteps: review.selectedSteps || [] }] : [])
   const [grades, setGrades] = useState<PaperGrade[]>([])
   const [drafts, setDrafts] = useState<Record<string, number[]>>({})
+  const [confirmedPasses, setConfirmedPasses] = useState<Record<string, boolean>>({})
   const [order, setOrder] = useState(() => exercises.map((_, index) => index))
   const [turning, setTurning] = useState(false)
   const [sorting, setSorting] = useState(false)
@@ -50,7 +51,7 @@ export function PaperReview({ paper, review, busy, error, onSubmit, characterNam
   const current = exercises[currentIndex]
   const savedGrades = review ? reviewedGrades : grades
   const selected = review ? savedGrades.find(item => item.paperId === current.id)?.selectedSteps || [] : drafts[current.id] ?? grades.find(item => item.paperId === current.id)?.selectedSteps ?? []
-  const grade = review ? savedGrades.find(item => item.paperId === current.id)?.grade || 'pass' : selected.length ? 'fail' : 'pass'
+  const grade = review ? savedGrades.find(item => item.paperId === current.id)?.grade : selected.length ? 'fail' : confirmedPasses[current.id] ? 'pass' : undefined
   const locked = busy || sorting || turning
   useEffect(() => {
     mounted.current = true
@@ -90,6 +91,7 @@ export function PaperReview({ paper, review, busy, error, onSubmit, characterNam
     if (review || locked || gradeLock.current) return
     const next = selected.includes(step) ? selected.filter(n => n !== step) : [...selected, step].sort((a, b) => a - b)
     setDrafts(items => ({ ...items, [current.id]: next }))
+    setConfirmedPasses(items => ({ ...items, [current.id]: false }))
     setGrades(items => items.filter(item => item.paperId !== current.id))
     setStamped(false)
   }
@@ -136,7 +138,7 @@ export function PaperReview({ paper, review, busy, error, onSubmit, characterNam
     }
   }
   async function finalizeGrade() {
-    if (review || busy || gradeLock.current) return
+    if (review || busy || gradeLock.current || !grade) return
     gradeLock.current = true
     setSorting(true)
     setStamped(false)
@@ -241,7 +243,7 @@ export function PaperReview({ paper, review, busy, error, onSubmit, characterNam
             const top = depth === 0
             const saved = savedGrades.find(item => item.paperId === exercise.id)
             const marks = review ? saved?.selectedSteps || [] : drafts[exercise.id] ?? saved?.selectedSteps ?? []
-            const sheetGrade = review ? saved?.grade || 'pass' : marks.length ? 'fail' : 'pass'
+            const sheetGrade = review ? saved?.grade : marks.length ? 'fail' : confirmedPasses[exercise.id] ? 'pass' : undefined
             const { problem, steps, conclusion } = paperParts(exercise)
             return <div key={exercise.id} data-paper-index={index} className={`paper-sheet ${top ? 'paper-sheet-top' : ''}`} style={{ transform: paperPosition(depth), zIndex: exercises.length - depth }} inert={!top} aria-hidden={!top}>
           <div className="paper-scroll">
@@ -249,7 +251,7 @@ export function PaperReview({ paper, review, busy, error, onSubmit, characterNam
               <div className="paper-heading">
                 <div className="paper-problem"><strong className="paper-problem-number">{index + 1}.</strong><div className="paper-problem-text"><MathText>{problem}</MathText></div></div>
                 <div className={`paper-stamp-target paper-grade-${sheetGrade} ${saved || top && stamped ? 'paper-is-inked' : ''}`}>
-                  {review ? <div className="paper-grade-field" aria-label={`Grade: ${sheetGrade}`}><span className="paper-grade-label">Reviewed</span></div> : <button ref={top ? gradeButton : undefined} type="button" className="paper-grade-field" onClick={() => void finalizeGrade()} disabled={!top || locked} aria-label={`Grade paper ${index + 1} ${sheetGrade}; click to finalize`}><span className="paper-grade-label">{top && sorting ? 'Stamping' : saved ? 'Re-stamp' : 'Click to stamp'}</span><span className="paper-grade-ghost" aria-hidden="true">{sheetGrade}</span></button>}
+                  {review ? <div className="paper-grade-field" aria-label={`Grade: ${sheetGrade}`}><span className="paper-grade-label">Reviewed</span></div> : <><button ref={top ? gradeButton : undefined} type="button" className="paper-grade-field" onClick={() => void finalizeGrade()} disabled={!top || locked || !sheetGrade} aria-label={sheetGrade ? `Grade paper ${index + 1} ${sheetGrade}; click to finalize` : `Choose a grade for paper ${index + 1}`}><span className="paper-grade-label">{!sheetGrade ? 'Choose a grade' : top && sorting ? 'Stamping' : saved ? 'Re-stamp' : 'Click to stamp'}</span><span className="paper-grade-ghost" aria-hidden="true">{sheetGrade}</span></button>{!sheetGrade && <button type="button" disabled={!top || locked} onClick={() => setConfirmedPasses(items => ({ ...items, [exercise.id]: true }))}>Mark all steps correct</button>}</>}
                   <span ref={top ? ink : undefined} className="paper-stamp-ink" aria-hidden="true"><span>{sheetGrade}</span><small>{characterName} · reviewed</small></span>
                   <span ref={top ? impact : undefined} className="paper-stamp-impact" aria-hidden="true" />
                 </div>

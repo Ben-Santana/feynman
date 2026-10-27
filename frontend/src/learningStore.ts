@@ -1,5 +1,6 @@
 import type { LearningType } from './learningTypes.js'
 import { accountSignal, requireAccount, supabase } from './accounts.ts'
+import { playgroundEntries, notifyPlayground } from './playgroundStore.ts'
 
 export type CourseAssignment = { courseId: string; courseName: string; moduleId: string }
 export type SavedLearning<T> = { concepts: T[]; activeId: string | null }
@@ -69,8 +70,16 @@ export function createLearningStore({ client = supabase, getAccount = requireAcc
     recoveryQueue = task
     return task
   }
-  async function loadPlayground<T>(): Promise<T[]> { return await localValue<T[]>(`${getAccount().id}:playground`) || [] }
-  async function savePlayground<T>(tests: T[]): Promise<void> { await localValue(`${getAccount().id}:playground`, tests) }
+  async function loadPlayground<T>(): Promise<T[]> { return await playgroundEntries(getAccount().id) as T[] }
+  async function savePlayground<T>(tests: T[]): Promise<T[]> {
+    const userId = getAccount().id
+    for (const test of tests) {
+      const value = test as T & { id?: string }
+      await playgroundEntries(userId, { ...value, id: value.id || crypto.randomUUID() })
+    }
+    notifyPlayground(userId)
+    return await playgroundEntries(userId) as T[]
+  }
 
   async function upload(blob: Blob, sessionId: string, userId: string, signal: AbortSignal): Promise<string> {
     const bytes = await blob.arrayBuffer()

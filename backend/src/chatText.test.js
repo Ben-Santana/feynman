@@ -6,6 +6,14 @@ import { ChatText } from '../../frontend/src/components/ChatText.ts';
 
 const render = source => renderToStaticMarkup(createElement(ChatText, null, source));
 
+test('scenario tables render semantic columns, math and safe literal cell text', () => {
+  const output = render('Simulated readings\n\n| Frequency (Hz) | Gain (dB) |\n| --- | --- |\n| 100 | $-0.02$ |\n| 1000 | <script>x</script> |\n\nWhat do you notice?');
+  assert.match(output, /<table/); assert.match(output, /scope="col"/);
+  assert.match(output, /class="katex"/); assert.match(output, /&lt;script&gt;/);
+  assert.doesNotMatch(output, /<script>/);
+  assert.match(output, /What do you notice/);
+});
+
 test('chat preserves Markdown punctuation and treats HTML as literal text', () => {
   const output = render('# Heading\n**literal** _text_\n- item\n<script>alert(1)</script>');
   assert.match(output, /# Heading/);

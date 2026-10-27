@@ -31,3 +31,37 @@ test('simplified primary retains every evidence and completion blocker', () => {
   const raw = answer(); raw.judgments[1].criterionId = 'criterion_1';
   assert.throws(() => normalizePrimaryAssessment(raw, context, task), /Invalid/);
 });
+
+test('task-only transfer policy retains its schema and cannot borrow assisted transfer or original evidence', () => {
+  const transferContext = createEvaluationContext({ ...input, level: 'apply' }, { requireTransfer: true });
+  const transferTask = taskDefinition(transferContext, 'Apply the concept under a changed condition.');
+  const variants = primaryAssessmentTool(transferContext, transferTask).schema.properties.judgments.items.anyOf;
+  assert.equal(variants.length, 2, 'ordinary rubric rows share one compact variant');
+  const taskSchema = variants.find(v => v.properties.criterionId.enum.includes('level_task'));
+  assert.ok(taskSchema.required.includes('transferCheck'));
+  const raw = answer();
+  const j = raw.judgments.at(-1);
+  j.independentCheck = 'demonstrated'; j.transferCheck = 'demonstrated';
+  Object.assign(j.observations[0], { assistance: 'none', assistanceMessageIds: [], demonstratesTransfer: false });
+  assert.equal(normalizePrimaryAssessment(raw, transferContext, transferTask).completion.eligible, false);
+  j.observations[0].demonstratesTransfer = true;
+  assert.equal(normalizePrimaryAssessment(raw, transferContext, transferTask).completion.eligible, true);
+  j.observations[0].assistance = 'unknown';
+  assert.equal(normalizePrimaryAssessment(raw, transferContext, transferTask).completion.eligible, false);
+});
+
+test('shared evidence expands before citation validation and never waives policy or accepts dangling references', () => {
+  const pooled = answer();
+  pooled.evidence = [{ id: 'e1', messageId: 'u', quote: input.messages[1].content }];
+  pooled.judgments.forEach(j => { j.observations = [{ evidenceId: 'e1' }]; });
+  assert.equal(normalizePrimaryAssessment(pooled, context, task).completion.eligible, true);
+  assert.ok(JSON.stringify(pooled).length < JSON.stringify(answer()).length);
+  for (const mutate of [r => { r.evidence.push(r.evidence[0]); }, r => { r.judgments[0].observations[0].evidenceId = 'missing'; }, r => { r.evidence.push({ id: 'unused', messageId: 'u', quote: 'Unused' }); }, r => { r.judgments[0].observations[0].quote = 'Override'; }]) {
+    const invalid = structuredClone(pooled); mutate(invalid);
+    assert.throws(() => normalizePrimaryAssessment(invalid, context, task), /shared evidence/);
+  }
+  for (const patch of [{ messageId: 'q', quote: input.messages[0].content }, { quote: 'Fabricated quote' }]) {
+    const invalid = structuredClone(pooled); Object.assign(invalid.evidence[0], patch);
+    assert.equal(normalizePrimaryAssessment(invalid, context, task).completion.eligible, false);
+  }
+});

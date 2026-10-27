@@ -37,7 +37,7 @@ export function chatTextParts(source: string): Part[] {
   return parts
 }
 
-export function ChatText({ children }: { children: string }) {
+function PlainChatText({ children = '' }: { children?: string }) {
   return createElement('div', { className: 'chat-plain-text', style: { whiteSpace: 'pre-wrap', overflowWrap: 'anywhere' } },
     ...chatTextParts(children).map((part, index) => {
       if (!part.math) return createElement(ReadingText, { key: index }, part.source)
@@ -46,4 +46,32 @@ export function ChatText({ children }: { children: string }) {
         return createElement('span', { key: index, className: `chat-equation${part.display ? ' chat-equation-display' : ''}`, dangerouslySetInnerHTML: { __html: html } })
       } catch { return createElement(ReadingText, { key: index }, part.source) }
     }))
+}
+
+export function chatTableBlocks(source: string): (string | string[][])[] {
+  const lines = source.split('\n'), blocks: (string | string[][])[] = []
+  let plain: string[] = []
+  const cells = (line: string) => line.trim().replace(/^\||\|$/g, '').split(/(?<!\\)\|/).map(cell => cell.trim().replace(/\\\|/g, '|'))
+  for (let index = 0; index < lines.length; index++) {
+    if (lines[index].trim().startsWith('|') && /^\|?\s*:?-{3,}:?\s*(\|\s*:?-{3,}:?\s*)+\|?$/.test(lines[index + 1]?.trim() || '')) {
+      if (plain.length) { blocks.push(plain.join('\n')); plain = [] }
+      const rows = [cells(lines[index])]
+      index++
+      while (lines[index + 1]?.trim().startsWith('|')) rows.push(cells(lines[++index]))
+      blocks.push(rows)
+    } else plain.push(lines[index])
+  }
+  if (plain.length) blocks.push(plain.join('\n'))
+  return blocks
+}
+
+export function ChatText({ children }: { children: string }) {
+  const blocks = chatTableBlocks(children)
+  if (!blocks.some(Array.isArray)) return createElement(PlainChatText, null, children)
+  return createElement('div', null, ...blocks.map((block, index) => typeof block === 'string'
+    ? createElement(PlainChatText, { key: index }, block)
+    : createElement('div', { className: 'chat-table-scroll', key: index, tabIndex: 0, role: 'region', 'aria-label': 'Scenario data' },
+      createElement('table', { className: 'chat-data-table' },
+        createElement('thead', null, createElement('tr', null, ...block[0].map((cell, i) => createElement('th', { key: i, scope: 'col' }, createElement(PlainChatText, null, cell))))),
+        createElement('tbody', null, ...block.slice(1).map((row, i) => createElement('tr', { key: i }, ...row.map((cell, j) => createElement('td', { key: j }, createElement(PlainChatText, null, cell))))))))))
 }

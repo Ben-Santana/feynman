@@ -16,6 +16,7 @@ import { compareEvaluators, comparisonOptions, deferredEvaluatorWork } from './e
 import { createEvaluationContext, EvaluatorInputError, evaluatorVersion } from './evaluatorContracts.js';
 import { evaluatorComparisonCases, evaluatorTestCases } from './evaluatorTestCases.js';
 import { screenEvaluatorComparison } from './evaluatorBenchmark.js';
+import { EvaluationCache } from './turnCache.js';
 
 const evaluatorCases = evaluatorComparisonCases;
 
@@ -187,10 +188,11 @@ export function createApiServer({ query, hosted = false, env = process.env, prom
         } catch (error) { call.error = error.message; throw error; }
         finally { call.durationMs = Date.now() - started; }
       } : selectedQuery;
-      const result = await chat(input, tracedQuery, loadPrompts(promptsPath));
+      const result = await chat(input, tracedQuery, loadPrompts(promptsPath), { evaluationCache, cacheScope: [account.id, provider, model] });
       return send(200, { ...result, ...(calls ? { calls } : {}) });
     } catch (error) { return send(error instanceof AccountError || error instanceof PromptError || error instanceof AIError ? error.status : 502, { error: error.name === 'TimeoutError' ? 'The model took too long. Please retry.' : error.message, ...(calls ? { calls } : {}) }); }
   });
+  const evaluationCache = new EvaluationCache();
   server.on('clientError', (error, socket) => {
     const tls = error.rawPacket?.[0] === 0x16;
     console.info(`Feynman API connection: ${tls ? 'HTTPS attempted on the HTTP port' : error.code || 'invalid HTTP request'}.`);

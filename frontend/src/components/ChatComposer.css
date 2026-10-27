@@ -51,3 +51,12 @@
 .math-composer :is(button, [role="textbox"]):focus-visible { outline: 2px solid var(--primary); outline-offset: 2px; }
 .chat-plain-text > .chat-equation { display: inline-block; vertical-align: middle; max-width: 100%; overflow-x: auto; padding: 2px 0; font-size: 1.08em; }
 .chat-plain-text > .chat-equation-display { display: block; padding: 8px 0; }
+.chat-table-scroll { max-width: 100%; overflow-x: auto; margin: 12px 0; }
+.chat-data-table { width: 100%; border-collapse: collapse; font-size: .9em; }
+.chat-data-table th, .chat-data-table td { border: 1px solid var(--border, #ddd); padding: 8px 12px; text-align: left; }
+.chat-data-table th { background: var(--secondary, #f4f4f4); }
+.learning-actions { display: flex; flex-wrap: wrap; gap: 8px; padding: 12px 0; }
+.learning-actions p { flex-basis: 100%; margin: 0; font-size: .85rem; }
+.learning-actions button { padding: 8px 12px; border: 1px solid var(--border, #ddd); border-radius: 8px; background: var(--background, white); color: inherit; cursor: pointer; }
+.learning-actions button:focus-visible, .chat-table-scroll:focus-visible { outline: 2px solid var(--primary); outline-offset: 2px; }
+.learning-actions button:disabled { opacity: .5; cursor: not-allowed; }

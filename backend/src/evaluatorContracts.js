@@ -16,7 +16,7 @@ const hash = value => createHash('sha256').update(value).digest('hex').slice(0, 
 export class EvaluatorInputError extends Error {}
 
 // Transport validation is shared with regular chats; definition metadata is local/dev only.
-export function createEvaluationContext(input) {
+export function createEvaluationContext(input, { requireTransfer = false } = {}) {
   try { validate(input); } catch (error) { throw new EvaluatorInputError(error.message); }
   const aspects = input.criterion && /^\s*1[.)]\s/m.test(input.criterion) ? checklistItems(input.criterion) : input.aspects;
   if (!aspects.length || aspects.length > 20) throw new EvaluatorInputError('Provide 1–20 checklist items.');
@@ -33,18 +33,18 @@ export function createEvaluationContext(input) {
   const criteria = definitions.map((c, index) => {
     if (!c || !id(c.id) || c.id === 'level_task' || c.text !== aspects[index] || typeof c.required !== 'boolean' || typeof c.requiresIndependent !== 'boolean' || typeof c.requiresTransfer !== 'boolean' || !Array.isArray(c.components) || !c.components.length || c.components.length > 20 || c.components.some(p => !p || !id(p.id) || !text(p.text, 1000)) || new Set(c.components.map(p => p.id)).size !== c.components.length) throw new EvaluatorInputError('Invalid criterion definition: use exact checklist text, unique IDs, components, and boolean requirements.');
     // The rubric is authoritative. Legacy optional flags cannot waive an item.
-    return { id: c.id, text: c.text, required: true, components: c.components.map(p => ({ id: p.id, text: p.text })), requiresIndependent: c.requiresIndependent, requiresTransfer: c.requiresTransfer, level: input.level };
+    return { id: c.id, text: c.text, required: true, components: c.components.map(p => ({ id: p.id, text: p.text })), requiresIndependent: c.requiresIndependent || messages.some(m => m.assistance), requiresTransfer: c.requiresTransfer, level: input.level };
   });
   if (new Set(criteria.map(c => c.id)).size !== criteria.length) throw new EvaluatorInputError('Criterion IDs must be unique.');
   const paperAnalysis = input.level === 'analyze' && (input.learningType ?? 'quantitative') === 'quantitative';
   const latestPaper = messages.findLast(m => m.paper)?.paper;
-  const reviewIndex = latestPaper ? messages.findIndex(m => m.review?.paperId === latestPaper.id) : -1;
+  const reviewIndex = latestPaper ? messages.findLastIndex(m => m.review?.paperId === latestPaper.id) : -1;
   const eligibility = !messages.length ? 'no_learner_evidence' : paperAnalysis && (reviewIndex < 0 || !messages.slice(reviewIndex + 1).some(m => m.role === 'user' && !m.review)) ? 'awaiting_paper_review_explanation' : null;
-  return { schemaVersion: contractVersion, stageId, topic: input.topic, criterion: input.criterion ?? null, level: input.level, learningType: input.learningType ?? 'quantitative', criteria, messages, reviewIndex, eligibility };
+  return { schemaVersion: contractVersion, stageId, topic: input.topic, criterion: input.criterion ?? null, level: input.level, learningType: input.learningType ?? 'quantitative', criteria, messages, reviewIndex, eligibility, requireTransfer: requireTransfer && ['apply', 'analyze'].includes(input.level) };
 }
 
 export function taskDefinition(context, taskText) {
-  return { id: 'level_task', text: taskText, required: true, level: context.level, components: [{ id: 'whole', text: taskText }], requiresIndependent: false, requiresTransfer: false };
+  return { id: 'level_task', text: taskText, required: true, level: context.level, components: [{ id: 'whole', text: taskText }], requiresIndependent: context.requireTransfer || context.messages.some(m => m.assistance), requiresTransfer: Boolean(context.requireTransfer) };
 }
 const object = properties => ({ type: 'object', properties, required: Object.keys(properties), additionalProperties: false });
 const string = { type: 'string', maxLength: 2000 };

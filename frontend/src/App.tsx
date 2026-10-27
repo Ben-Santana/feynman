@@ -1,4 +1,6 @@
 import { ChatComposer } from './components/ChatComposer'
+import { LearningActions } from './components/LearningActions'
+import { learningActionMessage, type LearningAction } from './learningActions'
 import { TooltipButton } from './components/TooltipButton'
 import { ConceptTooltip } from './components/ConceptTooltip'
 import { ChatMessage, ThoughtCloud } from './components/ChatMessage'
@@ -37,7 +39,7 @@ import { SessionSummary, SummaryUnavailable } from './components/SessionSummary'
 import { Whiteboard, type WhiteboardHandle } from './components/Whiteboard'
 import { saveModuleRecovery, loadModuleRecovery, subscribeSaveStatus, getSaveStatus, resolveSessionConflict, loadSessions, queueSessionSave, flushSessionSaves, deleteSession as deleteCloudSession, type SavedSession } from './learningStore'
 import { advanceConcept, assessmentTranscript, restoreLearning, sessionComplete, startConcepts, targetCount, type ChatResult, type Concept, type ConceptRubric, type Level, type Message, type Session } from './learningFlow'
-import { draftTarget, editCriterion, fillMissingRubric, genericRubric, highestFilledLevel, mergeSuggestions, restoreDraft, withBasicCriterion } from './rubricSetup'
+import { draftTarget, editCriterion, fillMissingRubric, genericRubric, highestFilledLevel, mergeSuggestions, restoreDraft } from './rubricSetup'
 import { generateRubricBatches } from './rubricGeneration'
 
 import { LearningTypeSelector } from './components/LearningTypeSelector'
@@ -180,7 +182,8 @@ export default function App({ account, onProfileUpdated, authMode }: { account: 
   const session: Session = currentConcept || { messages: [], draft: '', assessment: null }
   const done = Boolean(currentConcept && currentConcept.passed >= targetCount(currentConcept.target))
   const paper = session.messages.findLast(message => message.paper)?.paper
-  const review = paper ? session.messages.find(message => message.review?.paperId === paper.id)?.review : undefined
+  const review = paper ? session.messages.findLast(message => message.review?.paperId === paper.id)?.review : undefined
+  const [revisingPaper, setRevisingPaper] = useState<string | null>(null)
 
   useEffect(() => {
     if (isChatPage && !started && setupStep === 'title') void preloadClassModelPreview().catch(() => {})
@@ -517,10 +520,18 @@ export default function App({ account, onProfileUpdated, authMode }: { account: 
   }
   async function raiseTarget(concept: Concept, target: Level) {
     if (assignment || busy || targetCount(target) <= targetCount(concept.target)) return
-    const nextConcept = fruitFlySelected() && !checklistItems(concept.rubric[target]).length ? { ...concept, rubric: { ...concept.rubric, [target]: fruitFlyBuzz() } } : withBasicCriterion(concept, target, learningType ?? 'quantitative')
-    if (concept.passed < targetCount(concept.target)) { updateConcept(concept.id, { target, rubric: nextConcept.rubric }); return }
     setBusy(true); setError('')
     try {
+      const [generated] = await generateRubricBatches(
+        [{ name: concept.name, target }],
+        batch => post<{ concepts: { name: string; rubric: ConceptRubric }[] }>('/api/rubric', {
+          concepts: batch,
+          previousRubric: [{ name: concept.name, rubric: concept.rubric }],
+          learningType,
+          additionalInstructions: [rubricInstructions.trim(), `Create topic-specific checklist items for the ${target} level of ${concept.name}, building on the existing rubric. Only the ${target} level will be added to the session.`].filter(Boolean).join('\n'),
+        }, AbortSignal.timeout(225000)),
+      )
+      const nextConcept = { ...concept, rubric: { ...concept.rubric, [target]: generated.rubric[target] } }
       const level = levels[concept.passed].id
       const controller = new AbortController()
       const response = await levelOpening(nextConcept, level, controller.signal)
@@ -541,13 +552,14 @@ export default function App({ account, onProfileUpdated, authMode }: { account: 
     } catch (reason) { setError(reason instanceof Error ? reason.message : 'Could not start another paper set.') }
     finally { setBusy(false) }
   }
-  async function send(submittedReview?: Review): Promise<boolean> {
-    if (requestLock.current || done || (submittedReview && !quantitative) || (!submittedReview && !session.draft.trim())) return false
+  async function send(submittedReview?: Review, action?: LearningAction): Promise<boolean> {
+    if (requestLock.current || done || (submittedReview && !quantitative) || (!submittedReview && !action && !session.draft.trim())) return false
     requestLock.current = true; setBusy(true); setError('')
     const controller = new AbortController()
     const timeout = setTimeout(() => controller.abort(), 195000)
     const board = whiteboard.current?.snapshot()
     const userMessage: Message = { role: 'user', content: submittedReview ? submittedReview.grades ? `I graded your papers: ${submittedReview.grades.map((grade, index) => `paper ${index + 1} ${grade.grade === 'pass' ? 'Pass' : 'Fail'}${grade.selectedSteps.length ? ` (marked ${grade.selectedSteps.map(step => `step ${step}`).join(', ')})` : ''}`).join('; ')}.` : `I grade your paper ${submittedReview.grade === 'pass' ? 'Pass' : 'Fail'}.${submittedReview.selectedSteps?.length ? ` I marked ${submittedReview.selectedSteps.map(step => `step ${step}`).join(', ')} as incorrect.` : ''}` : session.draft.trim(), ...(submittedReview ? { review: submittedReview } : {}), ...(board ? { boardImage: board.image } : {}) }
+    if (action) Object.assign(userMessage, learningActionMessage(action))
     const messages = [...session.messages, userMessage]
     setPendingMessage(userMessage)
     // Keep the draft recoverable until the full turn succeeds.
@@ -566,6 +578,7 @@ export default function App({ account, onProfileUpdated, authMode }: { account: 
       setArrivingReply({ conceptId: currentConcept.id, index: messages.length, content: nextOpening?.message ?? result.message })
       setConcepts(items => items.map(item => item.id === currentConcept.id ? { ...advanceConcept(item, messages, result, nextOpening), draft: '' } : item))
       if (board) whiteboard.current?.markSent(board.version)
+      setRevisingPaper(null)
       return true
     } catch (reason) {
       if (!submittedReview) updateSession({ draft: userMessage.content })
@@ -638,8 +651,8 @@ export default function App({ account, onProfileUpdated, authMode }: { account: 
             const reviewedMessage = message.role === 'assistant' ? session.messages[index - 1] : undefined
             const reviewedPaper = reviewedMessage?.review ? session.messages.find(item => item.paper?.id === reviewedMessage.review?.paperId)?.paper : undefined
             const divider = message.passedLevel && <div className="level-divider" role="status"><span>{levels.find(level => level.id === message.passedLevel)?.name} level passed!</span></div>
-            return <div key={`${sessionId}-${active}-${index}-${message.role}-${message.content}`}>{divider}<ChatMessage role={message.role} name={message.role === 'user' ? 'You' : appearance.name} content={message.content} className={message.paper ? 'chat-message-with-paper' : ''} avatarRef={avatarCharacter} arrive={message.role === 'assistant' && arrivingReply?.conceptId === active && arrivingReply.index === index && arrivingReply.content === message.content} onArrived={finishReplyArrival} feedback={quantitative && reviewedPaper && reviewedMessage?.review && <ReviewFeedback paper={reviewedPaper} review={reviewedMessage.review} />} boardImage={message.boardImage}>{quantitative && message.paper && currentConcept && <><svg className="paper-invite-arrow" viewBox="0 0 120 72" preserveAspectRatio="none" aria-hidden="true"><path d="M3 53 C27 64 42 51 57 36 S88 20 108 32" /><path d="M97 19 Q105 25 109 32 Q100 35 94 43" /></svg><PaperReview characterName={appearance.name} key={`${active}-${message.paper.id}`} paper={message.paper} review={session.messages.find(item => item.review?.paperId === message.paper?.id)?.review} busy={busy} error={error} onSubmit={review => send(review)} /></>}</ChatMessage></div>
-          })}{done && currentConcept && <div className="level-divider level-divider-final" role="status"><span>{levels[currentConcept.passed - 1]?.name} level passed!</span>{!assignment && currentConcept.passed < levels.length && <button type="button" className="level-divider-continue" disabled={busy} onClick={() => void raiseTarget(currentConcept, levels[currentConcept.passed].id)}>{busy ? 'Thinking' : 'Continue'}</button>}{sessionComplete(concepts) && currentConcept.passed < levels.length && <button type="button" className="level-divider-summary" onClick={() => navigate(`/summary?session=${encodeURIComponent(sessionId)}`)}>View session summary →</button>}</div>}</div>{done ? null : quantitative && currentConcept?.finalSummary && currentConcept.passed < 4 ? <div className="chat-complete" role="status"><strong>Analyze needs more evidence</strong><div className="learning-report"><p>{currentConcept.finalSummary}</p><strong>Analysis grade: {currentConcept.analysisGrade}%</strong></div><button type="button" className="send-button" disabled={busy} onClick={() => void retryAnalyze(currentConcept)}>{busy ? 'Thinking' : 'Try another paper set'}</button></div> : quantitative && currentConcept && levels[currentConcept.passed]?.id === 'analyze' && paper && !review ? <div className="chat-awaiting-grade">Sort all my papers to continue the conversation.</div> : <ChatComposer key={active} className="chat-composer" value={session.draft} onChange={draft => updateSession({ draft })} onSend={() => { void send() }} busy={busy} />}</>}{error && <p className="chat-error" role="alert">{error}</p>}</div></section></>}
+            return <div key={`${sessionId}-${active}-${index}-${message.role}-${message.content}`}>{divider}<ChatMessage role={message.role} name={message.assistance ? 'Prerequisite review' : message.role === 'user' ? 'You' : appearance.name} content={message.content} className={message.paper ? 'chat-message-with-paper' : ''} avatarRef={avatarCharacter} arrive={message.role === 'assistant' && arrivingReply?.conceptId === active && arrivingReply.index === index && arrivingReply.content === message.content} onArrived={finishReplyArrival} feedback={quantitative && reviewedPaper && reviewedMessage?.review && <ReviewFeedback paper={reviewedPaper} review={reviewedMessage.review} />} boardImage={message.boardImage}>{quantitative && message.paper && currentConcept && <><svg className="paper-invite-arrow" viewBox="0 0 120 72" preserveAspectRatio="none" aria-hidden="true"><path d="M3 53 C27 64 42 51 57 36 S88 20 108 32" /><path d="M97 19 Q105 25 109 32 Q100 35 94 43" /></svg><PaperReview characterName={appearance.name} key={`${active}-${message.paper.id}-${revisingPaper === message.paper.id}`} paper={message.paper} review={revisingPaper === message.paper.id ? undefined : session.messages.findLast(item => item.review?.paperId === message.paper?.id)?.review} busy={busy} error={error} onSubmit={review => send(review)} /></>}</ChatMessage></div>
+          })}{done && currentConcept && <div className="level-divider level-divider-final" role="status"><span>{levels[currentConcept.passed - 1]?.name} level passed!</span>{!assignment && currentConcept.passed < levels.length && <button type="button" className="level-divider-continue" disabled={busy} onClick={() => void raiseTarget(currentConcept, levels[currentConcept.passed].id)}>{busy ? 'Thinking' : 'Continue'}</button>}{sessionComplete(concepts) && currentConcept.passed < levels.length && <button type="button" className="level-divider-summary" onClick={() => navigate(`/summary?session=${encodeURIComponent(sessionId)}`)}>View session summary →</button>}</div>}</div>{done ? null : quantitative && currentConcept?.finalSummary && currentConcept.passed < 4 ? <div className="chat-complete" role="status"><strong>Analyze needs more evidence</strong><div className="learning-report"><p>{currentConcept.finalSummary}</p><strong>Rubric mastery: {currentConcept.analysisGrade}%</strong></div><button type="button" className="send-button" disabled={busy} onClick={() => void retryAnalyze(currentConcept)}>{busy ? 'Thinking' : 'Try another paper set'}</button></div> : quantitative && currentConcept && levels[currentConcept.passed]?.id === 'analyze' && paper && !review ? <div className="chat-awaiting-grade">Sort all my papers to continue the conversation.</div> : <ChatComposer key={active} className="chat-composer" value={session.draft} onChange={draft => updateSession({ draft })} onSend={() => { void send() }} busy={busy} />}{!done && !currentConcept?.finalSummary && <LearningActions busy={busy} needsCheck={Boolean(session.messages.at(-1)?.assistance)} canFinish={Boolean(quantitative && currentConcept?.passed === 3 && review && session.assessment)} canRevise={Boolean(quantitative && paper && review)} onRevise={() => setRevisingPaper(paper!.id)} onAction={action => { void send(undefined, action) }} />}</>}{error && <p className="chat-error" role="alert">{error}</p>}</div></section></>}
       {!started && setupStep === 'class-type' && pendingLearningType && <LearningTypeChangeDialog learningType={pendingLearningType} onConfirm={confirmLearningTypeChange} onCancel={() => setPendingLearningType(null)} />}
     </main>
   }
