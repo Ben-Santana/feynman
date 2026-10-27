@@ -275,7 +275,7 @@ function ChatPlayground({ dirtyPrompts, characterName }: { dirtyPrompts: boolean
   }
   async function send(submittedReview?: Review, action?: LearningAction): Promise<boolean> {
     if (!run || lock.current || finished || (!submittedReview && !action && !draft.trim())) return false
-    const user: Message = { role: 'user', content: submittedReview ? `I graded your papers: ${submittedReview.grades?.map((grade, index) => `paper ${index + 1}: ${grade.grade}${grade.selectedSteps.length ? ` (marked steps ${grade.selectedSteps.join(', ')})` : ''}`).join('; ')}.` : draft.trim(), ...(submittedReview ? { review: submittedReview } : {}), ...(action ? learningActionMessage(action) : {}) }
+    const user: Message = { role: 'user', content: submittedReview ? `I graded your papers: ${submittedReview.grades?.map((grade, index) => `paper ${index + 1}: ${grade.grade}${grade.selectedSteps.length ? ` (marked steps ${grade.selectedSteps.join(', ')})` : ''}`).join('; ')}.` : draft.trim(), ...(submittedReview ? { review: submittedReview } : {}), ...(action ? learningActionMessage() : {}) }
     const transcript = [...messages, user]
     lock.current = true; setBusy(true); setPending(user); setError('')
     try {
@@ -318,7 +318,7 @@ function ChatPlayground({ dirtyPrompts, characterName }: { dirtyPrompts: boolean
         </div>
         {run && (finished ? <div className="developer-test-ended" role="status">{result?.assessment?.complete ? `${nameLevel(run.level)} complete.` : 'Assessment finished.'} Start a new test to try again.</div> : awaitingReview ? <div className="developer-test-ended">Grade all three papers to continue.</div> : <ChatComposer key={composerVersion} className="developer-composer" value={draft} onChange={setDraft} onSend={() => { void send() }} busy={working} />)}
         {error && <p className="developer-error" role="alert">{error}</p>}
-        {run && !finished && <LearningActions busy={working} needsCheck={Boolean(messages.at(-1)?.assistance)} canFinish={Boolean(review && result?.assessment)} canRevise={Boolean(review)} onAction={action => { void send(undefined, action) }} onRevise={() => { setReviewVersion(value => value + 1); setRevisingReview(true) }} />}
+        {run && !finished && <LearningActions busy={working} canFinish={Boolean(review && result?.assessment)} canRevise={Boolean(review)} onAction={action => { void send(undefined, action) }} onRevise={() => { setReviewVersion(value => value + 1); setRevisingReview(true) }} />}
         {working && <p role="status">Checking evidence and preparing a response…</p>}
       </div>
       <section className="developer-terminal" aria-label="Conversation JSON log">
