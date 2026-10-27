@@ -5,7 +5,7 @@
 - Save browser-local workshop tests by account and test ID in an IndexedDB transaction. Migrate legacy arrays and refresh other tabs on save. Concurrent edits to the same ID remain last-save-wins.
 - Keep weak Quantitative Analyze reviews open. Support revising the latest paper review and explicitly finishing an assessment. Label report percentages as rubric mastery. Require explicit grade selection before stamping papers.
 - Focus follow-ups on one immediate objective, prioritizing cited contradictions. Change the probe after unsuccessful attempts. Question quality still depends on the model.
-- Provide labeled prerequisite assistance and a separate independent check. Reject duplicate practice questions in help. Require independently demonstrated transfer for ordinary Apply and Analyze completion.
+- Preserve labeled assistance and independent checks for saved conversations. The prerequisite-review request button was removed from the learning chat and Chat Workshop at the user's request. Require independently demonstrated transfer for ordinary Apply and Analyze completion.
 - Render simulated measurements and candidate properties as safe semantic tables. Improve prediction staging, scenario assumptions, and supplied Design Apply candidates. Numerical-consistency work was deferred; no domain-specific circuit generator is included.
 - Remove ordinary strategy-planning overhead, cache successful evaluations for exact scoped retries, and deduplicate evaluator quotes through shared evidence IDs. Preserve citation, reasoning, opportunity, contradiction, independence, and transfer validation.
 - Deduplicate React runtimes in Vite to fix fresh development startup.
