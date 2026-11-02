@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { compareQuestions } from './strategyComparison.js';
-import { comparisonCases, retrieveStrategies, strategies } from './questionStrategies.js';
+import { comparisonCases, retrieveStrategies, strategies, strategySupportsInput } from './questionStrategies.js';
 import { chat as conversationChat, validate } from './chat.js';
 import { strategyLevelInstructions, strategyExampleContext, clearQuestionInstructions, coreGenerationContext, validateSelection } from './strategyPlanning.js';
 import { Readable } from 'node:stream';
@@ -14,13 +14,14 @@ function fakeQuery({ complete = false, caseId = 'inertia' } = {}) {
   return async (instructions, messages, response) => {
     if (response.name === 'evaluate_learning') {
       const aspects = response.schema.properties.criteria.items.properties.aspect.enum;
-      const judgment = { status: complete ? 'supported' : 'flawed', result: complete ? 'correct' : 'incorrect', evidence: [{ messageIndex: 3, quote: fixture.messages[3].content }] };
+      const judgment = { status: complete ? 'supported' : 'flawed', result: complete ? 'correct' : 'incorrect', evidence: [{ messageIndex: 3, quote: fixture.messages.at(-1).content }] };
       return { reason: 'Reasoning needs clarification.', nextQuestionFocus: 'Motion after the push.', criteria: aspects.map(aspect => ({ aspect, ...judgment })), task: judgment };
     }
     if (response.name === 'select_strategy') return { strategyId: 'remove-condition', rationale: 'Probe the state after the initiating condition ends.', plan: {
-      targetMessageIndex: 3, targetQuote: fixture.messages[3].content, rubricItem: fixture.aspects[0],
+      targetMessageIndex: fixture.messages.length - 1, targetQuote: fixture.messages.at(-1).content, rubricItem: fixture.aspects[0],
       objective: 'Distinguish continued motion from a continued interaction.', scenario: 'The object moves on a horizontal frictionless surface after contact ends.',
       assumptions: ['No horizontal external interaction'], heldFixed: ['Surface and object'], varied: ['Contact with the initiating agent'],
+      ...(fixture.expectedStrategyId === 'background-knowledge-bridge' ? { background: { action: 'probe', originalMessageIndex: 0, prerequisite: 'The prerequisite relationship named by the student', probeLevel: 'understand', returnTarget: fixture.aspects[0] } } : {}),
       construction: 'Ask about one consequence after contact ends.', prerequisitesSatisfied: 'The student discusses the state after the push.', limitations: ['A prediction alone is ambiguous.'],
       responseSignals: [{ hypothesis: 'Stored push', responsePattern: 'The object slows because the push expires.', interpretation: 'Supports the stored-push hypothesis if friction is excluded.' }, { hypothesis: 'No net influence', responsePattern: 'Velocity remains constant.', interpretation: 'Needs a specific explanation before establishing understanding.' }],
     } };
@@ -79,12 +80,13 @@ test('every supported level retrieves strategies with matching examples and gene
   for (const level of ['remember', 'understand', 'apply', 'analyze']) {
     const input = { ...comparisonCases[0], level };
     const candidates = retrieveStrategies({}, input);
-    assert.deepEqual(candidates.map(({ strategy }) => strategy.id), strategies.filter(strategy => strategy.levels.includes(level)).map(strategy => strategy.id));
+    assert.deepEqual(candidates.map(({ strategy }) => strategy.id), strategies.filter(strategy => strategySupportsInput(strategy, input)).map(strategy => strategy.id));
     assert.ok(candidates.length > 0);
     assert.ok(strategyLevelInstructions(level).length > 0);
     const examples = strategyExampleContext(candidates, level);
     for (const { strategy } of candidates) {
       assert.ok(examples.some(example => example.strategyId === strategy.id));
+      if (strategy.id === 'background-knowledge-bridge') continue; // Its required persisted context is covered in backgroundQuestions.test.js.
       const context = coreGenerationContext(input, strategy, {});
       assert.ok(context.strategy.constructionRules.includes(strategy.levelGuidance[level]));
     }
@@ -109,7 +111,7 @@ test('new strategy generation retains observable settings and learning type with
   const { plan } = await fakeQuery()('', [], { name: 'select_strategy' });
   const adapted = { ...plan, scenario: 'An explicit system, interval, and observed transfers.', assumptions: ['No unreported boundary flows.'] };
   const originalIds = new Set(['controlled-comparison', 'boundary-case', 'remove-condition', 'quantity-versus-change', 'reconcile-claims', 'representation-change', 'clarify-specific-term']);
-  const additions = strategies.filter(strategy => !originalIds.has(strategy.id) && strategy.levels.includes(input.level));
+  const additions = strategies.filter(strategy => !originalIds.has(strategy.id) && strategy.id !== 'background-knowledge-bridge' && strategy.levels.includes(input.level));
   assert.ok(additions.length > 0);
   for (const strategy of additions) {
     const context = coreGenerationContext(input, strategy, adapted);
@@ -352,6 +354,12 @@ test('every comparison uses its saved level-pipeline rubric without runtime rege
     assert.deepEqual(fixture.aspects, fixture.reviewedRubricItems || record.items);
     if (fixture.reviewedRubricItems) assert.deepEqual(fixture.rubricGeneration.generatedItems, record.items);
     assert.deepEqual(record.input, { topic: fixture.topic, level: fixture.level, learningType: fixture.learningType });
+    if (fixture.expectedStrategyId === 'background-knowledge-bridge') {
+      assert.equal(fixture.rubricGeneration.pipeline, 'authored_fixture_scope_review');
+      assert.equal(fixture.rubricGeneration.generatedAt, undefined);
+      assert.doesNotThrow(() => validate(fixture));
+      continue;
+    }
     assert.equal(fixture.rubricGeneration.pipeline, 'generateLevelRubric');
     assert.equal(fixture.rubricGeneration.endpoint, '/api/developer/rubric');
     assert.match(fixture.rubricGeneration.promptVersion, /^[a-f0-9]{64}$/);
@@ -363,7 +371,7 @@ test('every comparison uses its saved level-pipeline rubric without runtime rege
 test('coverage fixtures exercise every eligible strategy-level pair and do not leak benchmark expectations', async () => {
   const coverage = comparisonCases.filter(item => item.expectedStrategyId);
   const expected = strategies.flatMap(strategy => strategy.levels.map(level => `${strategy.id}:${level}`)).sort();
-  assert.equal(coverage.length, 51);
+  assert.equal(coverage.length, 54);
   assert.deepEqual(coverage.map(item => `${item.expectedStrategyId}:${item.level}`).sort(), expected);
   for (const fixture of coverage) {
     assert.doesNotThrow(() => validate(fixture));
@@ -407,7 +415,7 @@ test('local comparison API lists fixed cases without a provider and returns vers
   t.after(() => server.close());
   const listed = await invoke(server);
   assert.equal(listed.status, 200);
-  assert.equal(listed.data.cases.length, 67);
+  assert.equal(listed.data.cases.length, 70);
   assert.deepEqual(listed.data.cases[0].messages, comparisonCases[0].messages);
   assert.equal((await invoke(server, { method: 'POST', body: { caseId: 'not-real' } })).status, 400);
   const generated = await invoke(server, { method: 'POST', body: { caseId: 'inertia', messages: [] } });

@@ -27,7 +27,7 @@ const model = argument('--model') || (provider === 'chatgpt' ? (await request('/
 if (model) headers['X-Feynman-Model'] = model;
 const listed = await request('/api/developer/question-comparison');
 const allCases = listed.cases.filter(item => item.expectedStrategyId);
-if (allCases.length !== 51) throw new Error('Expected all 51 supported strategy-level cases from the running API. Restart the backend after adding them.');
+if (allCases.length !== 54) throw new Error('Expected all 54 supported strategy-level cases from the running API. Restart the backend after adding them.');
 const selectedIds = argument('--case-ids')?.split(',');
 if (selectedIds?.some(id => !allCases.some(item => item.id === id))) throw new Error('Unknown selected case.');
 const cases = selectedIds ? allCases.filter(item => selectedIds.includes(item.id)) : allCases;

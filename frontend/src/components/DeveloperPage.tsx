@@ -280,7 +280,7 @@ function ChatPlayground({ dirtyPrompts, characterName }: { dirtyPrompts: boolean
     lock.current = true; setBusy(true); setPending(user); setError('')
     try {
       const response = await turn(run, transcript)
-      setMessages([...transcript, { role: 'assistant', content: response.message, ...(response.assistance ? { assistance: true } : {}), ...(response.independentCheck ? { independentCheck: true } : {}), ...(response.paper ? { paper: response.paper } : {}) }]); setResult(response); setDraft(''); setRevisingReview(false)
+      setMessages([...transcript, { role: 'assistant', content: response.message, ...(response.background ? { background: response.background } : {}), ...(response.assistance ? { assistance: true } : {}), ...(response.independentCheck ? { independentCheck: true } : {}), ...(response.paper ? { paper: response.paper } : {}) }]); setResult(response); setDraft(''); setRevisingReview(false)
       return true
     } catch (reason) { setError(errorText(reason)); return false }
     finally { lock.current = false; setBusy(false); setPending(null) }

@@ -3,6 +3,7 @@ import { InvalidOutputError, retryStructuredOutput, repairQuery } from './struct
 import { retrieveStrategies } from './questionStrategies.js';
 import { targetedQuestionInstructions, assertTargetedQuestion, questionIntegrityInstructions, assertQuestionIntegrity } from './questionTargeting.js';
 import { selectionTool, validateSelection, strategySelectionPrompt, strategyLevelInstructions, strategyExampleContext, clearQuestionInstructions, coreGenerationContext, coreGenerationInstructions } from './strategyPlanning.js';
+import { backgroundInstructions, validateBackgroundHistory } from './backgroundQuestions.js';
 
 
 export async function generateStrategyQuestion(input, baseline, generation, query, { catalog, comparisonMode = 'open', intendedStrategyId = null, caseId = 'conversation', trace = () => query } = {}) {
@@ -17,13 +18,15 @@ export async function generateStrategyQuestion(input, baseline, generation, quer
   let selection = null;
   const fallback = (stage, reason) => {
     const coverageGap = { caseId, stage, diagnosticObjective: state.diagnosticObjective, reason, recordedAt: new Date().toISOString() };
+    const pending = validateBackgroundHistory(input);
+    const background = pending?.phase === 'probe' ? { ...pending, phase: 'exit' } : null;
     calls.push({ branch: 'rubric fallback', name: 'strategy_coverage_gap', response: coverageGap, durationMs: 0 });
-    return { ...common, selection, strategy: null, questionPlan: null, enhanced: { ...baseline, fallback: true }, coverageGap, notice: 'No suitable strategy application. Reusing the default rubric-based question.' };
+    return { ...common, selection, strategy: null, questionPlan: null, enhanced: { ...baseline, fallback: true, ...(background ? { background } : {}) }, coverageGap, notice: 'No suitable strategy application. Reusing the default rubric-based question.' };
   };
   if (!candidates.length) return fallback('retrieval', 'No design-reviewed strategy is compatible with the active level.');
   try {
     selection = await retryStructuredOutput(async (attempt, signal) => {
-      const result = await repairQuery(traced('strategy selector and planner'), attempt, signal)(strategySelectionPrompt(input.level),
+      const result = await repairQuery(traced('strategy selector and planner'), attempt, signal)(`${strategySelectionPrompt(input.level)}\n${backgroundInstructions(input)}`,
         [{ role: 'user', content: JSON.stringify({ state, rubricAssessment: baseline.assessment, candidates, exampleContext, input }) }], selectionTool(candidates, input));
       validateSelection(result, candidates, input);
       return result;
@@ -44,7 +47,7 @@ export async function generateStrategyQuestion(input, baseline, generation, quer
     if (typeof result?.message !== 'string' || !result.message.trim() || result.message.length > 12000 || result.message.trim().toLowerCase() === input.messages.at(-2).content.trim().toLowerCase()) throw new InvalidOutputError('Invalid or repeated strategy question.');
     assertTargetedQuestion(result.message);
     assertQuestionIntegrity(result.message);
-    return { message: result.message, expression: result.expression, assessment: baseline.assessment };
+    return { message: result.message, expression: result.expression, assessment: baseline.assessment, ...(generationContext.background ? { background: generationContext.background } : {}) };
   }); } catch (error) {
     if (!(error instanceof InvalidOutputError)) throw error;
     return fallback('question_validation', error.message);

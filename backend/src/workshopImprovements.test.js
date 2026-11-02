@@ -17,7 +17,7 @@ test('production follow-up needs only evaluator and reply, targeting one misconc
     if (tool.name === 'evaluate_refined') return assessment(messages);
     assert.match(system, /ONE small diagnostic question/);
     assert.match(system, /Do not request a full solution, multiple metrics/);
-    return { message: 'What happens to a bacterium that cannot resist the treatment?', expression: 'confused' };
+    return { strategyChoice: { strategyId: 'none', rationale: 'No suitable operation for this fixture.', targetQuote: '', rubricItem: '' }, message: 'What happens to a bacterium that cannot resist the treatment?', expression: 'confused' };
   });
   assert.deepEqual(calls, ['evaluate_refined', 'respond_to_student']);
   assert.equal(result.assessment.complete, false);
@@ -33,7 +33,7 @@ test('a cited contradiction takes priority over the first flawed rubric row', as
       return value;
     }
     assert.match(system, /unresolved requirement: "Explain signed external impulse"/);
-    return { message: 'How does a leftward external impulse affect your signed momentum balance?', expression: 'confused' };
+    return { strategyChoice: { strategyId: 'none', rationale: 'No suitable operation for this fixture.', targetQuote: '', rubricItem: '' }, message: 'How does a leftward external impulse affect your signed momentum balance?', expression: 'confused' };
   });
 });
 
@@ -47,7 +47,7 @@ test('reply failure reuses completed evaluation only for exact scoped prompt and
   await assert.rejects(chat(input(), query, undefined, options), /Disconnected/);
   const result = await chat(input(), async (_, messages, tool) => {
     if (tool.name === 'evaluate_refined') assert.fail('Should reuse validated assessment');
-    return { message: 'What happens to the susceptible bacteria?', expression: 'attentive' };
+    return { strategyChoice: { strategyId: 'none', rationale: 'No suitable operation for this fixture.', targetQuote: '', rubricItem: '' }, message: 'What happens to the susceptible bacteria?', expression: 'attentive' };
   }, undefined, options);
   assert.equal(result.evaluationReused, true);
   assert.equal(evaluations, 1);
@@ -77,7 +77,7 @@ test('weak quantitative analysis stays open until explicit finish', async () => 
     names.push(tool.name);
     if (tool.name === 'evaluate_refined') return assessment(messages);
     if (tool.name === 'summarize_learning') return { summary: 'The momentum reasoning needs more evidence.' };
-    return { message: 'What sign did you use for the leftward velocity?', expression: 'confused' };
+    return { strategyChoice: { strategyId: 'none', rationale: 'No suitable operation for this fixture.', targetQuote: '', rubricItem: '' }, message: 'What sign did you use for the leftward velocity?', expression: 'confused' };
   };
   const open = await chat(body, query);
   assert.equal(open.finalSummary, undefined);
@@ -113,7 +113,7 @@ test('prerequisite help is labeled assistance and readiness generates a fresh ch
   body.messages.push({ role: 'assistant', content: help.message, assistance: true }, { role: 'user', content: 'Ready.' });
   const check = await chat(body, async (system, _, tool) => {
     assert.equal(tool.name, 'respond_to_student'); assert.match(system, /DIFFERENT self-contained situation/);
-    return { message: 'A beetle population contains inherited color variants; what would you predict if predators favor one color?', expression: 'attentive' };
+    return { strategyChoice: { strategyId: 'none', rationale: 'No suitable operation for this fixture.', targetQuote: '', rubricItem: '' }, message: 'A beetle population contains inherited color variants; what would you predict if predators favor one color?', expression: 'attentive' };
   });
   assert.equal(check.independentCheck, true); assert.equal(check.assessment, null);
   assert.ok(createEvaluationContext(body).criteria.every(c => c.requiresIndependent));
@@ -161,7 +161,7 @@ for (const learningType of ['theoretical', 'quantitative', 'experimental', 'desi
       if (tool.name === 'summarize_learning') return { summary: 'Independent changed-condition reasoning demonstrated.' };
       assert.match(system, /ONE materially changed condition/);
       assert.match(system, /do not repeat every rubric item/i);
-      return { message: 'If the external condition changes, how would your conclusion change, and why?', expression: 'attentive' };
+      return { strategyChoice: { strategyId: 'none', rationale: 'No suitable operation for this fixture.', targetQuote: '', rubricItem: '' }, message: 'If the external condition changes, how would your conclusion change, and why?', expression: 'attentive' };
     };
     const original = await chat(body, query);
     assert.equal(original.assessment.complete, false);

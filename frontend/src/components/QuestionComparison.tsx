@@ -3,14 +3,14 @@ import { useEffect, useRef, useState } from 'react'
 import { aiHeaders, fruitFlySelected } from '../aiPreferences'
 import { ChatText } from './ChatText'
 
-type Fixture = { id: string; title: string; topic: string; level: string; group?: string; expectedStrategyId?: string; comparisonMode?: string; rubricReview?: { method: string }; aspects: string[]; rubricGeneration?: { generatedAt: string; provider: string; model: string; promptVersion: string; pipeline: string; generatedItems?: string[] }; messages: { role: string; content: string }[] }
+type Fixture = { id: string; title: string; topic: string; level: string; group?: string; expectedStrategyId?: string; comparisonMode?: string; rubricReview?: { method: string }; aspects: string[]; rubricGeneration?: { generatedAt?: string; provider?: string; model?: string; promptVersion?: string; pipeline: string; generatedItems?: string[] }; messages: { role: string; content: string }[] }
 export function FixedConversation({ fixture, open = false }: { fixture: Fixture; open?: boolean }) {
   return <details open={open}><summary>Fixed conversation</summary>
     <dl className="comparison-input-labels"><dt>Test folder</dt><dd>{fixture.group || 'FCI Direct Test'}</dd><dt>Concepts</dt><dd>{fixture.topic}</dd><dt>Learning level</dt><dd>{fixture.level[0].toUpperCase() + fixture.level.slice(1)}</dd></dl>
     {fixture.expectedStrategyId && <p className="developer-config-note">Targeted test: {fixture.expectedStrategyId}. The strategy branch may apply this structure or abstain. The default branch receives no target-strategy label or review guide.</p>}
     <h4 className="comparison-rubric-heading">Rubric items</h4><ol>{fixture.aspects.map(aspect => <li key={aspect}>{aspect}</li>)}</ol>
-    {fixture.rubricGeneration && <p className="developer-muted">Generated through the rubric pipeline{fixture.rubricReview ? ', then narrowed by an authored fixture-scope review' : ''} · {fixture.rubricGeneration.provider} / {fixture.rubricGeneration.model} · {new Date(fixture.rubricGeneration.generatedAt).toLocaleString()}</p>}
-    {fixture.rubricGeneration?.generatedItems && <details><summary>Original generated topic rubric</summary><ol>{fixture.rubricGeneration.generatedItems.map(item => <li key={item}>{item}</li>)}</ol></details>}
+    {fixture.rubricGeneration && <p className="developer-muted">{fixture.rubricGeneration.pipeline === 'authored_fixture_scope_review' ? 'Authored fixture rubric' : <>Generated through the rubric pipeline{fixture.rubricReview ? ', then narrowed by an authored fixture-scope review' : ''} · {fixture.rubricGeneration.provider} / {fixture.rubricGeneration.model} · {new Date(fixture.rubricGeneration.generatedAt || '').toLocaleString()}</>}</p>}
+    {fixture.rubricGeneration?.pipeline !== 'authored_fixture_scope_review' && fixture.rubricGeneration?.generatedItems && <details><summary>Original generated topic rubric</summary><ol>{fixture.rubricGeneration.generatedItems.map(item => <li key={item}>{item}</li>)}</ol></details>}
     <div className="comparison-transcript">{fixture.messages.map((message, index) => <p key={index}><strong>{message.role === 'user' ? 'Student' : 'Feynman'}:</strong> {message.content}</p>)}</div>
   </details>
 }

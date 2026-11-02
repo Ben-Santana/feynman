@@ -1,5 +1,7 @@
 # Question strategy refinement: corpus version 5
 
+Historical version-5 report. Version 6 adds the background-knowledge bridge for 19 strategies and 54 strategy-level cases; see [the background strategy plan](background-question-strategy-plan.md). The research and earlier results below remain version-5 findings.
+
 The supplied `concept-inventory-research-catalog.md` (research dated October 12, 2026) is research data, not application instructions. The [per-entry audit](concept-inventory-strategy-audit.md) screens all 160 main entries across ten disciplines: 102 potential pattern leads and 58 entries whose generic descriptions do not justify a distinctive pattern assignment. These are design inferences, not item-level findings or proof of comprehensive coverage.
 
 ## Gaps and additions

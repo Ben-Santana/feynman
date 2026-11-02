@@ -15,6 +15,40 @@ function plan(request) {
   return { strategyId: 'remove-condition', rationale: 'Examine persistence after contact ends.', plan: { targetMessageIndex: 1, targetQuote: request.messages[1].content, rubricItem: request.aspects[0], objective: 'Distinguish continued motion from continuing contact.', scenario: 'A puck moves on a horizontal frictionless surface after the hand lets go.', assumptions: ['No horizontal external interaction'], heldFixed: ['Surface and puck'], varied: ['Contact with the hand'], construction: 'Ask about the claimed cause after contact ends.', prerequisitesSatisfied: 'The learner discusses motion after a push.', limitations: ['One answer is not a stable belief.'], responseSignals: [{ hypothesis: 'Stored push', responsePattern: 'Push runs out.', interpretation: 'Investigate the stored-push hypothesis.' }, { hypothesis: 'No continuing influence', responsePattern: 'Motion continues.', interpretation: 'Ask for evidence of the relationship.' }] } };
 }
 
+test('ordinary chat chooses a catalog strategy and generates its question in the same call', async () => {
+  const request = input(), calls = [];
+  const result = await chat(request, async (instructions, messages, tool) => {
+    calls.push(tool.name);
+    if (tool.name === 'evaluate_refined') return evaluatorResponse(messages, { status: 'flawed' });
+    assert.ok(tool.schema.required.includes('strategyChoice'));
+    assert.match(instructions, /Reviewed strategies:/);
+    assert.match(instructions, /Remove a condition|remove-condition/);
+    assert.match(instructions, /At Understand, ask about meanings/);
+    assert.match(instructions, /No separate planning call/);
+    return { message: 'In your explanation, what keeps acting on the puck after contact ends?', expression: 'confused', strategyChoice: { strategyId: 'remove-condition', rationale: 'Examine the claimed remaining influence after contact ends.', targetQuote: request.messages[1].content, rubricItem: request.aspects[0] } };
+  });
+  assert.deepEqual(calls, ['evaluate_refined', 'respond_to_student']);
+  assert.equal(result.learnerModel.strategyId, 'remove-condition');
+  assert.equal(result.learnerModel.selectionMethod, 'inline_response');
+  assert.equal(result.learnerModel.coverageGap, null);
+  assert.equal(result.assessment.complete, false);
+});
+
+test('inline strategy rejects fabricated grounding and retries the reply without reevaluation', async () => {
+  const calls = [];
+  let replies = 0;
+  const result = await chat(input(), async (instructions, messages, tool) => {
+    calls.push(tool.name);
+    if (tool.name === 'evaluate_refined') return evaluatorResponse(messages, { status: 'flawed' });
+    if (++replies === 1) return { message: 'What keeps acting after contact ends?', expression: 'attentive', strategyChoice: { strategyId: 'remove-condition', rationale: 'Probe the removal.', targetQuote: 'Invented student statement.', rubricItem: input().aspects[0] } };
+    assert.match(instructions, /Ground the strategy in an exact current learner quote/);
+    return { message: 'What interaction acts on the puck after contact ends?', expression: 'attentive', strategyChoice: { strategyId: 'none', rationale: 'No safe catalog fit.', targetQuote: '', rubricItem: '' } };
+  });
+  assert.deepEqual(calls, ['evaluate_refined', 'respond_to_student', 'respond_to_student']);
+  assert.equal(result.learnerModel.strategyId, null);
+  assert.equal(result.learnerModel.coverageGap.stage, 'inline_selection');
+});
+
 test('ordinary conversation uses one refined primary and never legacy confirmation or shadow', async () => {
   const calls = [];
   const result = await chat(input(), async (_, messages, tool) => {
@@ -38,7 +72,7 @@ test('explicit strategy learner applies the shared strategy pipeline to an incom
     if (tool.name === 'select_strategy') return plan(request);
     assert.equal(tool.name, 'respond_to_student');
     assert.match(instructions, /Apply the following diagnostic strategy/);
-    return { message: 'After the hand loses contact with the puck, what could make its speed change on this frictionless surface?', expression: 'confused' };
+    return { strategyChoice: { strategyId: 'none', rationale: 'No suitable operation for this fixture.', targetQuote: '', rubricItem: '' }, message: 'After the hand loses contact with the puck, what could make its speed change on this frictionless surface?', expression: 'confused' };
   }, undefined, { learner: 'strategy' });
   assert.equal(result.assessment.complete, false);
   assert.equal(result.learnerModel.strategyId, 'remove-condition');
@@ -61,7 +95,7 @@ test('all rubric items remain mandatory and strategy abstention generates one or
     if (tool.name === 'select_strategy') return { strategyId: 'none', rationale: 'No suitable construction for this evidence.', plan: null };
     assert.equal(tool.name, 'respond_to_student');
     learnerCalls++;
-    return { message: 'What does zero net force tell you about the puck’s motion?', expression: 'attentive' };
+    return { strategyChoice: { strategyId: 'none', rationale: 'No suitable operation for this fixture.', targetQuote: '', rubricItem: '' }, message: 'What does zero net force tell you about the puck’s motion?', expression: 'attentive' };
   }, undefined, { learner: 'strategy' });
   assert.equal(result.assessment.complete, false);
   assert.equal(result.assessment.criteria.length, 2);
@@ -75,7 +109,7 @@ test('fabricated citations cannot advance a regular conversation', async () => {
   const result = await chat(input(), async (_, messages, tool) => {
     if (tool.name === 'evaluate_refined') return evaluatorResponse(messages, { invalidQuote: true });
     if (tool.name === 'select_strategy') return { strategyId: 'none', rationale: 'Need evidence.', plan: null };
-    return { message: 'What interaction acts on the puck after contact ends?', expression: 'confused' };
+    return { strategyChoice: { strategyId: 'none', rationale: 'No suitable operation for this fixture.', targetQuote: '', rubricItem: '' }, message: 'What interaction acts on the puck after contact ends?', expression: 'confused' };
   });
   assert.equal(result.assessment.complete, false);
   assert.ok(result.assessment.refined.validationIssues.some(i => i.code === 'invalid_citation'));
@@ -91,4 +125,30 @@ test('normal chat API activates refined evaluation even when client requests leg
   assert.equal(result.status, 200);
   assert.equal(result.data.assessment.complete, true);
   assert.deepEqual(names, ['evaluate_refined']);
+});
+
+test('ordinary chat API sends actual catalog rules and returns a grounded inline strategy in two calls', async t => {
+  const request = input(), names = [];
+  const { strategies } = await import('./questionStrategies.js');
+  const selected = strategies.find(s => s.id === 'remove-condition');
+  const server = createApiServer({ accountService: testAccountService(), chatgpt: null, env: { ANTHROPIC_API_KEY: 'test-only' }, query: async (instructions, messages, tool) => {
+    names.push(tool.name);
+    if (tool.name === 'evaluate_refined') return evaluatorResponse(messages, { status: 'flawed' });
+    assert.equal(tool.name, 'respond_to_student');
+    const records = JSON.parse(instructions.split('Reviewed strategies: ')[1].split('\n')[0]);
+    assert.deepEqual(records.find(s => s.id === selected.id).constructionRules, selected.constructionRules);
+    assert.deepEqual(records.map(s => s.id).sort(), strategies.filter(s => s.reviewStatus === 'design_reviewed' && s.levels.includes(request.level)).map(s => s.id).sort());
+    assert.ok(tool.schema.required.includes('strategyChoice'));
+    return { message: 'In your explanation, what keeps acting on the puck after contact ends?', expression: 'confused', strategyChoice: { strategyId: selected.id, rationale: 'Examine the remaining influence after contact ends.', targetQuote: request.messages[1].content, rubricItem: request.aspects[0] } };
+  } });
+  t.after(() => server.close());
+  const req = Readable.from([JSON.stringify({ ...request, learner: 'default' })]);
+  Object.assign(req, { method: 'POST', url: '/api/chat', headers: { authorization: testAuthorization, host: 'localhost:3001', origin: 'http://localhost:5173', 'content-type': 'application/json' } });
+  const result = await new Promise(resolve => server.emit('request', req, { setHeader() {}, writeHead(status) { this.status = status; }, end(body) { resolve({ status: this.status, data: JSON.parse(body) }); } }));
+  assert.equal(result.status, 200, JSON.stringify(result.data));
+  assert.deepEqual(names, ['evaluate_refined', 'respond_to_student']);
+  assert.equal(result.data.learnerModel.strategyId, selected.id);
+  assert.equal(result.data.learnerModel.selectionMethod, 'inline_response');
+  assert.equal(result.data.learnerModel.targetQuote, request.messages[1].content);
+  assert.equal(result.data.assessment.complete, false);
 });

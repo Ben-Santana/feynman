@@ -1,5 +1,5 @@
 {
-  "version": "question-strategies-5",
+  "version": "question-strategies-6",
   "strategies": [
     {
       "id": "controlled-comparison",
@@ -1216,6 +1216,86 @@
         }
       ],
       "exampleUse": "Use authored examples for structure only. They are not inventory items or validated adaptations. Never copy their topic assumptions or tentative interpretations into another setting."
+    },
+    {
+      "id": "background-knowledge-bridge",
+      "title": "Connect background knowledge to the task",
+      "reviewStatus": "design_reviewed",
+      "validationStatus": "not_empirically_validated",
+      "levels": [
+        "understand",
+        "apply",
+        "analyze"
+      ],
+      "objective": "Temporarily elicit one prerequisite needed for a harder task and return to that task.",
+      "useWhen": "An exact learner statement suggests a specific prerequisite obstacle with a clear connection to an unresolved rubric item. Treat the gap as tentative.",
+      "requirements": [
+        "An original question and unresolved rubric item",
+        "Actual learner evidence for a plausible prerequisite obstacle",
+        "One prerequisite and an explicit return target",
+        "A bounded sequence persisted on assistant messages"
+      ],
+      "avoidWhen": [
+        "The prerequisite has already been established",
+        "Confusing wording or missing observable data is the obstacle",
+        "Only a short answer, mistake, or frustration suggests a gap",
+        "A previous background detour already addressed this rubric item in the current stage",
+        "Quantitative Analyze paper flow or a Remember task"
+      ],
+      "constructionRules": [
+        "Ask one focused prerequisite question without supplying its principle, formula, answer, or connection to the harder task.",
+        "Use background action probe initially, then return to connect the idea to the original task once established.",
+        "Allow at most two prerequisite probes; then return or exit by reframing an accessible part of the original task.",
+        "Respect a student request to change direction. Do not label an emotion from an error or terse reply.",
+        "Preserve the original task level and rubric, and use separate probeLevel metadata for a temporary step down."
+      ],
+      "interpretationRules": [
+        "An answer may establish the prerequisite without demonstrating the original task.",
+        "A failed probe is not automatically an attempted complete solution.",
+        "Credit genuine volunteered original-task reasoning when it meets all existing evidence and independence/transfer gates."
+      ],
+      "examples": [
+        {
+          "level": "understand",
+          "illustrativeOnly": true,
+          "context": "A student explains a falling object at constant speed but says they cannot recall how net force and acceleration are related.",
+          "question": "How is acceleration related to the net force on an object?",
+          "diagnosticPurpose": "Retrieve the prerequisite relationship, then ask the student to connect it to the original constant-speed explanation. This answer alone does not establish that explanation.",
+          "probeLevel": "understand",
+          "returnQuestion": "How does that relationship help explain the constant speed in the original situation?"
+        },
+        {
+          "level": "apply",
+          "illustrativeOnly": true,
+          "context": "A student is trying to use momentum conservation in a collision but explicitly cannot recall how mass and velocity relate to momentum.",
+          "question": "How is an object’s momentum related to its mass and velocity?",
+          "diagnosticPurpose": "Ask for the missing prerequisite without solving the collision; then return to using it in the original momentum account.",
+          "probeLevel": "understand",
+          "returnQuestion": "How would you use that relationship in the momentum account for our collision?"
+        },
+        {
+          "level": "analyze",
+          "illustrativeOnly": true,
+          "context": "A student analyzing a simulated beetle population says they do not understand how survival is connected to which individuals leave offspring.",
+          "question": "How can surviving long enough to reproduce affect which individuals leave offspring?",
+          "diagnosticPurpose": "Establish one prerequisite relationship before returning to analysis of the population data. Do not supply the explanation of the observed frequency shift.",
+          "probeLevel": "understand",
+          "returnQuestion": "How does that connection help you examine the explanation of the changing trait frequencies in our beetle population?"
+        }
+      ],
+      "exampleUse": "Original authored illustrations of a questioning sequence, not validated tasks or templates to copy.",
+      "levelGuidance": {
+        "understand": "A probe may recall or explain a prerequisite within the established setting. Do not introduce a new application exercise. Return to the original meaning or relationship.",
+        "apply": "A probe may recall, explain, or use a simpler prerequisite. Return to using the principle in the original task; recall alone cannot complete Apply.",
+        "analyze": "A probe may recall, explain, or use a simpler prerequisite. Return to the original relationship, assumption, or error analysis. Exclude the Quantitative Analyze paper flow."
+      },
+      "distinctFrom": "Recall-specific-element asks for a fact in a recall task; clarify-specific-term resolves wording ambiguity. This strategy probes a prerequisite of a harder task and persists an obligation to return. Prefer a direct mechanism or reasoning probe when prerequisite knowledge is already established.",
+      "excludedTasks": [
+        {
+          "level": "analyze",
+          "learningType": "quantitative"
+        }
+      ]
     }
   ]
 }

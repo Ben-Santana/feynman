@@ -64,6 +64,10 @@ if (new Set(comparisonCases.map(item => item.id)).size !== comparisonCases.lengt
 // The small catalog is retrieved by review status and level compatibility.
 // Topic-word overlap is not evidence that a diagnostic strategy applies.
 export function retrieveStrategies(_state, input, catalog = strategies) {
-  return catalog.filter(strategy => strategy.reviewStatus === 'design_reviewed' && strategy.levels.includes(input.level))
+  return catalog.filter(strategy => strategy.reviewStatus === 'design_reviewed' && strategySupportsInput(strategy, input))
     .map(strategy => ({ strategy, eligibility: 'Design reviewed and compatible with the active level' }));
+}
+
+export function strategySupportsInput(strategy, input) {
+  return strategy.levels.includes(input.level) && !(strategy.excludedTasks || []).some(task => task.level === input.level && task.learningType === (input.learningType || 'quantitative'));
 }

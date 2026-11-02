@@ -1,16 +1,22 @@
 import { questionIntegrityInstructions } from './questionTargeting.js';
 import { InvalidOutputError } from './structuredOutput.js';
+import { backgroundChoiceSchema, backgroundForChoice, backgroundStrategyId } from './backgroundQuestions.js';
+import { strategySupportsInput } from './questionStrategies.js';
 
 const text = { type: 'string' };
 const strings = { type: 'array', items: text };
 export const clearQuestionInstructions = 'Write a question the student can understand on the first reading. Use familiar words from their explanation and focus on one diagnostic point. Include enough context and detail to make the question unambiguous and probe what the student understands; use multiple sentences when helpful. Choose length according to what the student needs to understand and answer the question, without a word-count target. Do not introduce unfamiliar technical terms, stack qualifications, embed several comparisons, or translate a simple claim into formal terminology. If a technical term is essential but not established in the transcript, ask about the simpler underlying idea instead. Avoid unnecessary confused/unsure preambles and detail that adds complexity without helping the diagnostic target. Preserve a specific diagnostic target without giving the answer; shorter but vague is not acceptable.';
-export function strategyLevelInstructions(level) {
+function standardLevelInstructions(level) {
   if (level === 'remember') return 'At Remember, ask only for recall or identification of a relevant term, quantity, component, principle, or stated condition. Use only strategies explicitly supporting Remember; do not weaken a higher-level strategy into recall. Do not ask for explanations, causal comparisons, predictions, calculations, error analysis, or reconciliation. Record that recall alone leaves conceptual hypotheses unresolved.';
   if (level === 'apply') return 'At Apply, elicit use of a principle or method in a self-contained situation, with the information and prerequisites needed. Respect the active learning type and rubric: quantitative tasks can require calculations; theoretical tasks require conceptual application; experimental tasks use simulated evidence; design tasks apply principles to decisions. Do not replace application with recall or merely defining a term.';
   if (level === 'analyze') return 'At Analyze, target a relationship, assumption, interaction, discrepancy, or error in the active task and ask for evidence-based reasoning. Preserve the active learning type and rubric: worked-solution grading belongs to the quantitative task, not every Analyze task. Do not replace analysis with a definition or isolated final answer.';
   return level === 'understand'
     ? 'At Understand, ask about meanings, mechanisms, and relationships in the existing explanation. Do not request numerical results, formula substitution, procedural execution, or solving a new problem, even if the calculation is simple or single-step. Ground the question in the student\'s actual statements and existing setting; do not invent numeric givens, change conditions into a new exercise, or ask for a hypothetical prediction that requires applying a method. A conceptual question may refer to quantities already mentioned, but must not ask the student to compute their values. If a strategy needs a new problem to distinguish the hypotheses, choose another strategy or abstain.'
     : '';
+}
+
+export function strategyLevelInstructions(level) {
+  return `${standardLevelInstructions(level)}\nNarrow exception: only a background-knowledge-bridge in probe phase may temporarily ask at a simpler prerequisite level. Its active task level and rubric remain unchanged; a prerequisite answer alone never completes that task. At Understand this exception allows recall or explanation in the existing setting, never a new application exercise. A return phase reconnects the prerequisite to the active task; an exit reframes an accessible part of it. All other strategies retain the standard level requirements.`;
 }
 
 export function strategyExampleContext(candidates, level) {
@@ -22,7 +28,7 @@ export function strategyExampleContext(candidates, level) {
 // Selection and validation keep the full diagnostic plan. Generation gets only
 // the target and the constraints needed to instantiate this particular strategy.
 export function coreGenerationContext(input, strategy, plan) {
-  if (!strategy.levels.includes(input.level)) throw new InvalidOutputError('The selected strategy does not support the active learning level.');
+  if (!strategySupportsInput(strategy, input)) throw new InvalidOutputError('The selected strategy does not support the active learning level.');
   const context = {
     topic: input.topic,
     level: input.level,
@@ -34,6 +40,7 @@ export function coreGenerationContext(input, strategy, plan) {
   };
   if (strategy.id === 'controlled-comparison') context.comparison = { heldFixed: plan.heldFixed, varied: plan.varied };
   if (['boundary-case', 'remove-condition', 'representation-change'].includes(strategy.id) || strategy.generationFields?.includes('setting')) context.setting = { description: plan.scenario, assumptions: plan.assumptions };
+  if (strategy.id === backgroundStrategyId) context.background = backgroundForChoice(input, { strategyId: strategy.id, targetQuote: plan.targetQuote, rubricItem: plan.rubricItem, background: plan.background });
   return context;
 }
 
@@ -44,6 +51,7 @@ export function selectionTool(candidates, input) {
     rubricItem: { type: 'string', enum: input.aspects }, objective: text,
     scenario: text, assumptions: strings, heldFixed: strings, varied: strings,
     construction: text, prerequisitesSatisfied: text, limitations: strings,
+    background: backgroundChoiceSchema(input),
     responseSignals: { type: 'array', minItems: 2, items: { type: 'object', properties: { hypothesis: text, responsePattern: text, interpretation: text }, required: ['hypothesis', 'responsePattern', 'interpretation'], additionalProperties: false } },
   };
   return { name: 'select_strategy', schema: { type: 'object', properties: {
@@ -57,12 +65,14 @@ export function validateSelection(selection, candidates, input) {
   if (typeof selection?.rationale !== 'string' || !selection.rationale.trim()) throw new InvalidOutputError('Explain why a strategy fits or why none fits.');
   if (selection.strategyId === 'none') {
     if (selection.plan !== null) throw new InvalidOutputError('An abstention must not manufacture an adapted plan.');
+    backgroundForChoice(input, selection);
     return null;
   }
   const strategy = candidates.find(c => c.strategy.id === selection.strategyId)?.strategy;
   if (!strategy) throw new InvalidOutputError('Choose a retrieved strategy or none; never manufacture a match.');
-  if (!strategy.levels.includes(input.level)) throw new InvalidOutputError('The selected strategy does not support the active learning level.');
+  if (!strategySupportsInput(strategy, input)) throw new InvalidOutputError('The selected strategy does not support the active learning level.');
   const plan = selection.plan;
+  backgroundForChoice(input, { strategyId: strategy.id, targetQuote: plan?.targetQuote, rubricItem: plan?.rubricItem, background: plan?.background });
   for (const key of ['targetQuote', 'rubricItem', 'objective', 'scenario', 'construction', 'prerequisitesSatisfied']) if (typeof plan?.[key] !== 'string' || !plan[key].trim()) throw new InvalidOutputError('The topic-specific plan must name a concrete diagnostic target, scenario, and construction.');
   if (!Number.isInteger(plan.targetMessageIndex) || input.messages[plan.targetMessageIndex]?.role !== 'user' || !input.messages[plan.targetMessageIndex].content.includes(plan.targetQuote) || !input.aspects.includes(plan.rubricItem)) throw new InvalidOutputError('Ground the adapted plan in an exact student quote and active rubric item.');
   for (const key of ['assumptions', 'heldFixed', 'varied', 'limitations']) if (!Array.isArray(plan[key]) || plan[key].some(item => typeof item !== 'string' || !item.trim())) throw new InvalidOutputError('Invalid scenario constraints.');

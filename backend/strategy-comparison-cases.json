@@ -2222,6 +2222,111 @@
         "reviewedAt": "2026-10-18T20:00:03.310Z",
         "reason": "Narrowed the generated topic rubric to the supplied fixed task and its specific evidence target. This is benchmark-author review, not independent expert validation."
       }
+    },
+    {
+      "id": "coverage-background-knowledge-bridge-understand",
+      "title": "Background knowledge bridge — understand",
+      "group": "Strategy coverage · Understand",
+      "topic": "Explaining terminal velocity",
+      "level": "understand",
+      "learningType": "theoretical",
+      "expectedStrategyId": "background-knowledge-bridge",
+      "comparisonMode": "targeted",
+      "messages": [
+        {
+          "role": "assistant",
+          "content": "A falling object reaches constant speed. Explain how its forces and acceleration fit that observation."
+        },
+        {
+          "role": "user",
+          "content": "It must still accelerate because it moves fast, but I cannot recall the relationship between acceleration and net force."
+        }
+      ],
+      "reviewGuide": {
+        "target": "Elicit one evidence-linked prerequisite and save a return path to the original task.",
+        "risks": [
+          "Do not solve the original task or infer frustration.",
+          "Do not credit the prerequisite alone as the original task."
+        ],
+        "scope": "One first-probe example; multi-turn return behavior is tested separately."
+      },
+      "reviewedRubricItems": [
+        "Explains the relationship between constant velocity, acceleration, and net force in this falling-object account."
+      ],
+      "rubricReview": {
+        "method": "authored_fixture_scope_review",
+        "limitations": "Original authored example, not empirical validation."
+      }
+    },
+    {
+      "id": "coverage-background-knowledge-bridge-apply",
+      "title": "Background knowledge bridge — apply",
+      "group": "Strategy coverage · Apply",
+      "topic": "Using momentum in a collision",
+      "level": "apply",
+      "learningType": "quantitative",
+      "expectedStrategyId": "background-knowledge-bridge",
+      "comparisonMode": "targeted",
+      "messages": [
+        {
+          "role": "assistant",
+          "content": "Two carts collide on a level track with negligible external horizontal impulse. Use momentum conservation to relate their motion before and after the collision."
+        },
+        {
+          "role": "user",
+          "content": "I know I need the masses and velocities, but I cannot remember how they relate to momentum."
+        }
+      ],
+      "reviewGuide": {
+        "target": "Elicit one evidence-linked prerequisite and save a return path to the original task.",
+        "risks": [
+          "Do not solve the original task or infer frustration.",
+          "Do not credit the prerequisite alone as the original task."
+        ],
+        "scope": "One first-probe example; multi-turn return behavior is tested separately."
+      },
+      "reviewedRubricItems": [
+        "Uses mass and signed velocity to account for total momentum before and after the stated collision."
+      ],
+      "rubricReview": {
+        "method": "authored_fixture_scope_review",
+        "limitations": "Original authored example, not empirical validation."
+      }
+    },
+    {
+      "id": "coverage-background-knowledge-bridge-analyze",
+      "title": "Background knowledge bridge — analyze",
+      "group": "Strategy coverage · Analyze",
+      "topic": "Analyzing a changing beetle population",
+      "level": "analyze",
+      "learningType": "theoretical",
+      "expectedStrategyId": "background-knowledge-bridge",
+      "comparisonMode": "targeted",
+      "messages": [
+        {
+          "role": "assistant",
+          "content": "In a simulated beetle population with inherited color variation, darker beetles survive predation more often and leave more offspring. A report claims the population darkened because individual beetles changed color to avoid predators. Analyze that explanation."
+        },
+        {
+          "role": "user",
+          "content": "I can read the frequencies, but I do not understand how surviving and leaving offspring are connected."
+        }
+      ],
+      "reviewGuide": {
+        "target": "Elicit one evidence-linked prerequisite and save a return path to the original task.",
+        "risks": [
+          "Do not solve the original task or infer frustration.",
+          "Do not credit the prerequisite alone as the original task."
+        ],
+        "scope": "One first-probe example; multi-turn return behavior is tested separately."
+      },
+      "reviewedRubricItems": [
+        "Analyzes the proposed individual-change explanation against the stated survival and offspring relationships in this population."
+      ],
+      "rubricReview": {
+        "method": "authored_fixture_scope_review",
+        "limitations": "Original authored example, not empirical validation."
+      }
     }
   ]
 }

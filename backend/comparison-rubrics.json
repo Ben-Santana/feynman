@@ -1287,6 +1287,45 @@
       "promptVersion": "1ed6b362365e1015fd4ce68ea57a48f664401c3ceee0009263c8d629323a1cde",
       "pipeline": "generateLevelRubric",
       "endpoint": "/api/developer/rubric"
+    },
+    "coverage-background-knowledge-bridge-understand": {
+      "input": {
+        "topic": "Explaining terminal velocity",
+        "level": "understand",
+        "learningType": "theoretical"
+      },
+      "items": [
+        "Explains the relationship between constant velocity, acceleration, and net force in this falling-object account."
+      ],
+      "pipeline": "authored_fixture_scope_review",
+      "authoredAt": "2026-11-02",
+      "limitations": "Authored fixture rubric; not model-generated or empirically validated."
+    },
+    "coverage-background-knowledge-bridge-apply": {
+      "input": {
+        "topic": "Using momentum in a collision",
+        "level": "apply",
+        "learningType": "quantitative"
+      },
+      "items": [
+        "Uses mass and signed velocity to account for total momentum before and after the stated collision."
+      ],
+      "pipeline": "authored_fixture_scope_review",
+      "authoredAt": "2026-11-02",
+      "limitations": "Authored fixture rubric; not model-generated or empirically validated."
+    },
+    "coverage-background-knowledge-bridge-analyze": {
+      "input": {
+        "topic": "Analyzing a changing beetle population",
+        "level": "analyze",
+        "learningType": "theoretical"
+      },
+      "items": [
+        "Analyzes the proposed individual-change explanation against the stated survival and offspring relationships in this population."
+      ],
+      "pipeline": "authored_fixture_scope_review",
+      "authoredAt": "2026-11-02",
+      "limitations": "Authored fixture rubric; not model-generated or empirically validated."
     }
   }
 }
