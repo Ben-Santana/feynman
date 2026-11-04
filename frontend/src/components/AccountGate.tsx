@@ -43,6 +43,23 @@ export function AccountGate({ children }: { children: (account: Account, onProfi
   const [hasSession, setHasSession] = useState(false)
   const [attempt, setAttempt] = useState(0)
   const generation = useRef(0)
+  const wpiRedirectStarted = useRef(false)
+  const redirectToWpi = !loading && authMode === 'wpi' && !account && !error && page !== '/' && page !== '/account/callback'
+  useEffect(() => {
+    if (account) wpiRedirectStarted.current = false
+    if (!redirectToWpi || wpiRedirectStarted.current) return
+    let disposed = false
+    queueMicrotask(() => {
+      if (disposed || wpiRedirectStarted.current) return
+      wpiRedirectStarted.current = true
+      setSigningIn(true)
+      void signInWithWpi().catch(reason => {
+        setError(reason instanceof Error ? reason.message : 'Could not open WPI sign-in. Please try again.')
+        setSigningIn(false)
+      })
+    })
+    return () => { disposed = true }
+  }, [redirectToWpi, account])
   useEffect(() => {
     const onPopState = () => setPage(window.location.pathname.replace(/\/$/, '') || '/')
     window.addEventListener('popstate', onPopState)
@@ -152,6 +169,7 @@ export function AccountGate({ children }: { children: (account: Account, onProfi
     </div></div>
   </section></main>
   if (loading) return <AccountLoading />
+  if (redirectToWpi || (authMode === 'wpi' && signingIn && !account)) return <AccountLoading />
   if (resettingPassword && authMode === 'email') return <main className="account-login"><section aria-labelledby="account-title">
     <div className="account-card">
       <AccountAvatar />
@@ -186,7 +204,7 @@ export function AccountGate({ children }: { children: (account: Account, onProfi
     <div className="account-card">
       <AccountAvatar />
       <header className="account-heading">
-        <h1 id="account-title">{editingPending ? 'Edit account.' : formMode === 'sign-up' ? 'Create an account.' : formMode === 'reset-request' ? 'Forgot your password?' : 'Welcome back.'}</h1>
+        <h1 id="account-title">{editingPending ? 'Edit account.' : authMode === 'wpi' ? 'Sign in with WPI' : formMode === 'sign-up' ? 'Create an account.' : formMode === 'reset-request' ? 'Forgot your password?' : 'Welcome back.'}</h1>
         {formMode === 'reset-request' && <p>We’ll send a reset link to your email.</p>}
       </header>
       {(authMode === 'email' || editingPending) && <>
@@ -204,9 +222,7 @@ export function AccountGate({ children }: { children: (account: Account, onProfi
         </div>
       </>}
       {authMode === 'wpi' && !editingPending && <>
-        <p>Sign in with your WPI account to save your learning and customize your classmate.</p>
         <button type="button" disabled={signingIn} onClick={() => { setSigningIn(true); setError(''); void signInWithWpi().catch(reason => { setError(reason.message); setSigningIn(false) }) }}>{signingIn ? 'Opening WPI sign-in…' : 'Continue with WPI'}</button>
-        <small>WPI handles your password and multifactor authentication. Use the same WPI email as your existing Feynman account to keep your saved work.</small>
       </>}
       {notice && <p className="account-notice" role="status">{notice}</p>}
       {error && <><p className="account-error" role="alert">{error}</p><button type="button" onClick={() => { setLoading(true); setSigningIn(false); setAttempt(value => value + 1) }}>Retry checking login</button></>}
