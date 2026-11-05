@@ -10,7 +10,7 @@ approved automatically. Both paths require the signed consent agreement.
 1. Configure `frontend/.env` and `backend/.env` using their example files. Keep
    `SUPABASE_SECRET_KEY` on the backend only.
 2. Apply all migrations in order, including `202611030003_wpi_auto_approval.sql`
-   and `202611050002_dual_sign_in.sql`. Apply only missing migrations on an
+   through `202611050003_approve_linked_wpi_accounts.sql`. Apply only missing migrations on an
    existing project.
 3. In Supabase Authentication, enable the Email provider and new signups, turn
    **Confirm email** off, and set minimum password length to **12**. Keep
@@ -56,7 +56,8 @@ Email-only mode also supports existing student password accounts.
    After reload, the login screen offers **Sign in with WPI SSO** and **Sign in
    with email**. The API, database, and Storage require students to use a verified
    WPI OAuth session. Email-origin instructors and admins can use app passwords.
-   Existing roles, approval status, and learning data are retained. Existing
+   WPI SSO accounts are approved automatically, including existing accounts that
+   link WPI SSO. Existing roles and learning data are retained. Existing
    password students need a matching WPI identity to keep using their account
    in this mode.
 5. Test both paths, including consent, instructor approval, password reset,

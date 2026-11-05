@@ -16,6 +16,32 @@ test('WPI auto approval trusts Azure identities and preserves consent', async t 
   `);
   await db.exec(await readFile(new URL('../../supabase/migrations/202611030003_wpi_auto_approval.sql', import.meta.url), 'utf8'));
   assert.deepEqual((await db.query('select approved, consent_required from public.profiles')).rows[0], { approved: true, consent_required: true });
+  const createPasswordProfile = async email => {
+    const { rows: [{ id }] } = await db.query(
+      `insert into auth.users values (gen_random_uuid(), $1, '{"provider":"email"}') returning id`, [email]);
+    await db.query('insert into public.profiles(id) values ($1)', [id]);
+    return id;
+  };
+  const linkIdentity = (id, provider) => db.query('insert into auth.identities values ($1, $2)', [id, provider]);
+  const profile = async id => (await db.query(
+    'select approved, consent_required from public.profiles where id = $1', [id])).rows[0];
+
+  const previouslyLinked = await createPasswordProfile('previous@wpi.edu');
+  await linkIdentity(previouslyLinked, 'azure');
+  assert.equal((await profile(previouslyLinked)).approved, false);
+  await db.exec(await readFile(new URL('../../supabase/migrations/202611050003_approve_linked_wpi_accounts.sql', import.meta.url), 'utf8'));
+  assert.deepEqual(await profile(previouslyLinked), { approved: true, consent_required: true });
+
+  const newlyLinked = await createPasswordProfile('New@WPI.edu');
+  await linkIdentity(newlyLinked, 'email');
+  assert.equal((await profile(newlyLinked)).approved, false);
+  await linkIdentity(newlyLinked, 'azure');
+  assert.deepEqual(await profile(newlyLinked), { approved: true, consent_required: true });
+
+  const outsideWpi = await createPasswordProfile('outside@example.com');
+  await linkIdentity(outsideWpi, 'azure');
+  assert.deepEqual(await profile(outsideWpi), { approved: false, consent_required: true });
+
   for (const [email, provider, expected] of [['new@wpi.edu', 'azure', true], ['email@wpi.edu', 'email', false], ['other@example.com', 'azure', false]]) {
     const { rows: [{ id }] } = await db.query(`insert into auth.users values (gen_random_uuid(), $1, jsonb_build_object('provider', $2::text)) returning id`, [email, provider]);
     await db.query('insert into public.profiles(id) values ($1)', [id]);
