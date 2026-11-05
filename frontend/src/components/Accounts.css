@@ -65,13 +65,16 @@
 .account-login input:hover:not(:disabled) { border-color: var(--neutral-400); }
 .account-login input:focus-visible { border-color: var(--primary); }
 .account-login input:focus-visible, .account-login button:focus-visible { outline: 2px solid var(--primary); outline-offset: 3px; }
-.account-role { min-width: 0; margin: 0 0 18px; padding: 0; border: 0; }
-.account-role legend { margin-bottom: 8px; padding: 0; font-size: 0.8125rem; font-weight: 500; }
-.account-role-options { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; }
-.account-role-options label { display: flex; align-items: center; gap: 10px; min-height: 54px; margin: 0; padding: 12px; border: 1px solid var(--border); border-radius: 12px; cursor: pointer; }
-.account-role-options label:has(input:checked) { border-color: var(--primary); background: color-mix(in srgb, var(--primary) 8%, var(--background)); }
-.account-role-options input { flex: none; width: 16px; height: 16px; min-height: 0; margin: 0; padding: 0; accent-color: var(--primary); }
-.account-role:disabled label { opacity: .5; cursor: default; }
+.account-entry {
+  --primary: var(--red-strong);
+  --primary-hover: color-mix(in srgb, var(--black) 8%, var(--red-strong));
+  background: var(--background);
+}
+.account-entry .account-card { box-shadow: none; }
+.account-login .account-method { margin-top: 0; }
+.account-login .account-method-email { margin-top: 12px; border: 1px solid var(--border); background: var(--background); color: var(--foreground); }
+.account-login .account-method-email:hover:not(:disabled) { background: var(--muted); box-shadow: none; }
+.account-method-hint { margin: 6px 0 0; text-align: center; font-size: 0.8125rem; color: var(--muted-foreground); }
 @media (max-width: 480px) { .account-login { padding: 24px 16px; } .account-card { padding: 26px 24px; border-radius: 20px; } .account-avatar { width: 148px; margin-bottom: 16px; } }
 @media (prefers-reduced-motion: reduce) { .account-avatar .bloub-float { animation: none; } .account-login button, .account-login input { transition: none; } }
 

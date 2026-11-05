@@ -417,4 +417,59 @@ test('account migration enforces database and storage permissions in PostgreSQL'
     await assert.rejects(db.query('select public.has_signed_consent()'), error => error.code === '42501');
   });
 
+  await t.test('new WPI SSO signups can start after consent without admin approval', async () => {
+    const id = 'abcdefab-1234-4234-8234-123456789002';
+    const email = 'sso-new@wpi.edu';
+    await db.exec('reset role');
+    await db.exec(await readFile(new URL('../../supabase/migrations/202611030003_wpi_auto_approval.sql', import.meta.url), 'utf8'));
+    await db.query(`update public.account_auth_settings set mode = 'wpi'`);
+    await signup(id, email, undefined, true, 'azure');
+    await db.query(`insert into auth.identities values ($1, 'azure')`, [id]);
+
+    await as(id, 'authenticated', 'oauth');
+    assert.deepEqual((await db.query('select approved, consent_required from public.profiles')).rows, [{ approved: true, consent_required: true }]);
+    await assert.rejects(save(first, 0), error => error.code === '42501');
+
+    await as('', 'service_role');
+    await db.query(`insert into public.signed_consents values ($1,'informed-consent-v1',$2,'Participant',$3,now(),'I agree',$4,$2)`, [id, 'a'.repeat(64), email, 'b'.repeat(100)]);
+    await as(id, 'authenticated', 'oauth');
+    assert.equal((await save(first, 0)).rows[0].revision, 1);
+  });
+
+  await t.test('combined sign-in separates WPI OAuth from instructor password access', async () => {
+    await db.exec('reset role');
+    await db.exec(await readFile(new URL('../../supabase/migrations/202611050002_dual_sign_in.sql', import.meta.url), 'utf8'));
+    assert.deepEqual((await db.query('select public.get_account_auth_mode() as mode')).rows, [{ mode: 'both' }]);
+    assert.deepEqual(await hook('instructor@example.net'), {});
+    assert.equal((await hook('outside@example.net', null, 'azure')).error.http_code, 403);
+
+    const emailId = 'abcdefab-1234-4234-8234-123456789003';
+    const wpiId = 'abcdefab-1234-4234-8234-123456789004';
+    // Forged signup metadata cannot select an admin or an instructor role.
+    await signup(emailId, 'email-new@wpi.edu', undefined);
+    await signup(wpiId, 'azure-new@wpi.edu', undefined, true, 'azure');
+    await db.query("insert into auth.identities values ($1, 'email'), ($2, 'azure'), ($2, 'email')", [emailId, wpiId]);
+
+    async function signedIn() {
+      return (await db.query('select public.account_signed_in() as allowed')).rows[0].allowed;
+    }
+    for (const method of ['password', 'email/signup', 'recovery']) {
+      await as(emailId, 'authenticated', method);
+      assert.equal(await signedIn(), true);
+    }
+    assert.deepEqual((await db.query('select role from public.user_roles')).rows, [{ role: 'instructor' }]);
+    assert.deepEqual((await db.query('select approved from public.profiles')).rows, [{ approved: false }]);
+    await assert.rejects(save(first, 0), error => error.code === '42501');
+    await assert.rejects(db.query("select public.set_pending_account_role('student')"), error => error.code === '42883');
+    await as(emailId, 'authenticated', 'oauth');
+    assert.equal(await signedIn(), false);
+    await as(openAccount, 'authenticated', 'password');
+    assert.equal(await signedIn(), false);
+    await as(wpiId, 'authenticated', 'password');
+    assert.equal(await signedIn(), false);
+    await as(wpiId, 'authenticated', 'oauth');
+    assert.equal(await signedIn(), true);
+    assert.deepEqual((await db.query('select role from public.user_roles')).rows, [{ role: 'student' }]);
+    assert.deepEqual((await db.query('select approved, consent_required from public.profiles')).rows, [{ approved: true, consent_required: true }]);
+  });
 });

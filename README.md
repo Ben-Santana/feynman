@@ -9,7 +9,7 @@ Completing a concept ends its chat without a completion banner or closing reply.
 Requires Node.js 22.9+ (tested with Node 24).
 
 1. `npm install`
-2. Follow [account setup](backend/docs/accounts.md): configure Supabase, apply all SQL migrations and enable email and app password sign-in with Confirm email turned off. WPI Entra registration can be added later. Copy `frontend/.env.example` to `frontend/.env` and `backend/.env.example` to `backend/.env` and supply the account variables.
+2. Follow [account setup](backend/docs/accounts.md): configure Supabase, apply all SQL migrations and enable email and app password sign-in with Confirm email turned off. Configure WPI Entra and select combined mode to offer both sign-in options. Copy `frontend/.env.example` to `frontend/.env` and `backend/.env.example` to `backend/.env` and supply the account variables.
 3. Set `ANTHROPIC_API_KEY`; if the key is not workspace-scoped, also set `ANTHROPIC_WORKSPACE_ID`. Local admins may instead connect ChatGPT after login.
 4. `npm run dev`
 5. Open http://localhost:5173, choose **Create an account**, and sign up with any email and an app password. New accounts wait for approval in **Manage accounts**. Bootstrap your first approved admin using the setup guide to access account management and local developer tools.
@@ -251,3 +251,7 @@ models change. ChatGPT subscription usage and unknown models have no USD
 estimate; their reported tokens and call counts remain visible. Transport
 failures without a provider usage response cannot be metered. Usage persistence
 failures are logged by the API without interrupting learning requests.
+
+## Topic reports and research scores
+
+Students can finish a topic with gaps, inspect criterion evidence and first/final scores, and resume specific practice goals. Admin research downloads are available under Analytics. Apply `supabase/migrations/202611030001_topic_reports.sql` before using this feature; see [scoring, exports, and study calibration](backend/docs/topic-report-scoring.md) for setup and definitions.

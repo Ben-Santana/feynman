@@ -39,8 +39,9 @@ export async function evaluateRefined(input, query, prompts = loadPrompts(), opt
     response.schema.required.push('backgroundResponseScope');
   }
   const hasBackground = input.messages.some(m => m.background?.taskLevel === input.level);
-  return retryStructuredOutput(async (attempt, signal) => {
-    const raw = await repairQuery(query, attempt, signal)(`${detailedPolicies ? leanInstructions : primaryInstructions}\nEmit each exact learner quote only once in the shared evidence array, with a short ID. Observations reference evidenceId and retain their own component, assistance, and transfer policies. Reuse IDs across judgments; do not repeat quotes or emit unused evidence. Use the shortest exact excerpts sufficient to assess every requirement and contradiction. Keep the overall reason and next objective concise.\n${hasBackground ? backgroundAssessmentInstructions : ''}`, material.messages, response);
+  return retryStructuredOutput(async (attempt, signal, previousError) => {
+    const scoringInstructions = context.researchScoring ? '\nFor each judgment explicitly assess partialCredit: awarded=true only for a correct but incomplete substantive demonstration with valid reasoning, a fair opportunity, verified learner citations, and no unresolved error or contradiction. State exactly which required part remains missing in partialCredit.reason. Missing, ambiguous, unreadable, assisted repetition, or uncertain evidence does not earn partial credit. Otherwise awarded=false and reason may be empty. Partial credit never makes a criterion supported or permits advancement. Classify assistance on every observation, including ordinary rubric items; cite preceding assistant help IDs for hints or explanations. Give each judgment a short reason describing the demonstrated knowledge or missing requirement.' : '';
+    const raw = await repairQuery(query, attempt, signal, previousError)(`${detailedPolicies ? leanInstructions : primaryInstructions}\nEmit each exact learner quote only once in the shared evidence array, with a short ID. Observations reference evidenceId and retain their own component, assistance, and transfer policies. Reuse IDs across judgments; do not repeat quotes or emit unused evidence. Use the shortest exact excerpts sufficient to assess every requirement and contradiction. Keep the overall reason and next objective concise.${scoringInstructions}\n${hasBackground ? backgroundAssessmentInstructions : ''}`, material.messages, response);
     const result = normalizePrimaryAssessment(raw, context, material.task);
     if (probe) {
       const scope = raw.backgroundResponseScope;
@@ -55,7 +56,7 @@ export async function evaluateRefined(input, query, prompts = loadPrompts(), opt
       }
     }
     return result;
-  });
+  }, 60_000, 3);
 }
 
 // Keep the normal conversation's checklist/report contract, retaining validated

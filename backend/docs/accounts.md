@@ -1,98 +1,74 @@
 # Accounts
 
-Feynman uses Supabase Auth, Postgres, and private Storage. Anyone can create an
-account with an email address and an app password. No invite code or email
-verification is required in email mode. New accounts wait for admin approval before
-accessing learning, customization, or attachments. WPI Microsoft Entra SSO remains available
-for a future cutover. Existing accounts and saved learning data are preserved.
+Feynman uses Supabase Auth, Postgres, and private Storage. Instructors can create
+an account with an email address and app password. New email accounts require
+admin approval. New WPI Microsoft Entra accounts start as students and are
+approved automatically. Both paths require the signed consent agreement.
 
-## Enable email and password sign-in
+## Configure email sign-in
 
 1. Configure `frontend/.env` and `backend/.env` using their example files. Keep
    `SUPABASE_SECRET_KEY` on the backend only.
-2. Apply all migrations in order, applying only missing migrations on an existing
-   project: `202610130001_accounts.sql`, `202610130002_email_auth.sql`,
-   `202610160001_invite_signup.sql`, `202610160002_open_email_signup.sql`,
-   `202610160003_account_approval.sql`, `202610160004_signup_roles.sql`,
-   `202610160005_pending_account_roles.sql`, `202610170001_courses.sql`, `202610170002_course_appearance.sql`.
-   Open signup removes invite admission and email confirmation checks in email
-   mode. The approval migration preserves existing accounts as approved and
-   defaults future accounts to pending. Signup offers Instructor or Student; the role
-   migration saves that selection at account creation and never accepts Admin. Pending
-   accounts can switch between Instructor and Student until an admin approves them. The old invite table stays private and unused.
+2. Apply all migrations in order, including `202611030003_wpi_auto_approval.sql`
+   and `202611050002_dual_sign_in.sql`. Apply only missing migrations on an
+   existing project.
 3. In Supabase Authentication, enable the Email provider and new signups, turn
    **Confirm email** off, and set minimum password length to **12**. Keep
-   anonymous sign-ins and unsupported providers disabled. Azure can stay disabled
-   until the WPI integration is ready.
-4. Retain the Before User Created Postgres hook
-   `public.before_wpi_user_created`. It now allows any valid email in email mode
-   and retains the WPI-only Azure path. A database trigger also enforces the
-   enabled provider if the hook is disabled.
-5. Keep `public.account_auth_settings.mode` set to `email` for open signup.
-   Create an account with an email and password, then approve it from an existing
-   admin account in **Manage accounts**. The pending screen checks approval every
-   15 seconds while visible and when the window regains focus. Passwords
-   are managed by Supabase Auth, separate from WPI institutional passwords.
-6. Configure custom SMTP for password resets. Set the Auth Site URL to the
+   anonymous sign-ins, manual identity linking, and unsupported providers disabled.
+   Retain the Before User Created Postgres hook `public.before_wpi_user_created`.
+4. Configure custom SMTP for password resets. Set the Auth Site URL to the
    frontend origin and allow `/account/callback` and `/account/reset-password`
    for each deployed origin and localhost (`http://localhost:5173`). Reset links
-   use PKCE and must be opened in the browser that requested them. Retain default
-   reset email templates that link through Supabase's confirmation URL.
-7. Set frontend/backend variables in Vercel too when deployed. Rebuild after
+   use PKCE and must be opened in the browser that requested them.
+5. Set frontend and backend variables in Vercel when deployed. Rebuild after
    changing `VITE_` values. Set `APP_ORIGIN` for a custom domain.
 
-No WPI IT registration is required for email signup. Email ownership is not
-verified in this mode; WPI SSO still requires a verified WPI identity.
+New instructor accounts appear in **Manage accounts** for approval. The pending
+screen checks approval every 15 seconds while visible and when the window regains
+focus. Keep the database setting at `email` while WPI SSO is being configured.
+Email-only mode also supports existing student password accounts.
 
-## Enable WPI SSO later, retaining account data
-
-The login UI, backend, and all database/Storage policies use one protected
-setting in `public.account_auth_settings`. Ordinary users cannot change it.
+## Enable both sign-in options
 
 1. Obtain WPI's Entra tenant ID and an app registration, arranging WPI IT approval
-   or admin consent if required. Register the Supabase callback
+   or admin consent if required. Register
    `https://<project-ref>.supabase.co/auth/v1/callback` as a Web redirect URI.
    Restrict the registration to WPI organizational accounts.
 2. In Supabase's Azure provider, configure the app client ID, client secret, and
    `https://login.microsoftonline.com/<WPI-tenant-id>` as the tenant URL. Configure
-   the `email` and `xms_edov` optional claims as described in
-   [Supabase's Azure guide](https://supabase.com/docs/guides/auth/social-login/auth-azure).
+   the `email` and `xms_edov` optional claims per
+   [Supabase's Azure guide](https://supabase.com/docs/guides/auth/social-sign-in/auth-azure).
    Confirm with WPI IT that the application is covered by their MFA policy.
    The app does not assert Supabase `aal2` for WPI's external MFA.
-3. Test Azure with a existing email account using the exact same WPI email.
-   [Supabase automatically links matching verified email identities](https://supabase.com/docs/guides/auth/auth-identity-linking).
-   Only accounts using the exact matching WPI email can carry over automatically.
-   Accounts using another email cannot sign in after a WPI-only cutover.
-   Confirm the Supabase user UUID is unchanged and that saved sessions,
-   customization, files, and the assigned role are retained. If Azure returns
-   a different alias, resolve that identity mismatch before cutover. Do not
-   automatically merge different addresses or delete the existing account.
-4. In the Supabase SQL editor, switch the shared setting:
+3. Verify an existing WPI student account can sign in through Azure with the same
+   WPI email and UUID. Resolve alias differences before switching modes.
+   Supabase can automatically link matching verified email identities.
+   [Supabase identity linking](https://supabase.com/docs/guides/auth/auth-identity-linking)
+4. Enable the Email provider and apply `202611050002_dual_sign_in.sql`. The
+   migration switches existing WPI-only projects to combined mode. If the
+   migration is already applied or the project is in email-only mode, set the
+   shared mode in the SQL editor.
 
    ```sql
-   update public.account_auth_settings set mode = 'wpi' where singleton;
+   update public.account_auth_settings set mode = 'both' where singleton;
    ```
 
-   After reload, the login screen offers **Continue with WPI**. New password
-   registrations are rejected. The API, direct database access, and private
-   Storage reject existing password sessions immediately, including sessions
-   belonging to accounts that already have a linked Azure identity. An SSO
-   session must include Supabase's signed OAuth authentication-method claim.
-   Newly signed-in users keep the existing UUID and its data.
-5. Disable the Email provider in Supabase, leaving only Azure enabled. Disabling
-   email authentication does not delete the existing app accounts. Retain the
-   signup hook. Test login/logout, MFA, existing data, and rejected non-WPI users.
+   After reload, the login screen offers **Sign in with WPI SSO** and **Sign in
+   with email**. The API, database, and Storage require students to use a verified
+   WPI OAuth session. Email-origin instructors and admins can use app passwords.
+   Existing roles, approval status, and learning data are retained. Existing
+   password students need a matching WPI identity to keep using their account
+   in this mode.
+5. Test both paths, including consent, instructor approval, password reset,
+   logout, WPI MFA, and rejection of non-WPI accounts.
 
-To roll back before a completed cutover, enable the Email provider without email
-confirmation, then set the same database setting back to `email`. No code changes
-or account deletion are needed. WPI SSO remains an external integration that
-requires real tenant credentials and IT consent to verify.
+Set the same database setting to `email` to return to email-only mode, or
+`wpi` to require WPI SSO for every account.
 
 ## Bootstrap the first admin
 
-Create your email account (or sign in with WPI SSO after cutover)
-to create its default student role. From the
-Supabase SQL editor, run this with your account’s exact email:
+Create your account through email or WPI SSO. In the Supabase SQL editor, run
+this with your account’s exact email.
 
 ```sql
 update public.profiles set approved = true where email = 'you@example.com';
@@ -144,18 +120,19 @@ a retention policy is chosen.
 
 ## Validation
 
-Run `npm test`, `npm run build`, and `npm run lint`. The tests execute all five actual
+Run `npm test`, `npm run build`, and `npm run lint`. The tests execute the account
 migrations in PGlite's PostgreSQL engine with fixtures for Supabase's platform
 auth/storage schemas, and exercise cloud saving with the actual Supabase client
 against a simulated REST/Storage service. No production account is created.
 
 Before launch, additionally verify against your configured Supabase project:
 
-- Open signup from WPI and other email domains without an invite or email
-  confirmation, pending approval, admin approval, password login/reset, and logout. Verify password signups and existing password sessions
-  lose access after switching to SSO.
-- WPI Azure login and callback, MFA behavior, logout, and rejected foreign tenants,
-  personal Microsoft accounts, non-WPI domains, and alternate login providers.
+- Instructor signup from WPI and other email domains, pending approval, admin
+  approval, password login/reset, and logout. Verify student password sessions
+  lose access in combined mode.
+- WPI Azure login and callback, automatic approval for a new WPI account, MFA
+  behavior, logout, and rejected foreign tenants, personal Microsoft accounts,
+  non-WPI domains, and alternate login providers.
 - Two users cannot read each other's rows or attachments through direct API calls.
 - The admin page changes roles, blocks final-admin demotion, and adds audit rows.
 - Sessions, papers, progress, files, whiteboards, and blob customization restore on
@@ -221,12 +198,15 @@ fields, and appends an electronic signature record. The study-explainer signatur
 remains blank. A changed agreement needs a new version and an explicit migration
 policy; this flow does not automatically re-consent existing participants.
 
-## Admin course browser
+## Admin courses
 
-Apply `202610180002_admin_courses.sql` after the earlier migrations. Approved admins
-can open **Administration → View courses** at `/admin/courses`, search by course
-name, code, or instructor, and inspect draft and published modules. Module previews
-show learning type, concepts, target levels, and rubrics. These tools are read-only;
-they do not expose student sessions or source attachments and do not grant course
-editing permissions. The backend uses `SUPABASE_SECRET_KEY` to call service-only
-RPCs that recheck the actor's approved admin role.
+With `202611050001_admin_course_ownership.sql` applied, approved admins can
+create and teach courses under **Workspace → Courses**. Course editing and
+enrollment management use the same ownership checks as for instructors.
+
+**Administration → All courses** at `/admin/all-courses` is the read-only
+directory. Admins can search by course name, code, or instructor and preview
+draft and published topics, including learning type, concepts, target levels,
+and rubrics. Student sessions and source attachments stay private. The backend
+uses `SUPABASE_SECRET_KEY` to call service-only RPCs that recheck the actor's
+approved admin role.

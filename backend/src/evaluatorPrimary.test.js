@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import { createEvaluationContext, taskDefinition } from './evaluatorContracts.js';
 import { leanAssessmentTool } from './evaluatorLean.js';
 import { primaryAssessmentTool, normalizePrimaryAssessment, primaryInstructions } from './evaluatorPrimary.js';
-import { leanInstructions } from './refinedEvaluator.js';
+import { evaluateRefined, leanInstructions } from './refinedEvaluator.js';
 
 const input = { level: 'understand', topic: 'Energy', aspects: ['Explain storage', 'Explain charging'], messages: [{ id: 'q', role: 'assistant', content: 'Explain storage and charging.' }, { id: 'u', role: 'user', content: 'Work separating charges stores energy in the field.' }] };
 const context = createEvaluationContext(input);
@@ -56,7 +56,7 @@ test('shared evidence expands before citation validation and never waives policy
   pooled.judgments.forEach(j => { j.observations = [{ evidenceId: 'e1' }]; });
   assert.equal(normalizePrimaryAssessment(pooled, context, task).completion.eligible, true);
   assert.ok(JSON.stringify(pooled).length < JSON.stringify(answer()).length);
-  for (const mutate of [r => { r.evidence.push(r.evidence[0]); }, r => { r.judgments[0].observations[0].evidenceId = 'missing'; }, r => { r.evidence.push({ id: 'unused', messageId: 'u', quote: 'Unused' }); }, r => { r.judgments[0].observations[0].quote = 'Override'; }]) {
+  for (const mutate of [r => { r.evidence.push(r.evidence[0]); }, r => { r.judgments[0].observations[0].evidenceId = 'missing'; }, r => { r.judgments[0].observations[0].quote = 'Override'; }]) {
     const invalid = structuredClone(pooled); mutate(invalid);
     assert.throws(() => normalizePrimaryAssessment(invalid, context, task), /shared evidence/);
   }
@@ -64,4 +64,48 @@ test('shared evidence expands before citation validation and never waives policy
     const invalid = structuredClone(pooled); Object.assign(invalid.evidence[0], patch);
     assert.equal(normalizePrimaryAssessment(invalid, context, task).completion.eligible, false);
   }
+});
+
+
+test('refined evaluator repairs shared evidence failures twice before completing', async () => {
+  let calls = 0;
+  const result = await evaluateRefined(input, async instructions => {
+    calls++;
+    if (calls > 1) assert.match(instructions, /Validation error: Invalid shared evidence: .*missing/);
+    const raw = answer();
+    raw.evidence = [{ id: 'e1', messageId: 'u', quote: input.messages[1].content }];
+    raw.judgments.forEach(j => { j.observations = [{ evidenceId: 'e1' }]; });
+    if (calls < 3) raw.judgments[0].observations[0].evidenceId = 'missing';
+    return raw;
+  });
+  assert.equal(calls, 3);
+  assert.equal(result.completion.eligible, true);
+});
+
+
+test('unused evidence does not change a valid assessment or require a retry', async () => {
+  const raw = answer();
+  raw.evidence = [{ id: 'e1', messageId: 'u', quote: input.messages[1].content }];
+  raw.judgments.forEach(j => { j.observations = [{ evidenceId: 'e1' }]; });
+  const expected = normalizePrimaryAssessment(raw, context, task);
+  raw.evidence.push({ id: 'e_what', messageId: 'u', quote: 'what' });
+  let calls = 0;
+  const result = await evaluateRefined(input, async () => { calls++; return raw; });
+  assert.equal(calls, 1);
+  assert.deepEqual(result.judgments, expected.judgments);
+  assert.equal(result.completion.eligible, true);
+  assert.equal(raw.evidence.length, 2); // Normalization does not mutate the model response.
+});
+
+test('what with unused evidence stays incomplete and returns without retrying', async () => {
+  const request = { ...input, messages: [input.messages[0], { id: 'u', role: 'user', content: 'what' }] };
+  const raw = answer();
+  raw.evidence = [{ id: 'e_what', messageId: 'u', quote: 'what' }];
+  raw.nextEvidenceObjective = 'Explain storage and charging.';
+  raw.judgments.forEach(j => Object.assign(j, { status: 'missing', result: 'undetermined', reasoning: 'unclear', opportunity: 'fair', observations: [] }));
+  let calls = 0;
+  const result = await evaluateRefined(request, async () => { calls++; return raw; });
+  assert.equal(calls, 1);
+  assert.equal(result.completion.eligible, false);
+  assert.ok(result.judgments.every(j => j.observations.length === 0));
 });

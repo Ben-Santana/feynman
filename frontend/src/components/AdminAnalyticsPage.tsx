@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from 'react'
 import { accountFetch } from '../accounts'
 import './AdminPage.css'
 import './AdminAnalyticsPage.css'
+import { ResearchExports } from './ResearchExports'
 
 type Metric = 'cost' | 'tokens'
 type UsageRow = { name: string; cost: number | null; tokens: number; calls: number }
@@ -120,6 +121,7 @@ export function AdminAnalyticsPage({ onNavigate }: { onNavigate: (path: string) 
         <p className="credit-updated">Updated {new Date(data.generatedAt).toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' })}</p>
       </>}
     </div>
+    <ResearchExports />
     <nav aria-label="Analytics reports" className="analytics-reports"><button type="button" className="analytics-report" onClick={() => onNavigate('/admin/analytics/salg-survey')}><span>SALG survey</span><span aria-hidden="true">→</span></button></nav>
   </div></section>
 }

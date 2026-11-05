@@ -1,5 +1,6 @@
 import { validateCourseBannerFile, type CourseBanner } from './courseAppearance'
 import { accountSignal, requireAccount, supabase } from './accounts'
+import { canTeachCourses } from './coursePermissions'
 import { decodeSession, encodeSession, flushSessionSaves, getSaveStatus, type CloudSession, type SavedSession } from './learningStore'
 import { sessionComplete, type Concept, type Level, type Session } from './learningFlow'
 import type { DashboardModule } from './dashboardData'
@@ -74,7 +75,8 @@ export async function loadCourse(id: string) {
   const { courses, enrollments } = await loadCourses()
   const course = courses.find(value => value.id === id)
   if (!course) throw new Error('Course not found.')
-  const instructor = course.instructor_id === requireAccount().id && requireAccount().role === 'instructor'
+  const account = requireAccount()
+  const instructor = course.instructor_id === account.id && canTeachCourses(account.role)
   const enrollment = enrollments.find(value => value.course_id === id)
   if (!instructor && enrollment?.status !== 'enrolled' && !course.is_public) return { course, enrollment, modules: [] as CourseModule[], progress: [] as StudentProgress[], ownProgress: [] as ModuleProgress[], people: [] as CoursePerson[] }
   const [modules, progress, people] = await Promise.all([

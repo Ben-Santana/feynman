@@ -40,7 +40,7 @@ export function createEvaluationContext(input, { requireTransfer = false } = {})
   const latestPaper = messages.findLast(m => m.paper)?.paper;
   const reviewIndex = latestPaper ? messages.findLastIndex(m => m.review?.paperId === latestPaper.id) : -1;
   const eligibility = !messages.length ? 'no_learner_evidence' : paperAnalysis && (reviewIndex < 0 || !messages.slice(reviewIndex + 1).some(m => m.role === 'user' && !m.review)) ? 'awaiting_paper_review_explanation' : null;
-  return { schemaVersion: contractVersion, stageId, topic: input.topic, criterion: input.criterion ?? null, level: input.level, learningType: input.learningType ?? 'quantitative', criteria, messages, reviewIndex, eligibility, requireTransfer: requireTransfer && ['apply', 'analyze'].includes(input.level) };
+  return { schemaVersion: contractVersion, researchScoring: input.researchScoring === true, stageId, topic: input.topic, criterion: input.criterion ?? null, level: input.level, learningType: input.learningType ?? 'quantitative', criteria, messages, reviewIndex, eligibility, requireTransfer: requireTransfer && ['apply', 'analyze'].includes(input.level) };
 }
 
 export function taskDefinition(context, taskText) {
@@ -96,11 +96,12 @@ export function normalizeAssessment(result, context, task) {
       seen.add(key);
       const assistance = !assistanceValid || (['hint', 'explanation_or_answer'].includes(o.assistance) && !o.assistanceMessageIds.length) ? 'unknown' : o.assistance;
       if (assistance !== o.assistance) issues.push({ criterionId: d.id, code: 'invalid_assistance_source', messageId: o.messageId });
-      observations.push({ ...o, assistance, assistanceMessageIds: assistanceValid ? o.assistanceMessageIds : [], id: `e_${hash(JSON.stringify([context.stageId, d.id, key]))}`, messageIndex: source.message.messageIndex, source: source.image ? 'image' : 'text' });
+      observations.push({ ...o, assistance, assistanceMessageIds: assistanceValid ? o.assistanceMessageIds : [], assistanceMessageIndices: assistanceValid ? o.assistanceMessageIds.map(id => context.messages.find(m => m.id === id).messageIndex) : [], id: `e_${hash(JSON.stringify([context.stageId, d.id, key]))}`, messageIndex: source.message.messageIndex, source: source.image ? 'image' : 'text' });
     }
-    const contradictions = raw.contradictions.filter(c => {
-      if (cite(context, c)) return true;
-      issues.push({ criterionId: d.id, code: 'invalid_contradiction_citation', messageId: c.messageId }); return false;
+    const contradictions = raw.contradictions.flatMap(c => {
+      const source = cite(context, c);
+      if (source) return [{ ...c, messageIndex: source.message.messageIndex }];
+      issues.push({ criterionId: d.id, code: 'invalid_contradiction_citation', messageId: c.messageId }); return [];
     });
     const coveredComponents = d.components.filter(p => observations.some(o => o.componentIds.includes(p.id))).map(p => p.id);
     const blockers = [];

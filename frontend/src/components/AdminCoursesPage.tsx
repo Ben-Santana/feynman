@@ -86,8 +86,8 @@ export function AdminCoursesPage({ courseId, onNavigate }: { courseId?: string; 
   const [query, setQuery] = useState('')
   const [page, setPage] = useState(1)
   return <section className="admin-page admin-courses-page" aria-label="Course administration"><div className="admin-shell">
-    {courseId ? <CourseView key={courseId} courseId={courseId} onBack={() => onNavigate('/admin/courses')} /> : <>
-      <h1 id="admin-courses-title">View courses</h1>
+    {courseId ? <CourseView key={courseId} courseId={courseId} onBack={() => onNavigate('/admin/all-courses')} /> : <>
+      <h1 id="admin-courses-title">All courses</h1>
       <form className="admin-search" onSubmit={event => { event.preventDefault(); setPage(1); setQuery(search.trim()) }}>
         <div className="admin-search-field">
           <label className="sr-only" htmlFor="admin-course-search">Search courses by name, code, or instructor</label>
@@ -106,7 +106,7 @@ function CourseDirectory({ page, query, setPage, onNavigate }: { page: number; q
   if (!data) return <LoadingScreen label="Loading courses" />
   return <div className="admin-directory">
     <ul className="admin-course-list">{data.courses.map(course => <li key={course.id}>
-      <button type="button" className="admin-course-row" onClick={() => onNavigate(`/admin/courses/${course.id}`)}>
+      <button type="button" className="admin-course-row" onClick={() => onNavigate(`/admin/all-courses/${course.id}`)}>
         <span className="admin-course-identity"><strong>{course.name}</strong><span>{course.instructor.name || course.instructor.email} · {course.code}</span><span>{course.module_count} {course.module_count === 1 ? 'topic' : 'topics'} · {course.enrollment_mode === 'open' ? 'Open enrollment' : 'Approval required'}</span></span>
         <span aria-hidden="true">→</span>
       </button>

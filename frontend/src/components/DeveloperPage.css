@@ -3,7 +3,7 @@
 .developer-page-heading { margin-bottom: 28px; }
 .developer-page-heading h1 { margin: 0; font: 500 clamp(1.75rem, 3vw, 2.25rem)/1.2 var(--font-display); letter-spacing: -.025em; }
 .developer-eyebrow { margin: 0 0 9px; text-transform: uppercase; letter-spacing: .14em; font-size: 0.6875rem; font-weight: 500; color: var(--muted-foreground); }
-.developer-tabs { display: flex; gap: 6px; width: fit-content; max-width: 100%; margin: 0 0 28px; padding: 4px; border: 1px solid var(--border); border-radius: 11px; background: var(--surface); }
+.developer-tabs { display: flex; flex-wrap: wrap; gap: 6px; width: fit-content; max-width: 100%; margin: 0 0 28px; padding: 4px; border: 1px solid var(--border); border-radius: 11px; background: var(--surface); }
 .developer-tabs > button { position: relative; min-height: 38px; padding: 8px 16px; border-radius: 7px; font: inherit; font-size: 0.8125rem; color: var(--muted-foreground); cursor: pointer; }
 .developer-tabs > button[aria-selected="true"] { background: var(--background); color: var(--foreground); box-shadow: 0 1px 3px #0000000d; }
 .developer-tabs i, .developer-prompt-list i { display: inline-block; flex: none; width: 6px; height: 6px; border-radius: 50%; background: var(--primary); margin-left: 8px; }

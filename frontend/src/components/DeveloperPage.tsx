@@ -17,6 +17,8 @@ import { LoadingAnimation, LoadingScreen } from './AccountLoading'
 import './DeveloperPage.css'
 import { QuestionComparison } from './QuestionComparison'
 import { EvaluatorComparison } from './EvaluatorComparison'
+import { ApplySimulations } from './ApplySimulations'
+import { PuzzleGenerator } from './PuzzleGenerator'
 
 type Prompt = { id: string; title: string; group: string; subgroup: string; description: string; text: string; variables: string[] }
 type PromptFile = { file: string; version: string; prompts: Prompt[]; editable: boolean }
@@ -40,7 +42,7 @@ async function request<T>(path: string, body?: unknown, signal = AbortSignal.tim
 }
 
 export function DeveloperPage({ onDirtyChange, characterName = 'Feynman' }: { onDirtyChange: (dirty: boolean) => void; characterName?: string }) {
-  const [tab, setTab] = useState<'prompts' | 'chat' | 'comparison' | 'evaluator'>('prompts')
+  const [tab, setTab] = useState<'prompts' | 'chat' | 'comparison' | 'evaluator' | 'simulations' | 'puzzles'>('prompts')
   const [dirty, setDirty] = useState(false)
   useEffect(() => { onDirtyChange(dirty); return () => onDirtyChange(false) }, [dirty, onDirtyChange])
   return <section className="developer-page">
@@ -49,7 +51,7 @@ export function DeveloperPage({ onDirtyChange, characterName = 'Feynman' }: { on
       <div className="developer-tabs" role="tablist" aria-label="Developer tools" onKeyDown={event => {
         if (!['ArrowLeft', 'ArrowRight', 'Home', 'End'].includes(event.key)) return
         event.preventDefault()
-        const tabs = ['prompts', 'chat', 'comparison', 'evaluator'] as const
+        const tabs = ['prompts', 'chat', 'comparison', 'evaluator', 'simulations', 'puzzles'] as const
         const index = event.key === 'Home' ? 0 : event.key === 'End' ? tabs.length - 1 : (tabs.indexOf(tab) + (event.key === 'ArrowRight' ? 1 : tabs.length - 1)) % tabs.length
         setTab(tabs[index]); document.getElementById(`${tabs[index]}-tab`)?.focus()
       }}>
@@ -57,7 +59,11 @@ export function DeveloperPage({ onDirtyChange, characterName = 'Feynman' }: { on
         <button type="button" id="chat-tab" role="tab" aria-selected={tab === 'chat'} aria-controls="chat-panel" tabIndex={tab === 'chat' ? 0 : -1} onClick={() => setTab('chat')}>Chat workshop</button>
         <button type="button" id="comparison-tab" role="tab" aria-selected={tab === 'comparison'} aria-controls="comparison-panel" tabIndex={tab === 'comparison' ? 0 : -1} onClick={() => setTab('comparison')}>Question strategies</button>
         <button type="button" id="evaluator-tab" role="tab" aria-selected={tab === 'evaluator'} aria-controls="evaluator-panel" tabIndex={tab === 'evaluator' ? 0 : -1} onClick={() => setTab('evaluator')}>Evaluator comparison</button>
+        <button type="button" id="simulations-tab" role="tab" aria-selected={tab === 'simulations'} aria-controls="simulations-panel" tabIndex={tab === 'simulations' ? 0 : -1} onClick={() => setTab('simulations')}>Apply simulations</button>
+        <button type="button" id="puzzles-tab" role="tab" aria-selected={tab === 'puzzles'} aria-controls="puzzles-panel" tabIndex={tab === 'puzzles' ? 0 : -1} onClick={() => setTab('puzzles')}>Puzzle generator</button>
       </div>
+      <div id="puzzles-panel" role="tabpanel" aria-labelledby="puzzles-tab" hidden={tab !== 'puzzles'}><PuzzleGenerator active={tab === 'puzzles'} /></div>
+      <div id="simulations-panel" role="tabpanel" aria-labelledby="simulations-tab" hidden={tab !== 'simulations'}>{tab === 'simulations' && <ApplySimulations />}</div>
       <div id="prompts-panel" role="tabpanel" aria-labelledby="prompts-tab" hidden={tab !== 'prompts'}><PromptEditor onDirtyChange={setDirty} /></div>
       <div id="chat-panel" role="tabpanel" aria-labelledby="chat-tab" hidden={tab !== 'chat'}><ChatPlayground characterName={characterName} dirtyPrompts={dirty} /></div>
       <div id="comparison-panel" role="tabpanel" aria-labelledby="comparison-tab" hidden={tab !== 'comparison'}><QuestionComparison dirtyPrompts={dirty} /></div>

@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import type { Account, AccountAuthMode } from '../accounts'
+import type { Account, AccountSignInMethod } from '../accounts'
 import type { CharacterAppearance } from '../characterAppearance'
 import { matchingSettings, type SettingsCategory } from '../settingsSearch'
 import { DisplaySettings } from './DisplaySettings'
@@ -9,7 +9,7 @@ import { ProfilePage } from './ProfilePage'
 import './SettingsPage.css'
 
 export function SettingsPage({ account, authMode, onProfileUpdated, appearance }: {
-  account: Account; authMode: AccountAuthMode; onProfileUpdated: (account: Account) => void; appearance: CharacterAppearance
+  account: Account; authMode: AccountSignInMethod; onProfileUpdated: (account: Account) => void; appearance: CharacterAppearance
 }) {
   const [category, setCategory] = useState<SettingsCategory | 'all'>('profile')
   const [query, setQuery] = useState('')

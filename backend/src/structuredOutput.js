@@ -2,19 +2,23 @@
 // timeout and transport failures must retain their original meaning.
 export class InvalidOutputError extends Error {}
 
-export async function retryStructuredOutput(run, budget = 60_000) {
+export async function retryStructuredOutput(run, budget = 60_000, maxAttempts = 2) {
   const signal = AbortSignal.timeout(budget);
-  for (let attempt = 0; attempt < 2; attempt++) {
-    try { return await run(attempt, signal); }
+  let previousError;
+  for (let attempt = 0; attempt < maxAttempts; attempt++) {
+    try { return await run(attempt, signal, previousError); }
     catch (error) {
-      if (signal.aborted || attempt || !(error instanceof InvalidOutputError)) throw error;
+      const retrying = !signal.aborted && attempt + 1 < maxAttempts && error instanceof InvalidOutputError;
+      console.error('Structured output attempt failed', { attempt: attempt + 1, retrying, error });
+      if (!retrying) throw error;
+      previousError = error;
     }
   }
 }
 
-export function repairQuery(query, attempt, signal) {
+export function repairQuery(query, attempt, signal, previousError) {
   return (instructions, messages, response, options) => query(attempt
-    ? `${instructions}\n\nThe previous response could not be validated. Return the complete requested tool response matching its schema. Preserve every requested name and checklist aspect exactly, including repeated entries and the requested counts. Do not omit required fields.${['generate_rubric', 'extract_concepts'].includes(response.name) ? ' Keep each rubric checklist within 1,000 characters including numbering.' : ''}`
+    ? `${instructions}\n\nThe previous response could not be validated.${previousError ? ` Validation error: ${previousError.message}` : ''} Return the complete requested tool response matching its schema. Preserve every requested name and checklist aspect exactly, including repeated entries and the requested counts. Do not omit required fields.${['generate_rubric', 'extract_concepts'].includes(response.name) ? ' Keep each rubric checklist within 1,000 characters including numbering.' : ''}`
     : instructions, messages, response, { ...options, signal: options?.signal && signal ? AbortSignal.any([options.signal, signal]) : signal || options?.signal });
 }
 

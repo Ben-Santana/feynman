@@ -97,7 +97,7 @@ test('course people shares teacher and enrolled identities with avatars only wit
   await assert.rejects(people(), error => error.code === '42501');
 });
 
-test('module deletion requires its owning instructor and removes only that module and its assignments', async t => {
+test('module deletion requires its owning instructor and retains modules with chats', async t => {
   const { db, as, one } = await courseFixture(t);
   await as(instructor);
   const course = await one("select * from public.create_course('Modules','open')");
@@ -129,17 +129,13 @@ test('module deletion requires its owning instructor and removes only that modul
   await db.exec('reset role');
   await db.query('update public.profiles set approved=true where id=$1', [instructor]);
   await as(instructor);
-  await one('select public.delete_course_module($1,2)', [moduleId]);
+  await assert.rejects(one('select public.delete_course_module($1,2)', [moduleId]), /Chats are retained/);
   await one('select public.delete_course_module($1,1)', [draftId]);
   await db.exec('reset role');
-  assert.deepEqual((await db.query('select id from public.course_modules')).rows, [{ id: keepId }]);
-  assert.deepEqual((await db.query('select module_id,session_id from public.course_assignments')).rows, [{ module_id: keepId, session_id: keptSession.id }]);
-  assert.equal((await one('select count(*)::int as count from public.learning_sessions where id=$1', [removedSession.id])).count, 0);
-  assert.equal((await one('select count(*)::int as count from public.learning_sessions')).count, 2);
-  assert.equal((await one('select count(*)::int as count from public.courses')).count, 1);
-  assert.equal((await one('select count(*)::int as count from public.course_enrollments')).count, 1);
-  await as(student);
-  await assert.rejects(one('select public.start_course_module($1)', [moduleId]), error => error.code === '42501');
+  assert.equal((await one('select count(*)::int as count from public.course_modules')).count, 2);
+  assert.equal((await one('select count(*)::int as count from public.course_assignments')).count, 2);
+  assert.equal((await one('select count(*)::int as count from public.learning_sessions where id=$1', [removedSession.id])).count, 1);
+  assert.equal((await one('select count(*)::int as count from public.learning_sessions where id=$1', [keptSession.id])).count, 1);
 });
 
 test('leaving removes only the student enrollment and pin, revokes module access, and preserves progress for rejoining', async t => {
@@ -257,7 +253,7 @@ test('course pins persist per account and reject inaccessible courses and direct
   await assert.rejects(pin(true), error => error.code === '42501');
 });
 
-test('only the owning instructor can delete a course and its dependent data', async t => {
+test('course deletion requires its owning instructor and is blocked when chats exist', async t => {
   const { db, as, one } = await courseFixture(t);
   await as(instructor);
   const course = await one("select * from public.create_course('Delete this course','open')");
@@ -287,12 +283,10 @@ test('only the owning instructor can delete a course and its dependent data', as
   await db.exec('reset role');
   await db.query('update public.profiles set approved=true where id=$1', [instructor]);
   await as(instructor);
-  await one('select public.delete_course($1)', [course.id]);
+  await assert.rejects(one('select public.delete_course($1)', [course.id]), /Chats are retained/);
   await db.exec('reset role');
-  assert.deepEqual((await db.query('select id from public.courses')).rows, [{ id: retained.id }]);
-  assert.deepEqual((await db.query('select course_id from public.course_pins')).rows, [{ course_id: retained.id }]);
-  for (const table of ['course_modules', 'course_assignments', 'course_enrollments']) assert.equal((await one(`select count(*)::int as count from public.${table}`)).count, 0);
-  assert.equal((await one('select count(*)::int as count from public.learning_sessions where id=$1', [assigned.id])).count, 0);
+  assert.equal((await one('select count(*)::int as count from public.courses')).count, 2);
+  assert.equal((await one('select count(*)::int as count from public.learning_sessions where id=$1', [assigned.id])).count, 1);
   assert.equal((await one('select count(*)::int as count from public.learning_sessions where id=$1', [personalId])).count, 1);
 });
 
@@ -373,7 +367,7 @@ test('courses enforce enrollment, publication, assignment configuration, and pri
     const unlinked = structuredClone(session.document); delete unlinked.session.assignment;
     await assert.rejects(save(unlinked),error => error.code === '23514');
     await assert.rejects(save(session.document,'bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb',0),error => error.code === '23514');
-    await assert.rejects(one('select public.delete_learning_session($1,1)',[session.id]),error => error.code === '23514');
+    await assert.rejects(one('select public.delete_learning_session($1,1)',[session.id]),error => error.code === '42501');
     session.document.session.concepts[0].passed=1;
     session.document.session.concepts[0].messages.push({role:'user',content:'PRIVATE STUDENT CHAT'});
     session = await save(session.document);
@@ -542,10 +536,12 @@ test('dashboard banners keep avatar settings, enforce ownership and revisions, a
   await assert.rejects(save({ type: 'none' }, 0), error => error.code === '42501');
 });
 
-test('admin course tools search all courses and preview draft and published configuration without write access', async t => {
+test('admins can inspect all courses and teach only their own courses', async t => {
   const { db, as, one } = await courseFixture(t);
   const admin = '66666666-6666-4666-8666-666666666666';
   await db.query(`insert into auth.users values ($1,'admin@example.com',now(),'{"provider":"email"}','{}',now())`, [admin]);
+  await db.query("insert into auth.identities values ($1,'email')", [admin]);
+  await db.query("update public.profiles set consent_required=false where id=$1", [admin]);
   await db.query("update public.profiles set approved=true where id=$1", [admin]);
   await db.query("update public.user_roles set role='admin' where user_id=$1", [admin]);
   await as(instructor);
@@ -605,8 +601,27 @@ test('admin course tools search all courses and preview draft and published conf
   await as(admin);
   assert.equal((await db.query('select * from public.courses')).rows.length, 0);
   await assert.rejects(one('select * from public.save_course_module($1,$2,$3,$4,1)', [course.id, moduleId, 'Forged', doc()]), error => error.code === '42501');
+  const createTeachingCourse = () => one("select * from public.create_tagged_course('Admin physics','approval',true,array['Physics'])");
+  const teachingCourse = await createTeachingCourse();
+  assert.equal(teachingCourse.instructor_id, admin);
+  assert.deepEqual(teachingCourse.subjects, ['Physics']);
+  assert.deepEqual((await db.query('select id from public.courses')).rows, [{ id: teachingCourse.id }]);
+  const adminModule = 'eeeeeeee-eeee-4eee-8eee-eeeeeeeeeeee';
+  await one('select * from public.save_course_module($1,$2,$3,$4,0)', [teachingCourse.id, adminModule, 'Energy', doc()]);
+  assert.equal((await one('select id from public.course_modules where course_id=$1', [teachingCourse.id])).id, adminModule);
+  await one('select * from public.publish_course_module($1,1)', [adminModule]);
+  await as(student);
+  await assert.rejects(createTeachingCourse(), error => error.code === '42501');
+  assert.equal((await one('select * from public.join_course($1)', [teachingCourse.code])).status, 'pending');
+  await as(admin);
+  await one("select public.decide_course_enrollment($1,$2,'enrolled')", [teachingCourse.id, student]);
+  const { progress } = await one('select public.course_progress($1) as progress', [teachingCourse.id]);
+  assert.deepEqual(progress.map(({ studentId, status }) => [studentId, status]), [[student, 'enrolled']]);
   await db.exec('reset role');
   await db.query('update public.profiles set approved=false where id=$1', [admin]);
+  await as(admin);
+  await assert.rejects(createTeachingCourse(), error => error.code === '42501');
+  assert.deepEqual((await db.query('select id from public.courses')).rows, []);
   await as('', 'service_role');
   await assert.rejects(view(), error => error.code === '42501');
 });
@@ -692,11 +707,11 @@ test('community courses expose published topics and star totals while keeping en
   personal.document.session.concepts[0].passed = 2;
   personal = await one('select * from public.save_learning_session($1,$2,$3,$4)', [personal.id, personal.title, personal.document, personal.revision]);
   await as(instructor);
-  await one('select public.delete_course($1)', [course.id]);
+  await assert.rejects(one('select public.delete_course($1)', [course.id]), /Chats are retained/);
   await as(outsider);
   assert.equal((await db.query('select * from public.learning_sessions')).rows[0].id, personal.id);
-  assert.deepEqual((await db.query('select * from public.community_topic_copies')).rows, []);
-  await one('select public.delete_learning_session($1,$2)', [personal.id, personal.revision]);
+  assert.equal((await db.query('select * from public.community_topic_copies')).rows.length, 1);
+  await assert.rejects(one('select public.delete_learning_session($1,$2)', [personal.id, personal.revision]), error => error.code === '42501');
   await as(pending);
   await assert.rejects(library(), error => error.code === '42501');
   await as('', 'anon');

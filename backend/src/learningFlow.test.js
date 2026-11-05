@@ -110,11 +110,15 @@ test('reload restores a saved concept chat and gives older unopened concepts an 
   assert.equal(restoreLearning({ concepts: [concept('integrals')], activeId: null, started: false }).started, false);
 });
 
-test('Analyze only advances when the specific criterion is supported', () => {
+test('finishing Analyze ends the session without marking unsupported criteria as passed', () => {
   const active = { ...concept('integrals'), passed: 3 };
   const messages = [{ role: 'assistant', content: 'Check my papers.' }, { role: 'user', content: 'I sorted them.' }];
   const incomplete = advanceConcept(active, messages, { message: 'Your learning report is ready.', expression: 'attentive', assessment: assessment(false), finalSummary: 'More evidence is needed.' });
   assert.equal(incomplete.passed, 3);
+  assert.equal(sessionComplete([incomplete]), true);
+  assert.deepEqual(incomplete.messages, messages);
+  assert.equal(incomplete.finalSummary, 'More evidence is needed.');
+  assert.equal(sessionComplete([incomplete, concept('unfinished')]), false);
   const complete = advanceConcept(active, messages, { message: 'Your learning report is ready.', expression: 'excited', assessment: assessment(true), finalSummary: 'Criterion met.' });
   assert.equal(complete.passed, 4);
   assert.deepEqual(complete.messages, messages);

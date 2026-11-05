@@ -4,7 +4,7 @@ import { playgroundEntries, notifyPlayground } from './playgroundStore.ts'
 
 export type CourseAssignment = { courseId: string; courseName: string; moduleId: string }
 export type SavedLearning<T> = { concepts: T[]; activeId: string | null }
-export type SavedSession<T, S> = SavedLearning<T> & { id: string; title: string; updatedAt: number; started: boolean; learningType?: LearningType | null; setupStep?: 'title' | 'class-type' | 'concepts' | 'rubric'; files?: File[]; selectedTargets?: Record<string, string | null>; aiByName?: boolean; rubricInstructions?: string; assignment?: CourseAssignment; generic?: S }
+export type SavedSession<T, S> = SavedLearning<T> & { id: string; title: string; updatedAt: number; reportFinishedAt?: number; started: boolean; learningType?: LearningType | null; setupStep?: 'title' | 'class-type' | 'concepts' | 'rubric'; files?: File[]; selectedTargets?: Record<string, string | null>; aiByName?: boolean; rubricInstructions?: string; assignment?: CourseAssignment; generic?: S }
 export type AttachmentReference = { path: string; name: string; type: string; lastModified?: number }
 export type CloudSession = { owner_id: string; id: string; title: string; document: { version: 1; session: Record<string, unknown> }; revision: number; updated_at: string }
 type RecordSession = SavedSession<unknown, unknown>
@@ -160,6 +160,8 @@ export function createLearningStore({ client = supabase, getAccount = requireAcc
     boundary(userId, signal)
     revisions = loadedRevisions
     for (const [id, item] of Object.entries(recovery)) {
+      // Cancel deletion requests recovered from older app versions.
+      item.deleting = false
       pending.set(id, item)
       const index = records.findIndex(record => record.id === id)
       if (item.deleting) { if (index >= 0) records.splice(index, 1) }
@@ -224,19 +226,6 @@ export function createLearningStore({ client = supabase, getAccount = requireAcc
       }
     }
   }
-  async function deleteSession<T, S>(record: SavedSession<T, S>): Promise<void> {
-    if (record.assignment) throw new Error('Assigned topics cannot be deleted.')
-    const userId = bindOwner()
-    await flushSessionSaves()
-    if (conflicts.has(record.id)) throw new Error('Resolve this session’s save conflict before deleting it.')
-    const revision = revisions.get(record.id) || 0
-    if (!revision) { pending.delete(record.id); await recover(userId, record.id); return }
-    const item: Pending = { record: record as RecordSession, revision, deleting: true }
-    pending.set(record.id, item); await recover(userId, record.id, item)
-    setStatus({ state: 'saving', message: 'Deleting…' })
-    await flushSessionSaves()
-    if (conflicts.has(record.id)) throw new Error('This session changed on another device. Resolve the conflict before deleting.')
-  }
   async function resolveSessionConflict(id: string, keepCopy: boolean): Promise<RecordSession | null> {
     const userId = bindOwner(), signal = getSignal()
     const local = pending.get(id)
@@ -288,7 +277,7 @@ export function createLearningStore({ client = supabase, getAccount = requireAcc
     boundary(userId, signal)
     return value
   }
-  return { saveModuleRecovery, loadModuleRecovery, encodeSession, decodeSession, loadSessions, queueSessionSave, flushSessionSaves, deleteSession, resolveSessionConflict, loadPlayground, savePlayground, subscribeSaveStatus, getSaveStatus }
+  return { saveModuleRecovery, loadModuleRecovery, encodeSession, decodeSession, loadSessions, queueSessionSave, flushSessionSaves, resolveSessionConflict, loadPlayground, savePlayground, subscribeSaveStatus, getSaveStatus }
 }
 const store = createLearningStore()
-export const { saveModuleRecovery, loadModuleRecovery, encodeSession, decodeSession, loadSessions, queueSessionSave, flushSessionSaves, deleteSession, resolveSessionConflict, loadPlayground, savePlayground, subscribeSaveStatus, getSaveStatus } = store
+export const { saveModuleRecovery, loadModuleRecovery, encodeSession, decodeSession, loadSessions, queueSessionSave, flushSessionSaves, resolveSessionConflict, loadPlayground, savePlayground, subscribeSaveStatus, getSaveStatus } = store

@@ -46,7 +46,7 @@ watchFile(sharedTypes, { interval: 500 }, () => {
 function restartBackend() {
   if (stopping || restarting) return;
   restarting = true;
-  console.info('Backend source changed; restarting Feynman API.');
+  console.info('Backend source changed; restart queued until active requests finish.');
   backend.kill('SIGTERM');
 }
 function stop(code = 0) {

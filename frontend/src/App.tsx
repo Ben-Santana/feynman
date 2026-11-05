@@ -1,5 +1,7 @@
+import { useToast } from './components/useToast'
+import { rubricSkipReason } from './rubricFallback.js'
 import { ChatComposer } from './components/ChatComposer'
-import { LearningActions } from './components/LearningActions'
+import { LearningActions, SkipRubricButton } from './components/LearningActions'
 import { learningActionMessage, type LearningAction } from './learningActions'
 import { TooltipButton } from './components/TooltipButton'
 import { ConceptTooltip } from './components/ConceptTooltip'
@@ -14,13 +16,14 @@ import { fruitFlyBuzz, fruitFlyRubric } from './fruitFly'
 import { CharacterStudio } from './components/CharacterStudio'
 import { defaultAppearance, type CharacterAppearance } from './characterAppearance'
 import { loadCloudAppearance, saveCloudAppearance } from './cloudAppearance'
-import { accountFetch, accountSignal, type Account, type AccountAuthMode } from './accounts'
+import { accountFetch, accountSignal, type Account, type AccountSignInMethod } from './accounts'
 import { AdminAnalyticsPage } from './components/AdminAnalyticsPage'
 import { AdminSalgSurveyPage } from './components/AdminSalgSurveyPage'
 import { LearningSurveyDialog } from './components/LearningSurveyDialog'
 import { useLearningSurvey } from './useLearningSurvey'
 import { AdminPage } from './components/AdminPage'
 import { AdminCoursesPage } from './components/AdminCoursesPage'
+import { canTeachCourses } from './coursePermissions'
 import { Bloub } from './components/Bloub'
 import { DashboardShell } from './components/DashboardShell'
 import { DashboardPage } from './components/DashboardPage'
@@ -29,16 +32,16 @@ import { CourseCreatePage } from './components/CourseCreatePage'
 import { CoursesPage } from './components/CoursesPage'
 import { loadModuleDraft, saveModule, publishModule, type ModuleSession } from './courseStore'
 import { SessionsPage } from './components/SessionsPage'
-import { DeleteMenu } from './components/DeleteMenu'
 import { PaperReview, type Review } from './components/PaperReview'
 import { ReviewFeedback } from './components/ReviewFeedback'
 import { RubricChecklistEditor } from './components/RubricChecklistEditor'
 import { checklistItems } from './rubricChecklist.js'
 import { RubricAutoGenerateToggle } from './components/RubricAutoGenerateToggle'
-import { SessionSummary, SummaryUnavailable } from './components/SessionSummary'
+import { SummaryUnavailable } from './components/SessionSummary'
+import { TopicReport } from './components/TopicReport'
 import { Whiteboard, type WhiteboardHandle } from './components/Whiteboard'
-import { saveModuleRecovery, loadModuleRecovery, subscribeSaveStatus, getSaveStatus, resolveSessionConflict, loadSessions, queueSessionSave, flushSessionSaves, deleteSession as deleteCloudSession, type SavedSession } from './learningStore'
-import { advanceConcept, assessmentTranscript, restoreLearning, sessionComplete, startConcepts, targetCount, type ChatResult, type Concept, type ConceptRubric, type Level, type Message, type Session } from './learningFlow'
+import { saveModuleRecovery, loadModuleRecovery, subscribeSaveStatus, getSaveStatus, resolveSessionConflict, loadSessions, queueSessionSave, flushSessionSaves, type SavedSession } from './learningStore'
+import { advanceConcept, assessmentTranscript, conceptFinished, restoreLearning, sessionComplete, startConcepts, targetCount, type ChatResult, type Concept, type ConceptRubric, type Level, type Message, type Session } from './learningFlow'
 import { draftTarget, editCriterion, fillMissingRubric, genericRubric, highestFilledLevel, mergeSuggestions, restoreDraft } from './rubricSetup'
 import { generateRubricBatches } from './rubricGeneration'
 
@@ -73,7 +76,7 @@ function LevelSlider({ id, name, value, onChange }: { id: string; name: string; 
 async function post<T>(path: string, body: unknown, signal: AbortSignal): Promise<T> {
   signal = AbortSignal.any([signal, accountSignal()])
   signal.throwIfAborted()
-  const local = body && typeof body === 'object' && 'assignmentSessionId' in body ? undefined : localAIResponse(path, body)
+  const local = body && typeof body === 'object' && ('assignmentSessionId' in body || 'sessionId' in body) ? undefined : localAIResponse(path, body)
   if (local !== undefined) return local as T
   const response = await accountFetch(path, { method: 'POST', signal, headers: { 'Content-Type': 'application/json', ...aiHeaders() }, body: JSON.stringify(body) })
   const data = await response.json()
@@ -81,7 +84,7 @@ async function post<T>(path: string, body: unknown, signal: AbortSignal): Promis
   return data as T
 }
 
-export default function App({ account, onProfileUpdated, authMode }: { account: Account; onProfileUpdated: (account: Account) => void; authMode: AccountAuthMode }) {
+export default function App({ account, onProfileUpdated, authMode }: { account: Account; onProfileUpdated: (account: Account) => void; authMode: AccountSignInMethod }) {
   const [page, setPage] = useState(window.location.pathname.replace(/\/$/, '') || '/')
   const [appearance, setAppearance] = useState(defaultAppearance)
   const [appearanceSaveStatus, setAppearanceSaveStatus] = useState<'saved' | 'saving' | 'error'>('saved')
@@ -104,7 +107,7 @@ export default function App({ account, onProfileUpdated, authMode }: { account: 
   const developerDirty = useRef(false)
   const onDeveloperDirtyChange = useCallback((dirty: boolean) => { developerDirty.current = dirty }, [])
   const isDeveloperPage = page === '/developer'
-  const adminCourseMatch = /^\/admin\/courses(?:\/([^/]+))?$/.exec(page)
+  const adminCourseMatch = /^\/admin\/(?:all-)?courses(?:\/([^/]+))?$/.exec(page)
   const isAdminCoursesPage = Boolean(adminCourseMatch)
   const isSalgSurveyPage = page === '/admin/analytics/salg-survey'
   const isAnalyticsPage = page === '/admin/analytics' || isSalgSurveyPage
@@ -150,8 +153,6 @@ export default function App({ account, onProfileUpdated, authMode }: { account: 
   const [rubricInstructions, setRubricInstructions] = useState('')
   const [savedSessions, setSavedSessions] = useState<SavedSession<Concept, Session>[]>([])
   const survey = useLearningSurvey(account, `${page}:${saveStatus.state}:${savedSessions.filter(record => record.started && sessionComplete(record.concepts)).map(record => record.id).join(',')}`)
-  const [deletingSession, setDeletingSession] = useState(false)
-  const sessionDeleteLock = useRef(false)
   const sessionsRef = useRef<SavedSession<Concept, Session>[]>([])
   const assignment = isModuleEditor ? undefined : savedSessions.find(record => record.id === sessionId)?.assignment
   const sessionBackPath = assignment ? `/courses/${assignment.courseId}` : '/sessions'
@@ -166,6 +167,11 @@ export default function App({ account, onProfileUpdated, authMode }: { account: 
   const [pendingMessage, setPendingMessage] = useState<Message | null>(null)
   const [uploading, setUploading] = useState(false)
   const [error, setError] = useState('')
+  const toast = useToast()
+  const reportError = useCallback((reason: unknown) => {
+    console.error('Feynman request failed', reason)
+    toast('something went wrong try again')
+  }, [toast])
   const [validationError, setValidationError] = useState<{ step: 'title' | 'concepts' | 'rubric'; fieldId: string; message: string; attempt: number } | null>(null)
   const [trackerOverflow, setTrackerOverflow] = useState(false)
   const [conceptTooltip, setConceptTooltip] = useState<{ name: string; left: number; top: number; bottom: number } | null>(null)
@@ -180,7 +186,7 @@ export default function App({ account, onProfileUpdated, authMode }: { account: 
   const [loadVersion, setLoadVersion] = useState(0)
   const currentConcept = concepts.find(concept => concept.id === active)
   const session: Session = currentConcept || { messages: [], draft: '', assessment: null }
-  const done = Boolean(currentConcept && currentConcept.passed >= targetCount(currentConcept.target))
+  const done = Boolean(currentConcept && conceptFinished(currentConcept))
   const paper = session.messages.findLast(message => message.paper)?.paper
   const review = paper ? session.messages.findLast(message => message.review?.paperId === paper.id)?.review : undefined
   const [revisingPaper, setRevisingPaper] = useState<string | null>(null)
@@ -232,12 +238,12 @@ export default function App({ account, onProfileUpdated, authMode }: { account: 
         if (restored) { const draft = restoreDraft(selected); setConcepts(restored.concepts); setStarted(restored.started); setActive(restored.activeId || ''); setSessionId(selected.id); setTitle(draft.title); setSetupStep(draft.step); setFiles(draft.files); setSelectedTargets(draft.selectedTargets); setAiByName(draft.aiByName); setRubricInstructions(draft.rubricInstructions); setLearningType(draft.learningType); setPendingLearningType(null) }
       } else if (window.location.pathname.replace(/\/$/, '') === '/chat') setSessionId(crypto.randomUUID())
       setHydrated(true)
-    }).catch(reason => { if (!disposed) { setError(reason.message); setLoadFailed(true) } })
+    }).catch(reason => { if (!disposed) { reportError(reason); setLoadFailed(true) } })
     return () => { disposed = true }
-  }, [loadVersion, commitAppearance])
+  }, [loadVersion, commitAppearance, reportError])
   useEffect(() => {
     if (isModuleEditor || sessionId === moduleSessionId.current || !hydrated || !sessionId || (!title.trim() && !learningType)) return
-    const record: SavedSession<Concept, Session> = { ...(assignment ? { assignment } : {}), id: sessionId, title: title.trim(), updatedAt: Date.now(), started, concepts, activeId: active || null, setupStep: setupStep === 'loading' ? 'concepts' : setupStep, files: started ? [] : files, selectedTargets, aiByName, rubricInstructions, learningType }
+    const record: SavedSession<Concept, Session> = { ...(assignment ? { assignment } : {}), id: sessionId, title: title.trim(), updatedAt: Date.now(), reportFinishedAt: sessionsRef.current.find(item => item.id === sessionId)?.reportFinishedAt || (isSummaryPage && started ? Date.now() : undefined), started, concepts, activeId: active || null, setupStep: setupStep === 'loading' ? 'concepts' : setupStep, files: started ? [] : files, selectedTargets, aiByName, rubricInstructions, learningType }
     const signature = (value: unknown) => JSON.stringify(value, (key, value) => key === 'updatedAt' ? undefined : value instanceof File ? { name: value.name, size: value.size, type: value.type, lastModified: value.lastModified } : value)
     if (signature(record) === signature(sessionsRef.current.find(item => item.id === sessionId))) return
     const previous = sessionsRef.current.find(item => item.id === record.id)
@@ -246,7 +252,7 @@ export default function App({ account, onProfileUpdated, authMode }: { account: 
     setSavedSessions(next)
     const committed = record.started !== previous?.started || record.concepts.some((concept, index) => concept.messages.length !== previous?.concepts[index]?.messages.length)
     queueSessionSave(record, committed)
-  }, [concepts, active, started, sessionId, hydrated, title, setupStep, files, selectedTargets, aiByName, rubricInstructions, learningType, busy, isModuleEditor, assignment])
+  }, [concepts, active, started, sessionId, hydrated, title, setupStep, files, selectedTargets, aiByName, rubricInstructions, learningType, busy, isModuleEditor, assignment, isSummaryPage])
   useEffect(() => {
     if (!moduleId || !moduleCourseId) return
     let disposed = false
@@ -255,7 +261,7 @@ export default function App({ account, onProfileUpdated, authMode }: { account: 
     const fresh = new URLSearchParams(window.location.search).get('new') === '1'
     const empty: ModuleSession = { id: moduleId, title: '', concepts: [newConcept()], started: false, activeId: null, updatedAt: Date.now(), learningType: null, setupStep: 'title', files: [], selectedTargets: {} }
     void (async () => {
-      if (account.role !== 'instructor') throw new Error('Instructor access required.')
+      if (!canTeachCourses(account.role)) throw new Error('Instructor access required.')
       const saved = fresh ? { record: empty, revision: 0 } : await loadModuleDraft(moduleCourseId, moduleId)
       signal.throwIfAborted()
       const recovery = await loadModuleRecovery<{ record: ModuleSession; revision: number } | null>(moduleId)
@@ -269,9 +275,9 @@ export default function App({ account, onProfileUpdated, authMode }: { account: 
       moduleDirty.current = Boolean(recovery)
       if (recovery) setModuleNotice('Unsaved topic changes restored. Save the draft to keep them.')
       setModuleReady(true)
-    })().catch(reason => { if (!disposed) setError(reason.message) })
+    })().catch(reason => { if (!disposed) reportError(reason) })
     return () => { disposed = true; moduleDirty.current = false }
-  }, [moduleId, moduleCourseId, account.role, moduleLoadVersion])
+  }, [moduleId, moduleCourseId, account.role, moduleLoadVersion, reportError])
   const moduleRecord = useCallback((): ModuleSession => {
     return { id: moduleId!, title: title.trim(), concepts, started: false, activeId: null, updatedAt: 0, learningType, setupStep: setupStep === 'loading' ? 'concepts' : setupStep, files, selectedTargets, aiByName, rubricInstructions }
   }, [moduleId, title, concepts, learningType, setupStep, files, selectedTargets, aiByName, rubricInstructions])
@@ -308,7 +314,7 @@ export default function App({ account, onProfileUpdated, authMode }: { account: 
       setHydrated(false)
       await resolveSessionConflict(saveStatus.sessionId, keepCopy)
       setLoadVersion(value => value + 1)
-    } catch (reason) { setError(reason instanceof Error ? reason.message : 'Could not resolve the conflict.'); setHydrated(true) }
+    } catch (reason) { reportError(reason); setHydrated(true) }
     finally { setResolvingSave(false) }
   }
   async function commitModule(publish = false) {
@@ -331,12 +337,12 @@ export default function App({ account, onProfileUpdated, authMode }: { account: 
         setSessionId('')
         navigate(`/courses/${moduleCourseId}`)
       } else setModuleNotice('Draft saved.')
-    } catch (reason) { if (!signal.aborted) setError(reason instanceof Error ? reason.message : 'Could not save the topic.') }
+    } catch (reason) { if (!signal.aborted) reportError(reason) }
     finally { if (!signal.aborted) setModuleSaving(false) }
   }
   useEffect(() => {
-    if (hydrated && isChatPage && started && sessionComplete(concepts) && currentConcept?.passed === levels.length) navigate(`/summary?session=${encodeURIComponent(sessionId)}`, true)
-  }, [hydrated, isChatPage, started, concepts, currentConcept, sessionId, navigate])
+    if (hydrated && isChatPage && started && (sessionComplete(concepts) || savedSessions.find(record => record.id === sessionId)?.reportFinishedAt)) navigate(`/summary?session=${encodeURIComponent(sessionId)}`, true)
+  }, [hydrated, isChatPage, started, concepts, currentConcept, sessionId, navigate, savedSessions])
   useEffect(() => {
     const onPopState = () => {
       setPage(window.location.pathname.replace(/\/$/, '') || '/')
@@ -354,20 +360,6 @@ export default function App({ account, onProfileUpdated, authMode }: { account: 
     if (isDeveloperPage && path !== '/developer' && developerDirty.current && !window.confirm('Leave developer tools and discard unsaved prompt edits?')) return
     navigate(path)
   }
-  async function deleteSession(record: SavedSession<Concept, Session>) {
-    if (record.assignment || sessionDeleteLock.current) return
-    if (!window.confirm(`Delete “${record.title || 'Untitled session'}”? Its conversation and progress will be removed from your account.`)) return
-    const signal = accountSignal()
-    sessionDeleteLock.current = true; setDeletingSession(true); setError('')
-    try {
-      await deleteCloudSession(record)
-      signal.throwIfAborted()
-      const next = sessionsRef.current.filter(item => item.id !== record.id)
-      sessionsRef.current = next; setSavedSessions(next)
-      if (sessionId === record.id) { setSessionId(''); setTitle(''); setActive('') }
-    } catch (reason) { if (!signal.aborted) setError((reason as Error).message) }
-    finally { sessionDeleteLock.current = false; if (!signal.aborted) setDeletingSession(false) }
-  }
   async function openSession(record: SavedSession<Concept, Session>) {
     if (busy) return
     if (!(record.started && sessionComplete(record.concepts)) && !await survey.guard()) return
@@ -375,7 +367,7 @@ export default function App({ account, onProfileUpdated, authMode }: { account: 
     if (!restored) return
     const draft = restoreDraft(record)
     setConcepts(restored.concepts); setStarted(restored.started); setActive(restored.activeId || ''); setSessionId(record.id); setTitle(draft.title); setSetupStep(draft.step); setFiles(draft.files); setSelectedTargets(draft.selectedTargets); setAiByName(draft.aiByName); setRubricInstructions(draft.rubricInstructions); setLearningType(draft.learningType); setPendingLearningType(null); setError('')
-    navigate(`/${record.started && sessionComplete(restored.concepts) ? 'summary' : 'chat'}?session=${encodeURIComponent(record.id)}`)
+    navigate(`/${record.started && (record.reportFinishedAt || sessionComplete(restored.concepts)) ? 'summary' : 'chat'}?session=${encodeURIComponent(record.id)}`)
   }
   async function createSession() {
     if (busy || !await survey.guard()) return
@@ -388,9 +380,10 @@ export default function App({ account, onProfileUpdated, authMode }: { account: 
     const element = tracker.current
     if (!element) return
     const update = () => {
-      const overflows = element.scrollWidth > element.clientWidth + 1
+      const vertical = window.matchMedia('(max-width: 700px)').matches
+      const overflows = vertical ? element.scrollHeight > element.clientHeight + 1 : element.scrollWidth > element.clientWidth + 1
       setTrackerOverflow(overflows)
-      if (overflows && element.scrollLeft === 0) element.scrollLeft = element.scrollWidth
+      if (!vertical && overflows && element.scrollLeft === 0) element.scrollLeft = element.scrollWidth
     }
     const observer = new ResizeObserver(update)
     observer.observe(element)
@@ -481,7 +474,7 @@ export default function App({ account, onProfileUpdated, authMode }: { account: 
       const next = mergeSuggestions(concepts, result.names, name => newConcept(name))
       setConcepts(next)
       setSelectedTargets(targets => Object.fromEntries(next.map(concept => [concept.id, targets[concept.id] ?? null])))
-    } catch (reason) { setError(reason instanceof Error ? reason.message : 'Could not suggest concepts.') }
+    } catch (reason) { reportError(reason) }
     finally { setUploading(false) }
   }
   async function continueToRubric() {
@@ -513,10 +506,10 @@ export default function App({ account, onProfileUpdated, authMode }: { account: 
     } catch (reason) { showValidation('concepts', '', reason instanceof Error ? reason.message : 'Could not generate the rubric.'); setSetupStep('concepts') }
   }
 
-  async function levelOpening(concept: Concept, level: Level, signal: AbortSignal, priorMessages: Message[] = concept.messages): Promise<ChatResult> {
+  async function levelOpening(concept: Concept, level: Level, signal: AbortSignal, priorMessages: Message[] = concept.messages, practiceGoal?: string): Promise<ChatResult> {
     if (fruitFlySelected() && !assignment) return post<ChatResult>('/api/chat', {}, signal)
     if (!learningType) throw new Error('Choose a learning type before starting.')
-    return post<ChatResult>('/api/chat', { ...(assignment ? { assignmentSessionId: sessionId, assignmentConceptId: concept.id } : {}), level, learningType, topic: concept.name, aspects: checklistItems(concept.rubric[level]), criterion: concept.rubric[level], messages: [], priorMessages: priorMessages.slice(-100) }, signal)
+    return post<ChatResult>('/api/chat', { ...(assignment ? { assignmentSessionId: sessionId, assignmentConceptId: concept.id } : {}), ...(practiceGoal ? { practiceGoal } : {}), level, learningType, topic: concept.name, aspects: checklistItems(concept.rubric[level]), criterion: concept.rubric[level], messages: [], priorMessages: priorMessages.slice(-100) }, signal)
   }
   async function raiseTarget(concept: Concept, target: Level) {
     if (assignment || busy || targetCount(target) <= targetCount(concept.target)) return
@@ -538,18 +531,7 @@ export default function App({ account, onProfileUpdated, authMode }: { account: 
       const message: Message = { role: 'assistant', content: response.message, passedLevel: levels[concept.passed - 1].id, ...('paper' in response && response.paper ? { paper: response.paper } : {}) }
       setArrivingReply({ conceptId: concept.id, index: concept.messages.length, content: message.content })
       updateConcept(concept.id, { target, rubric: nextConcept.rubric, messages: [...concept.messages, message], stageStart: concept.messages.length, assessment: null, expression: response.expression })
-    } catch (reason) { setError(reason instanceof Error ? reason.message : 'Could not start the next level.') }
-    finally { setBusy(false) }
-  }
-  async function retryAnalyze(concept: Concept) {
-    if (busy || !quantitative) return
-    setBusy(true); setError('')
-    try {
-      const result = await levelOpening(concept, 'analyze', new AbortController().signal, [])
-      const prior = concept.messages.at(-1)?.role === 'assistant' ? concept.messages.slice(0, -1) : concept.messages
-      setArrivingReply({ conceptId: concept.id, index: prior.length, content: result.message })
-      updateConcept(concept.id, { messages: [...prior, { role: 'assistant', content: result.message, ...(result.paper ? { paper: result.paper } : {}) }], finalSummary: undefined, analysisGrade: undefined, assessment: null })
-    } catch (reason) { setError(reason instanceof Error ? reason.message : 'Could not start another paper set.') }
+    } catch (reason) { reportError(reason) }
     finally { setBusy(false) }
   }
   async function send(submittedReview?: Review, action?: LearningAction): Promise<boolean> {
@@ -559,7 +541,12 @@ export default function App({ account, onProfileUpdated, authMode }: { account: 
     const timeout = setTimeout(() => controller.abort(), 195000)
     const board = whiteboard.current?.snapshot()
     const userMessage: Message = { role: 'user', content: submittedReview ? submittedReview.grades ? `I graded your papers: ${submittedReview.grades.map((grade, index) => `paper ${index + 1} ${grade.grade === 'pass' ? 'Pass' : 'Fail'}${grade.selectedSteps.length ? ` (marked ${grade.selectedSteps.map(step => `step ${step}`).join(', ')})` : ''}`).join('; ')}.` : `I grade your paper ${submittedReview.grade === 'pass' ? 'Pass' : 'Fail'}.${submittedReview.selectedSteps?.length ? ` I marked ${submittedReview.selectedSteps.map(step => `step ${step}`).join(', ')} as incorrect.` : ''}` : session.draft.trim(), ...(submittedReview ? { review: submittedReview } : {}), ...(board ? { boardImage: board.image } : {}) }
-    if (action) Object.assign(userMessage, learningActionMessage())
+    if (action === 'finish') Object.assign(userMessage, learningActionMessage())
+    if (action === 'skip') {
+      const aspect = session.messages.at(-1)?.rubricFocus
+      if (!aspect || !rubricSkipReason(session.messages.slice(currentConcept?.stageStart ?? 0), aspect)) { clearTimeout(timeout); requestLock.current = false; setBusy(false); return false }
+      Object.assign(userMessage, { content: `Skip this rubric item: ${aspect}`, skipRubricItem: aspect })
+    }
     const messages = [...session.messages, userMessage]
     setPendingMessage(userMessage)
     // Keep the draft recoverable until the full turn succeeds.
@@ -568,9 +555,10 @@ export default function App({ account, onProfileUpdated, authMode }: { account: 
       const level = levels[currentConcept.passed].id
       if (!learningType) throw new Error('Choose a learning type before starting.')
       const stageMessages = assessmentTranscript(currentConcept, userMessage, learningType)
-      const result = await post<ChatResult>('/api/chat', { ...(assignment ? { assignmentSessionId: sessionId, assignmentConceptId: currentConcept.id } : {}), level, learningType, topic: currentConcept.name, aspects: checklistItems(currentConcept.rubric[level]), criterion: currentConcept.rubric[level], messages: stageMessages }, controller.signal)
+      await flushSessionSaves()
+      const result = await post<ChatResult>('/api/chat', { ...(assignment ? { assignmentSessionId: sessionId, assignmentConceptId: currentConcept.id } : { sessionId, conceptId: currentConcept.id }), level, learningType, topic: currentConcept.name, aspects: checklistItems(currentConcept.rubric[level]), criterion: currentConcept.rubric[level], messages: stageMessages }, controller.signal)
       let nextOpening: { message: string; paper?: ChatResult['paper'] } | undefined
-      if (result.assessment?.complete && currentConcept.passed + 1 < targetCount(currentConcept.target)) {
+      if ((result.assessment?.complete || result.assessment?.readyToAdvance) && currentConcept.passed + 1 < targetCount(currentConcept.target)) {
         const nextLevel = levels[currentConcept.passed + 1].id
         const opening = await levelOpening(currentConcept, nextLevel, controller.signal, messages)
         nextOpening = { message: opening.message, ...('paper' in opening && opening.paper ? { paper: opening.paper } : {}) }
@@ -581,19 +569,19 @@ export default function App({ account, onProfileUpdated, authMode }: { account: 
       setRevisingPaper(null)
       return true
     } catch (reason) {
-      if (!submittedReview) updateSession({ draft: userMessage.content })
-      setError(reason instanceof Error ? reason.name === 'AbortError' ? 'The request timed out. Please retry.' : reason.message : 'Connection failed. Please retry.')
+      if (!submittedReview && !action) updateSession({ draft: userMessage.content })
+      reportError(reason)
     }
     finally { setPendingMessage(null); clearTimeout(timeout); requestLock.current = false; setBusy(false) }
     return false
   }
 
   function renderSessionCard(record: SavedSession<Concept, Session>) {
-      const complete = record.started && sessionComplete(record.concepts)
+      const complete = record.started && Boolean(record.reportFinishedAt || sessionComplete(record.concepts))
       const sessionTitle = record.title || 'Untitled session'
-      return <DeleteMenu key={record.id} className="session-card-wrap" label={sessionTitle} action="Delete session" disabled={deletingSession} onDelete={record.assignment ? undefined : () => void deleteSession(record)}>
+      return <div key={record.id} className="session-card-wrap">
         <button type="button" className={`session-card ${complete ? 'session-card-complete' : record.started ? '' : 'session-card-draft'}`} onClick={() => openSession(record)}><span className="session-card-icon" aria-hidden="true">{complete ? <span className="session-complete-dot" /> : record.started ? '✦' : '✎'}</span><span className="session-card-copy"><strong>{sessionTitle}</strong><small>{record.assignment && <span>{record.assignment.courseName} · </span>}<span>{record.concepts.length} {record.concepts.length === 1 ? 'concept' : 'concepts'}</span><span aria-hidden="true">·</span><span className={complete ? 'session-status-complete' : undefined}>{complete ? 'Complete' : record.started ? 'In progress' : 'Draft'}</span><span aria-hidden="true">·</span><time dateTime={new Date(record.updatedAt).toISOString()}>{new Date(record.updatedAt).toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' })}</time></small></span><span className="session-card-arrow" aria-hidden="true">→</span></button>
-      </DeleteMenu>
+      </div>
   }
 
   function renderPage() {
@@ -607,13 +595,13 @@ export default function App({ account, onProfileUpdated, authMode }: { account: 
     if (!hydrated) return <main className="bg-background text-foreground"><LoadingScreen label="Loading learning" /></main>
     if (page === '/character') return <main className="bg-background text-foreground"><CharacterStudio appearance={appearance} onChange={commitAppearance} saveStatus={appearanceSaveStatus} saveError={appearanceSaveError} onDone={() => navigate('/dashboard')} /></main>
     if (isCourseCreatePage) return <CourseCreatePage account={account} onNavigate={navigateFromSidebar} />
-    if (isCoursesPage) return <main><CoursesPage key={page} account={account} collection={page === '/courses/community' ? 'community' : page === '/courses/starred' ? 'starred' : 'enrolled'} courseId={['/courses', '/courses/community', '/courses/starred'].includes(page) ? undefined : page.split('/')[2]} sessions={savedSessions} onBeforeTopic={survey.guard} onNavigate={navigateFromSidebar} onOpenAssignment={record => { sessionsRef.current = [record, ...sessionsRef.current.filter(value => value.id !== record.id)]; setSavedSessions(sessionsRef.current); openSession(record) }} /></main>
+    if (isCoursesPage) return <main><CoursesPage key={page} account={account} collection={page === '/courses/community' ? 'community' : page === '/courses/starred' ? 'starred' : 'enrolled'} courseId={['/courses', '/courses/community', '/courses/starred'].includes(page) ? undefined : page.split('/')[2]} sessions={savedSessions} onBeforeTopic={survey.guard} onNavigate={navigateFromSidebar} onOpenAssignment={record => { record = { ...record, reportFinishedAt: record.reportFinishedAt || sessionsRef.current.find(value => value.id === record.id)?.reportFinishedAt }; sessionsRef.current = [record, ...sessionsRef.current.filter(value => value.id !== record.id)]; setSavedSessions(sessionsRef.current); openSession(record) }} /></main>
     if (isModuleEditor && (!moduleReady || sessionId !== moduleId)) return <main className={error ? 'courses-page' : 'bg-background text-foreground'}>{error ? <><p role="alert">{error}</p><button onClick={() => navigate(`/courses/${moduleCourseId}`)}>Back to course</button></> : <LoadingScreen label="Loading topic" />}</main>
-    if (isDashboardPage) return <main className="bg-background text-foreground"><DashboardPage key={account.id} account={account} appearance={appearance} sessions={savedSessions} onOpenSession={openSession} onDeleteSession={deleteSession} deletingSession={deletingSession} onCreateSession={createSession} onNavigate={navigateFromSidebar} onCustomizeAvatar={() => navigate('/character')} error={error} /></main>
+    if (isDashboardPage) return <main className="bg-background text-foreground"><DashboardPage key={account.id} account={account} appearance={appearance} sessions={savedSessions} onOpenSession={openSession} onCreateSession={createSession} onNavigate={navigateFromSidebar} onCustomizeAvatar={() => navigate('/character')} error={error} /></main>
     if (isDeveloperPage) return <main className="bg-background text-foreground"><DeveloperPage characterName={appearance.name} onDirtyChange={onDeveloperDirtyChange} /></main>
     if (!isSessionsPage && !isSummaryPage && !started && setupStep === 'loading') return <main className="bg-background text-foreground"><LoadingScreen label="Creating your rubric" delayMs={0} /></main>
     return <main className="bg-background text-foreground">
-      {isSessionsPage ? <SessionsPage sessions={savedSessions} onCreateSession={createSession} renderSession={renderSessionCard} error={error} /> : isSummaryPage ? started && sessionComplete(concepts) ? <SessionSummary title={title} learningType={learningType ?? 'quantitative'} concepts={concepts} backDestination={assignment ? 'course' : 'sessions'} onBack={() => navigate(sessionBackPath)} onNewSession={createSession} /> : <SummaryUnavailable hasSession={Boolean(sessionId)} onBack={() => navigate(sessionBackPath)} onContinue={sessionId ? () => navigate(`/chat?session=${encodeURIComponent(sessionId)}`) : createSession} /> : <>
+      {isSessionsPage ? <SessionsPage sessions={savedSessions} onCreateSession={createSession} renderSession={renderSessionCard} error={error} /> : isSummaryPage ? started ? <TopicReport key={sessionId} backDestination={assignment ? 'course' : 'sessions'} sessionId={sessionId} complete={sessionComplete(concepts)} onBack={() => navigate(sessionBackPath)} onNewSession={createSession} /> : <SummaryUnavailable hasSession={Boolean(sessionId)} onBack={() => navigate(sessionBackPath)} onContinue={sessionId ? () => navigate(`/chat?session=${encodeURIComponent(sessionId)}`) : createSession} /> : <>
         <nav className={`back-navigation chat-nav ${isModuleEditor ? 'module-editor-navigation' : ''} ${started ? 'chat-nav-started' : ''}`} aria-label="Learning navigation">
           <BackButton onClick={() => { if (!started && setupStep !== 'title' && setupStep !== 'loading') { if (setupStep === 'rubric') setAiByName(false); setSetupStep(setupStep === 'rubric' ? 'concepts' : setupStep === 'concepts' ? 'class-type' : 'title'); setValidationError(null); setError('') } else navigate(isModuleEditor ? `/courses/${moduleCourseId}` : sessionBackPath) }} destination={!started && setupStep !== 'title' && setupStep !== 'loading' ? 'previous step' : assignment || isModuleEditor ? 'course' : 'sessions'} />
           {!started && title.trim() && <h1 className="rubric-page-title" title={title.trim()}>{title.trim()}</h1>}
@@ -626,8 +614,11 @@ export default function App({ account, onProfileUpdated, authMode }: { account: 
           </>}
           {isModuleEditor && <div className="module-editor-toolbar"><button disabled={moduleSaving || uploading || setupStep === 'loading'} onClick={() => void commitModule()}>{moduleSaving ? 'Saving…' : 'Save draft'}</button></div>}
         </nav>
-        {isModuleEditor && <div className="module-editor-feedback"><span role="status">{moduleNotice}</span>{error && <><p role="alert">{error}</p><button disabled={moduleSaving} onClick={() => void reloadModule().catch(reason => setError(reason.message))}>Reload saved draft</button></>}</div>}
-        <section inert={isModuleEditor && moduleSaving} className={`chat-section ${started ? 'chat-section-started' : 'chat-section-setup'} ${boardOpen ? 'board-open' : 'board-closed'} ${!started && setupStep === 'class-type' ? 'class-type-section' : ''}`} aria-label="Learning chat"><aside className="chat-avatar" aria-label="Your classroom student">{started && <div id="classroom-whiteboard" className="whiteboard-container" onPointerEnter={event => { if (event.pointerType === 'mouse') setBoardHovered(true) }} onPointerLeave={() => setBoardHovered(false)}><TooltipButton type="button" className="whiteboard-toggle" tooltip={boardOpen ? 'Collapse whiteboard' : 'Open whiteboard'} aria-label={boardOpen ? 'Collapse whiteboard' : 'Open whiteboard'} aria-expanded={boardOpen} aria-controls="whiteboard-drawing" onClick={() => setBoardOpen(open => !open)}><svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><rect x="3" y="3" width="18" height="18" rx="4" /></svg></TooltipButton><div id="whiteboard-drawing" className="whiteboard-drawing" aria-hidden={!boardOpen} inert={!boardOpen}><Whiteboard key={active} ref={whiteboard} open={boardOpen} /></div></div>}{started && <div ref={avatarCharacter} className="avatar-character"><Bloub key={active} appearance={appearance} showControls={false} followPointer={!busy && boardOpen && boardHovered} expression={busy ? 'confused' : boardOpen && boardHovered ? 'attentive' : done ? 'excited' : session.expression || 'attentive'} /><ThoughtCloud thinking={busy} transferring={arrivingReply?.conceptId === active} /></div>}</aside>
+        {isModuleEditor && <div className="module-editor-feedback"><span role="status">{moduleNotice}</span>{error && <><p role="alert">{error}</p><button disabled={moduleSaving} onClick={() => void reloadModule().catch(reason => reportError(reason))}>Reload saved draft</button></>}</div>}
+        <section inert={isModuleEditor && moduleSaving} className={`chat-section ${started ? 'chat-section-started' : 'chat-section-setup'} ${boardOpen ? 'board-open' : 'board-closed'} ${!started && setupStep === 'class-type' ? 'class-type-section' : ''}`} aria-label="Learning chat">{started && <button type="button" className="finish-topic" disabled={busy} onClick={() => {
+          if (!sessionComplete(concepts) && !window.confirm('Are you sure? Finish this topic and view your report?')) return
+          navigate(`/summary?session=${encodeURIComponent(sessionId)}`)
+        }}>{sessionComplete(concepts) ? 'View topic report' : 'Finish topic'}</button>}<aside className="chat-avatar" aria-label="Your classroom student">{started && <div id="classroom-whiteboard" className="whiteboard-container" onPointerEnter={event => { if (event.pointerType === 'mouse') setBoardHovered(true) }} onPointerLeave={() => setBoardHovered(false)}><TooltipButton type="button" className="whiteboard-toggle" tooltip={boardOpen ? 'Close whiteboard' : 'Open whiteboard'} aria-label={boardOpen ? 'Close whiteboard' : 'Open whiteboard'} aria-expanded={boardOpen} aria-controls="whiteboard-drawing" onClick={() => setBoardOpen(open => !open)}><svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">{boardOpen ? <path d="m6 6 12 12M18 6 6 18" /> : <rect x="3" y="3" width="18" height="18" rx="4" />}</svg></TooltipButton><div id="whiteboard-drawing" className="whiteboard-drawing" aria-hidden={!boardOpen} inert={!boardOpen}><Whiteboard key={active} ref={whiteboard} open={boardOpen} /></div></div>}{started && <div ref={avatarCharacter} className="avatar-character"><Bloub key={active} appearance={appearance} showControls={false} followPointer={!busy && boardOpen && boardHovered} expression={busy ? 'confused' : boardOpen && boardHovered ? 'attentive' : done ? 'excited' : session.expression || 'attentive'} /><ThoughtCloud thinking={busy} transferring={arrivingReply?.conceptId === active} /></div>}</aside>
           <div className="chat-panel">
             {!started && <div className="setup-progress" role="progressbar" aria-label={isModuleEditor ? 'Topic setup progress' : 'Session setup progress'} aria-valuemin={0} aria-valuemax={100} aria-valuenow={setupProgress} aria-valuetext={setupProgressLabel}>
               <span className="setup-progress-fill" style={{ transform: `scaleX(${setupProgress / 100})` }} />
@@ -650,15 +641,16 @@ export default function App({ account, onProfileUpdated, authMode }: { account: 
             if (message.passedLevel && currentConcept && targetCount(message.passedLevel) === targetCount(currentConcept.target)) return null
             const reviewedMessage = message.role === 'assistant' ? session.messages[index - 1] : undefined
             const reviewedPaper = reviewedMessage?.review ? session.messages.find(item => item.paper?.id === reviewedMessage.review?.paperId)?.paper : undefined
-            const divider = message.passedLevel && <div className="level-divider" role="status"><span>{levels.find(level => level.id === message.passedLevel)?.name} level passed!</span></div>
-            return <div key={`${sessionId}-${active}-${index}-${message.role}-${message.content}`}>{divider}<ChatMessage role={message.role} name={message.assistance ? 'Prerequisite review' : message.role === 'user' ? 'You' : appearance.name} content={message.content} className={message.paper ? 'chat-message-with-paper' : ''} avatarRef={avatarCharacter} arrive={message.role === 'assistant' && arrivingReply?.conceptId === active && arrivingReply.index === index && arrivingReply.content === message.content} onArrived={finishReplyArrival} feedback={quantitative && reviewedPaper && reviewedMessage?.review && <ReviewFeedback paper={reviewedPaper} review={reviewedMessage.review} />} boardImage={message.boardImage}>{quantitative && message.paper && currentConcept && <><svg className="paper-invite-arrow" viewBox="0 0 120 72" preserveAspectRatio="none" aria-hidden="true"><path d="M3 53 C27 64 42 51 57 36 S88 20 108 32" /><path d="M97 19 Q105 25 109 32 Q100 35 94 43" /></svg><PaperReview characterName={appearance.name} key={`${active}-${message.paper.id}-${revisingPaper === message.paper.id}`} paper={message.paper} review={revisingPaper === message.paper.id ? undefined : session.messages.findLast(item => item.review?.paperId === message.paper?.id)?.review} busy={busy} error={error} onSubmit={review => send(review)} /></>}</ChatMessage></div>
-          })}{done && currentConcept && <div className="level-divider level-divider-final" role="status"><span>{levels[currentConcept.passed - 1]?.name} level passed!</span>{!assignment && currentConcept.passed < levels.length && <button type="button" className="level-divider-continue" disabled={busy} onClick={() => void raiseTarget(currentConcept, levels[currentConcept.passed].id)}>{busy ? 'Thinking' : 'Continue'}</button>}{sessionComplete(concepts) && currentConcept.passed < levels.length && <button type="button" className="level-divider-summary" onClick={() => navigate(`/summary?session=${encodeURIComponent(sessionId)}`)}>View session summary →</button>}</div>}</div>{done ? null : quantitative && currentConcept?.finalSummary && currentConcept.passed < 4 ? <div className="chat-complete" role="status"><strong>Analyze needs more evidence</strong><div className="learning-report"><p>{currentConcept.finalSummary}</p><strong>Rubric mastery: {currentConcept.analysisGrade}%</strong></div><button type="button" className="send-button" disabled={busy} onClick={() => void retryAnalyze(currentConcept)}>{busy ? 'Thinking' : 'Try another paper set'}</button></div> : quantitative && currentConcept && levels[currentConcept.passed]?.id === 'analyze' && paper && !review ? <div className="chat-awaiting-grade">Sort all my papers to continue the conversation.</div> : <ChatComposer key={active} className="chat-composer" value={session.draft} onChange={draft => updateSession({ draft })} onSend={() => { void send() }} busy={busy} />}{!done && !currentConcept?.finalSummary && <LearningActions busy={busy} canFinish={Boolean(quantitative && currentConcept?.passed === 3 && review && session.assessment)} canRevise={Boolean(quantitative && paper && review)} onRevise={() => setRevisingPaper(paper!.id)} onAction={action => { void send(undefined, action) }} />}</>}{error && <p className="chat-error" role="alert">{error}</p>}</div></section></>}
+            const skipItem = message.role === 'assistant' && index === session.messages.length - 1 && !pendingMessage && !done && !currentConcept?.finalSummary && message.rubricFocus && rubricSkipReason(session.messages.slice(currentConcept?.stageStart ?? 0), message.rubricFocus) ? message.rubricFocus : undefined
+            const divider = message.passedLevel && <div className="level-divider" role="status"><span>{levels.find(level => level.id === message.passedLevel)?.name} level {currentConcept?.assessments?.[message.passedLevel!]?.readyToAdvance ? 'finished with skipped items' : 'passed'}!</span></div>
+            return <div key={`${sessionId}-${active}-${index}-${message.role}-${message.content}`}>{divider}<ChatMessage role={message.role} name={message.assistance ? 'Prerequisite review' : message.role === 'user' ? 'You' : appearance.name} content={skipItem ? "Alright, no problem. Would you like to skip this?" : message.content} inlineAction={skipItem && <SkipRubricButton item={skipItem} busy={busy} onSkip={() => { void send(undefined, 'skip') }} />} className={message.paper ? 'chat-message-with-paper' : ''} avatarRef={avatarCharacter} arrive={message.role === 'assistant' && arrivingReply?.conceptId === active && arrivingReply.index === index && arrivingReply.content === message.content} onArrived={finishReplyArrival} feedback={quantitative && reviewedPaper && reviewedMessage?.review && <ReviewFeedback paper={reviewedPaper} review={reviewedMessage.review} />} boardImage={message.boardImage}>{quantitative && message.paper && currentConcept && <><svg className="paper-invite-arrow" viewBox="0 0 120 72" preserveAspectRatio="none" aria-hidden="true"><path d="M3 53 C27 64 42 51 57 36 S88 20 108 32" /><path d="M97 19 Q105 25 109 32 Q100 35 94 43" /></svg><PaperReview characterName={appearance.name} key={`${active}-${message.paper.id}-${revisingPaper === message.paper.id}`} paper={message.paper} review={revisingPaper === message.paper.id ? undefined : session.messages.findLast(item => item.review?.paperId === message.paper?.id)?.review} busy={busy} error={error} onSubmit={review => send(review)} /></>}</ChatMessage></div>
+          })}{done && currentConcept && <div className="level-divider level-divider-final" role="status"><span>{currentConcept.finalSummary ? 'Analyze assessment finished.' : <>{levels[currentConcept.passed - 1]?.name} level {currentConcept.assessment?.readyToAdvance ? 'finished with skipped items' : 'passed'}!</>}</span>{!assignment && !currentConcept.finalSummary && currentConcept.passed < levels.length && <button type="button" className="level-divider-continue" disabled={busy} onClick={() => void raiseTarget(currentConcept, levels[currentConcept.passed].id)}>{busy ? 'Thinking' : 'Continue'}</button>}{sessionComplete(concepts) && currentConcept.passed < levels.length && <button type="button" className="level-divider-summary" onClick={() => navigate(`/summary?session=${encodeURIComponent(sessionId)}`)}>View session summary →</button>}</div>}</div>{done ? null : quantitative && currentConcept && levels[currentConcept.passed]?.id === 'analyze' && paper && !review ? <div className="chat-awaiting-grade">Sort all my papers to continue the conversation.</div> : <ChatComposer key={active} className="chat-composer" value={session.draft} onChange={draft => updateSession({ draft })} onSend={() => { void send() }} busy={busy} />}{!done && !currentConcept?.finalSummary && <LearningActions busy={busy} canFinish={Boolean(quantitative && currentConcept?.passed === 3 && review && session.assessment)} canRevise={Boolean(quantitative && paper && review)} onRevise={() => setRevisingPaper(paper!.id)} onAction={action => { void send(undefined, action) }} />}</>}{error && <p className="chat-error" role="alert">{error}</p>}</div></section></>}
       {!started && setupStep === 'class-type' && pendingLearningType && <LearningTypeChangeDialog learningType={pendingLearningType} onConfirm={confirmLearningTypeChange} onCancel={() => setPendingLearningType(null)} />}
     </main>
   }
   const content = <>
     {(saveStatus.state === 'error' || saveStatus.state === 'conflict') && <div className="learning-save-notice" role="alert"><p>{saveStatus.message}</p>
-      {saveStatus.state === 'error' ? <button onClick={() => void flushSessionSaves().catch(reason => setError(reason.message))}>Retry saving</button> : <><button disabled={resolvingSave} onClick={() => void resolveSave(false)}>Reload server version</button>{!savedSessions.find(record => record.id === saveStatus.sessionId)?.assignment && <button disabled={resolvingSave} onClick={() => void resolveSave(true)}>Save a copy</button>}</>}
+      {saveStatus.state === 'error' ? <button onClick={() => void flushSessionSaves().catch(reason => reportError(reason))}>Retry saving</button> : <><button disabled={resolvingSave} onClick={() => void resolveSave(false)}>Reload server version</button>{!savedSessions.find(record => record.id === saveStatus.sessionId)?.assignment && <button disabled={resolvingSave} onClick={() => void resolveSave(true)}>Save a copy</button>}</>}
     </div>}
     {survey.error && !isChatPage && <p className="account-error" role="alert">{survey.error}</p>}
     {renderPage()}

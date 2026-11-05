@@ -1,5 +1,5 @@
 import { useState, type FormEvent } from 'react'
-import { saveAccountDisplayName, updateAccountPassword, type Account, type AccountAuthMode } from '../accounts'
+import { saveAccountDisplayName, updateAccountPassword, type Account, type AccountSignInMethod } from '../accounts'
 import type { CharacterAppearance } from '../characterAppearance'
 import { Bloub } from './Bloub'
 import { matchesSetting } from '../settingsSearch'
@@ -13,7 +13,7 @@ function accountDate(value: string | null) {
 }
 
 export function ProfilePage({ account, authMode, onProfileUpdated, appearance, query = '' }: {
-  account: Account; authMode: AccountAuthMode; onProfileUpdated: (account: Account) => void
+  account: Account; authMode: AccountSignInMethod; onProfileUpdated: (account: Account) => void
   appearance: CharacterAppearance
   query?: string
 }) {

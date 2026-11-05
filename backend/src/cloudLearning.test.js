@@ -31,7 +31,6 @@ function fixture(t) {
       if (state.fail) return json({ code: '503', message: 'Disconnected' }, 503);
       const existing = state.rows.get(key);
       if ((existing?.revision || 0) !== body.expected_revision) return json({ code: '40001', message: 'Conflict' }, 409);
-      if (url.pathname.endsWith('delete_learning_session')) { state.rows.delete(key); return json(null); }
       const row = { owner_id: userId, id: body.session_id, title: body.session_title, document: body.session_document, revision: body.expected_revision + 1, updated_at: new Date().toISOString() };
       state.rows.set(key, row); state.writes.push(row);
       return json(new Headers(init.headers).get('Accept')?.includes('object') ? row : [row]);
@@ -124,13 +123,6 @@ test('account changes abort in-flight work and playground data remains isolated'
   assert.deepEqual(await writer.loadSessions(), []); assert.deepEqual(await writer.loadPlayground(), []);
   assert.ok(!f.state.rows.has(`${second}:${sessionId}`));
 });
-test('session deletion checks revisions and removes account recovery', async t => {
-  const f = fixture(t), writer = f.store(); await writer.loadSessions();
-  writer.queueSessionSave(record()); await writer.flushSessionSaves();
-  await writer.deleteSession(record());
-  assert.deepEqual(await f.store().loadSessions(), []);
-});
-
 test('assigned sessions recover and resolve conflicts without creating a second assignment', async t => {
   const f = fixture(t), writer = f.store(); await writer.loadSessions();
   const assignment = { courseId: 'course', courseName: 'Physics', moduleId: 'module' };
@@ -142,7 +134,6 @@ test('assigned sessions recover and resolve conflicts without creating a second 
   right.queueSessionSave({ ...record('local'), assignment }); await right.flushSessionSaves();
   assert.equal(right.getSaveStatus().state,'conflict');
   await assert.rejects(right.resolveSessionConflict(sessionId,true),/cannot be copied/);
-  await assert.rejects(right.deleteSession(assigned),/cannot be deleted/);
   assert.equal(f.state.rows.size,1);
   const reloaded = await right.resolveSessionConflict(sessionId,false);
   assert.equal(reloaded.id,sessionId);

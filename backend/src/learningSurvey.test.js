@@ -44,7 +44,7 @@ async function fixture(t) {
 const document = (passed = 0, target = 'understand') => ({ version: 1, session: { started: true, concepts: [{ id: 'energy', name: 'Energy', passed, target }] } });
 const answers = () => Object.fromEntries([...Array.from({ length: 19 }, (_, i) => [String(i + 1), i < 15 ? 'Great Gain' : 'Great Help']), ...['concept_change', 'skills_developed', 'most_helpful', '20', '21'].map(id => [id, 'None'])]);
 
-test('survey requires a completed topic, persists after deletion, validates all answers and unlocks the next topic', async t => {
+test('survey requires a completed topic, survives a blocked deletion, validates all answers and unlocks the next topic', async t => {
   const { db, as, one } = await fixture(t);
   await as(student);
   const save = (id, doc, revision = 0) => one("select * from public.save_learning_session($1,'Energy',$2,$3)", [id, doc, revision]);
@@ -59,7 +59,7 @@ test('survey requires a completed topic, persists after deletion, validates all 
   assert.equal(status.submittedAt, null);
   await assert.rejects(save(second, document(1), 1), error => error.code === '42501');
   await assert.rejects(save('cccccccc-cccc-4ccc-8ccc-cccccccccccc', document()), error => error.code === '42501');
-  await one('select public.delete_learning_session($1,2)', [first]);
+  await assert.rejects(one('select public.delete_learning_session($1,2)', [first]), error => error.code === '42501');
   assert.equal((await one('select public.learning_survey_status() as status')).status.sessionId, first);
   for (const invalid of [{}, { ...answers(), '1': 'Great Help' }, { ...answers(), '16': 'Great Gain' }, { ...answers(), '20': '  ' }, { ...answers(), extra: 'x' }, { ...answers(), '21': 'a'.repeat(5001) }]) {
     await assert.rejects(one('select public.submit_learning_survey($1)', [invalid]), error => error.code === '23514');

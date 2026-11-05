@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import type { Account } from '../accounts'
 import { accountSignal } from '../accounts'
+import { canTeachCourses } from '../coursePermissions'
 import { decideEnrollment, deleteCourse, deleteModule, leaveCourse, loadCourse, loadCourses, setCoursePin, setCourseStar, startModule, courseSubjects, COURSE_SUBJECTS, type CourseCollection, type Course, type Enrollment, type CourseModule, type ModuleSession, type ModuleProgress, type StudentProgress, type CoursePerson } from '../courseStore'
 import { createCourseStarUpdates } from '../courseStars'
 import { useToast } from './useToast'
@@ -50,7 +51,7 @@ export function CoursesPage({ account, courseId, collection = 'enrolled', sessio
     })
   })
   useEffect(() => { starUpdates.setActive(true); return () => { starUpdates.setActive(false) } }, [starUpdates])
-  const instructor = account.role === 'instructor'
+  const instructor = canTeachCourses(account.role)
   useEffect(() => {
     let disposed = false
     const refresh = () => setVersion(value => value + 1)
@@ -102,7 +103,7 @@ export function CoursesPage({ account, courseId, collection = 'enrolled', sessio
   if (loading && (courseId ? !detail : courses.length === 0)) return <LoadingScreen label="Loading courses" />
   return <section className={`courses-page${courseId ? ' course-detail-page' : ' course-library-page'}`} aria-labelledby="courses-title">
     {courseId && <nav className="course-breadcrumb" aria-label="Course navigation"><button type="button" onClick={() => onNavigate('/courses')}><svg viewBox="0 0 20 20" aria-hidden="true" fill="none" stroke="currentColor" strokeWidth="1.5"><path d="m12 5-5 5 5 5" /></svg>Courses</button>{detail && canLeave(detail.enrollment) && <button type="button" className="course-leave-button" disabled={busy} onClick={() => leave(detail.course, detail.enrollment)}>{leaveLabel(detail.enrollment)}</button>}</nav>}
-    {!courseId ? <div className="dashboard-session-heading"><h1 id="courses-title">{collection === 'community' ? 'Community' : collection === 'starred' ? 'Starred' : 'My Courses'}</h1>{account.role !== 'admin' && <button className="dashboard-new-session" onClick={() => instructor ? onNavigate('/courses/new') : setShowJoinDialog(true)}>{instructor ? 'Create course' : 'Join course'}</button>}</div> : detail ? <CourseHeader course={detail.course} canEdit={Boolean(ownCourse)} disabled={busy} onUpdated={courseUpdated} onStar={() => starUpdates.toggle(detail.course)} /> : <h1 id="courses-title">Course</h1>}
+    {!courseId ? <div className="dashboard-session-heading"><h1 id="courses-title">{collection === 'community' ? 'Community' : collection === 'starred' ? 'Starred' : 'My Courses'}</h1><button className="dashboard-new-session" onClick={() => instructor ? onNavigate('/courses/new') : setShowJoinDialog(true)}>{instructor ? 'Create course' : 'Join course'}</button></div> : detail ? <CourseHeader course={detail.course} canEdit={Boolean(ownCourse)} disabled={busy} onUpdated={courseUpdated} onStar={() => starUpdates.toggle(detail.course)} /> : <h1 id="courses-title">Course</h1>}
     {error && <div className="course-error" role="alert"><p>{error}</p><button onClick={() => setVersion(value => value + 1)}>Retry loading</button></div>}
     {!courseId ? <>
       {showJoinDialog && account.role === 'student' && <JoinCourseDialog onClose={() => setShowJoinDialog(false)} onJoined={enrollment => { setShowJoinDialog(false); onNavigate(`/courses/${enrollment.course_id}`) }} />}

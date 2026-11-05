@@ -17,6 +17,9 @@ function SummaryIcon({ name }: { name: 'check' | 'arrow' | 'chevron' | 'book' })
 const levelLabel = (level: Level) => level[0].toUpperCase() + level.slice(1)
 const passedLevels = (concept: Concept) => levelIds.slice(0, Math.min(concept.passed, targetCount(concept.target)))
 
+const skippedGoal = (concept: Concept, level: Level, item: string) => Boolean(concept.assessments?.[level]?.criteria.find(criterion => criterion.aspect === item)?.skipped)
+const demonstratedGoals = (concept: Concept, level: Level) => checklistItems(concept.rubric[level]).filter(item => !skippedGoal(concept, level, item))
+
 export function SummaryUnavailable({ hasSession, onBack, onContinue }: { hasSession: boolean; onBack: () => void; onContinue: () => void }) {
   return <section className="summary-page" aria-labelledby="summary-title">
     <nav className="back-navigation summary-nav" aria-label="Summary navigation"><BackButton onClick={onBack} destination="sessions" /></nav>
@@ -57,8 +60,8 @@ function AssessmentDetails({ concept, learningType }: { concept: Concept; learni
 export function SessionSummary({ title, learningType, concepts, onBack, onNewSession, backDestination = 'sessions' }: { backDestination?: string; title: string; learningType: LearningType; concepts: Concept[]; onBack: () => void; onNewSession: () => void }) {
   const completedConcepts = concepts.filter(concept => concept.passed >= targetCount(concept.target)).length
   const completedLevels = concepts.reduce((count, concept) => count + passedLevels(concept).length, 0)
-  const completedGoals = concepts.reduce((count, concept) => count + passedLevels(concept).reduce((total, level) => total + checklistItems(concept.rubric[level]).length, 0), 0)
-  const studyFurther = concepts.flatMap(concept => levelIds.slice(concept.passed, targetCount(concept.target)).map(level => ({ id: concept.id, concept: concept.name, level, criteria: checklistItems(concept.rubric[level]) })))
+  const completedGoals = concepts.reduce((count, concept) => count + passedLevels(concept).reduce((total, level) => total + demonstratedGoals(concept, level).length, 0), 0)
+  const studyFurther = concepts.flatMap(concept => levelIds.slice(0, targetCount(concept.target)).map((level, index) => ({ id: concept.id, concept: concept.name, level, criteria: checklistItems(concept.rubric[level]).filter(item => index >= concept.passed || skippedGoal(concept, level, item)) })).filter(item => item.criteria.length))
   const complete = concepts.length > 0 && !studyFurther.length
 
   return <section className="summary-page" aria-labelledby="summary-title">
@@ -74,7 +77,7 @@ export function SessionSummary({ title, learningType, concepts, onBack, onNewSes
 
       <dl className="summary-stats" aria-label="Session achievements">
         <div><dt>{completedConcepts === 1 ? 'Concept completed' : 'Concepts completed'}</dt><dd>{completedConcepts.toLocaleString()}</dd></div>
-        <div><dt>{completedLevels === 1 ? 'Learning level passed' : 'Learning levels passed'}</dt><dd>{completedLevels.toLocaleString()}</dd></div>
+        <div><dt>{completedLevels === 1 ? 'Learning level finished' : 'Learning levels finished'}</dt><dd>{completedLevels.toLocaleString()}</dd></div>
         <div><dt>{completedGoals === 1 ? 'Goal demonstrated' : 'Goals demonstrated'}</dt><dd>{completedGoals.toLocaleString()}</dd></div>
       </dl>
 
@@ -83,7 +86,7 @@ export function SessionSummary({ title, learningType, concepts, onBack, onNewSes
           <div className="summary-section-heading"><span className="summary-section-icon"><SummaryIcon name="book" /></span><h2 id="summary-strong-title">What you know well</h2></div>
           <div className="summary-concepts">{concepts.map((concept, index) => {
             const levels = passedLevels(concept)
-            const goalCount = levels.reduce((count, level) => count + checklistItems(concept.rubric[level]).length, 0)
+            const goalCount = levels.reduce((count, level) => count + demonstratedGoals(concept, level).length, 0)
             return <details className="summary-concept" key={concept.id} open={concepts.length <= 3 || index === 0}>
               <summary className="summary-concept-heading">
                 <span className="summary-concept-number">{String(index + 1).padStart(2, '0')}</span>
@@ -93,7 +96,7 @@ export function SessionSummary({ title, learningType, concepts, onBack, onNewSes
               <div className="summary-concept-content">
                 {levels.map(level => <section className="summary-level" key={level} aria-label={`${levelLabel(level)} goals for ${concept.name}`}>
                   <div className="summary-level-heading"><h4>{levelLabel(level)}</h4></div>
-                  <ul className="summary-goals" role="list">{checklistItems(concept.rubric[level]).map((item, itemIndex) => <li key={itemIndex}><span className="summary-goal-check"><SummaryIcon name="check" /></span><span><ReadingText>{item}</ReadingText></span></li>)}</ul>
+                  <ul className="summary-goals" role="list">{checklistItems(concept.rubric[level]).map((item, itemIndex) => <li key={itemIndex}><span className="summary-goal-check">{skippedGoal(concept, level, item) ? <span aria-label="Skipped">—</span> : <SummaryIcon name="check" />}</span><span><ReadingText>{item}</ReadingText>{skippedGoal(concept, level, item) && <small> · Skipped</small>}</span></li>)}</ul>
                 </section>)}
                 {!levels.length && <p className="summary-no-goals">No levels have been completed for this concept yet.</p>}
                 <AssessmentDetails concept={concept} learningType={learningType} />

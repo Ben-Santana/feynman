@@ -1,3 +1,4 @@
+import { expressesFrustration, skippedRubricItems } from '../../frontend/src/rubricFallback.js';
 import { InvalidOutputError, retryStructuredOutput, repairQuery, orderByNames } from './structuredOutput.js';
 import { loadPrompts } from './promptStore.js';
 import { checklistItems, checklistText } from '../../frontend/src/rubricChecklist.js';
@@ -10,6 +11,7 @@ import { generateStrategyQuestion } from './strategyLearner.js';
 import { inlineQuestionStrategies } from './inlineQuestionStrategies.js';
 import { learnerStateFromAssessment } from './strategyLearnerState.js';
 import { validateBackgroundHistory } from './backgroundQuestions.js';
+import { scoreJudgment } from './topicReports.js';
 const initialPrompts = loadPrompts();
 export const rubrics = Object.fromEntries(['remember', 'understand', 'apply', 'analyze'].map(level => [level, initialPrompts.text('chat.rubric.' + level)]));
 const statuses = ['supported', 'needs_clarification', 'flawed', 'missing'];
@@ -64,7 +66,7 @@ export function validate(body) {
   if (body.messages.length && body.messages.at(-1).role !== 'user') throw new Error('The conversation must end with a student message.');
   if (body.priorMessages !== undefined) {
     if (body.messages.length || !Array.isArray(body.priorMessages)) throw new Error('Previous-stage context is only allowed when opening a level.');
-    validate({ ...body, priorMessages: undefined, messages: body.priorMessages.map(({ background: _background, ...message }) => message) });
+    validate({ ...body, priorMessages: undefined, practiceGoal: undefined, messages: body.priorMessages.map(({ background: _background, rubricFocus: _focus, skipRubricItem: _skip, ...message }) => message) });
   }
   let latestPaper;
   for (const m of body.messages) {
@@ -89,6 +91,12 @@ export function validate(body) {
       } else if (!['pass', 'fail'].includes(review.grade) || (review.grade === 'fail' && (!Array.isArray(review.selectedSteps) || !review.selectedSteps.length || review.selectedSteps.some(n => !Number.isInteger(n) || n < 1 || n > 10)))) throw new Error('A Fail grade requires at least one marked step on the current paper.');
     }
   }
+  const rubricAspects = body.criterion && /^\s*1[.)]\s/m.test(body.criterion) ? checklistItems(body.criterion) : body.aspects;
+  if (body.practiceGoal !== undefined && (body.messages.length || !rubricAspects.includes(body.practiceGoal))) throw new Error('Choose a rubric goal when opening practice.');
+  for (const message of body.messages) {
+    if (message.rubricFocus !== undefined && (message.role !== 'assistant' || !rubricAspects.includes(message.rubricFocus))) throw new Error('Invalid rubric focus.');
+  }
+  skippedRubricItems(body.messages, rubricAspects);
   validateBackgroundHistory({ ...body, aspects: body.criterion && /^\s*1[.)]\s/m.test(body.criterion) ? checklistItems(body.criterion) : body.aspects });
   return body;
 }
@@ -259,7 +267,7 @@ function followUpFocus(checked, prompts) {
   const instruction = target.status === 'flawed' ? prompts.text('chat.focusFlawed') : prompts.text('chat.focusMissing');
   return prompts.text('chat.followUpFocus', { focus: JSON.stringify(focus), instruction: instruction });
 }
-export async function chat(input, query, prompts = loadPrompts(), { evaluator = 'refined', learner = 'focused', evaluationCache, cacheScope } = {}) {
+export async function chat(input, query, prompts = loadPrompts(), { evaluator = 'refined', learner = 'focused', evaluationCache, cacheScope, persistedAssessment, onAssessment } = {}) {
   const { level, topic, messages, criterion } = validate(input);
   const learningType = resolveLearningType(input.learningType);
   const profile = { ...learningTypes[learningType], ...prompts.profile(learningType) };
@@ -268,6 +276,7 @@ export async function chat(input, query, prompts = loadPrompts(), { evaluator = 
   // Numbered rubric boxes are authoritative, including for older API callers.
   const aspects = criterion && /^\s*1[.)]\s/m.test(criterion) ? checklistItems(criterion) : input.aspects;
   if (!aspects.length || aspects.length > 20) throw new Error('Provide 1–20 checklist items.');
+  const skipped = skippedRubricItems(messages, aspects);
   const context = prompts.text('chat.context', { learningTypeLabel: profile.label, level: level, curriculum: JSON.stringify({ topic, aspects, criterion: criterion || null }) });
   if (messages.at(-1)?.helpRequest) {
     const support = await retryStructuredOutput(async (attempt, signal) => {
@@ -277,10 +286,10 @@ export async function chat(input, query, prompts = loadPrompts(), { evaluator = 
       return result;
     });
     const pending = validateBackgroundHistory({ ...input, aspects });
-    return { message: withoutEmDashes(support.explanation), assessment: null, expression: 'attentive', assistance: true, ...(pending?.phase === 'probe' ? { background: { ...pending, phase: 'exit' } } : {}) };
+    return { message: withoutEmDashes(support.explanation), assessment: null, expression: 'attentive', assistance: true, ...(messages.at(-2)?.rubricFocus ? { rubricFocus: messages.at(-2).rubricFocus } : {}), ...(pending?.phase === 'probe' ? { background: { ...pending, phase: 'exit' } } : {}) };
   }
   const freshCheck = messages.at(-2)?.assistance === true;
-  if (!messages.length && level === 'remember' && !input.priorMessages?.length) return { message: withoutEmDashes(prompts.text('chat.openingRemember', { topic })), assessment: null, expression: 'attentive' };
+  if (!messages.length && level === 'remember' && !input.priorMessages?.length && !input.practiceGoal) return { message: withoutEmDashes(prompts.text('chat.openingRemember', { topic })), assessment: null, expression: 'attentive' };
   const latestPaper = messages.findLast(m => m.paper)?.paper;
   const reviewIndex = latestPaper ? messages.findLastIndex(m => m.review?.paperId === latestPaper.id) : -1;
   const review = reviewIndex >= 0 ? messages[reviewIndex].review : null;
@@ -295,16 +304,25 @@ export async function chat(input, query, prompts = loadPrompts(), { evaluator = 
   let evaluationReused = false;
   if (messages.length && !freshCheck && (!paperAnalysis || review)) {
     const cacheKey = evaluationCache?.key(cacheScope, `${prompts.version}:shared-evidence-v1:background-v1`, input, evaluator);
-    checked = cacheKey ? evaluationCache.get(cacheKey) : undefined;
+    checked = persistedAssessment || (cacheKey ? evaluationCache.get(cacheKey) : undefined);
     evaluationReused = Boolean(checked);
     if (!checked) {
       checked = evaluator === 'legacy' ? await evaluateLegacy(input, query, prompts) : conversationAssessment(await evaluateRefined(input, query, prompts, { requireTransfer: true }), input);
       if (cacheKey && checked) evaluationCache.set(cacheKey, checked);
     }
-    if (paperAnalysis && (checked.complete || messages.at(-1)?.finishAssessment)) {
+    if (skipped.size && checked) {
+      checked = structuredClone(checked);
+      checked.criteria = checked.criteria.map(item => ({ ...item, ...(skipped.has(item.aspect) ? { skipped: true } : {}) }));
+      checked.complete = false;
+      checked.readyToAdvance = checked.criteria.every(item => item.skipped || item.status === 'supported');
+      checked.nextQuestionFocus = '';
+    }
+    if (checked && onAssessment) await onAssessment(checked);
+    if (paperAnalysis && (checked.complete || checked.readyToAdvance || messages.at(-1)?.finishAssessment)) {
       const judgments = [...checked.criteria, checked.task];
       const points = { supported: 100, needs_clarification: 50, flawed: 0, missing: 0 };
-      const grade = Math.round(judgments.reduce((sum, item) => sum + points[item.status], 0) / judgments.length);
+      const scored = input.researchScoring ? checked.criteria.map((item, index) => scoreJudgment(checked.refined?.judgments.find(j => j.criterionId === `criterion_${index + 1}`), item.skipped).credit).filter(credit => typeof credit === 'number') : [];
+      const grade = input.researchScoring ? (scored.length ? Math.round(scored.reduce((sum, credit) => sum + credit, 0) / scored.length * 1000) / 10 : undefined) : Math.round(judgments.reduce((sum, item) => sum + (item.skipped ? 0 : points[item.status]), 0) / judgments.length);
       const summaryResponse = await retryStructuredOutput(async (attempt, signal) => {
         const result = await repairQuery(query, attempt, signal)(prompts.text('chat.finalReport', { context: context }) + '\nReport only the supplied Analyze evidence. Do not comment on unavailable earlier levels. The percentage measures rubric mastery, not the fraction of paper verdicts that are right.', [{ role: 'user', content: JSON.stringify({ assessment: checked, transcript: messages.map(messageText) }) }], tool('summarize_learning', { summary: { type: 'string' } }));
         if (typeof result?.summary !== 'string' || !result.summary.trim()) throw new InvalidOutputError('Could not summarize the learning. Please retry.');
@@ -312,17 +330,19 @@ export async function chat(input, query, prompts = loadPrompts(), { evaluator = 
       });
       return { message: 'Your learning report is ready.', assessment: checked, expression: 'excited', finalSummary: withoutEmDashes(summaryResponse.summary.trim()), analysisGrade: grade, evaluationReused };
     }
-    if (checked.complete) return { message: 'Thank you for teaching me!', assessment: checked, expression: 'excited' };
+    if (checked.complete || checked.readyToAdvance) return { message: skipped.size ? 'This level is finished. Skipped items remain available in your rubric checklist.' : 'Thank you for teaching me!', assessment: checked, expression: 'excited' };
   }
   const contradictionIndex = checked?.refined?.judgments.filter(j => j.criterionId !== 'level_task').findIndex(j => j.status !== 'supported' && j.contradictions.length);
-  const target = (contradictionIndex >= 0 ? checked.criteria[contradictionIndex] : null) || checked?.criteria.find(item => item.status === 'flawed') || checked?.criteria.find(item => item.status !== 'supported');
+  const frustrationTarget = expressesFrustration(messages.at(-1)?.content || '')
+    && checked?.criteria.find(item => item.aspect === messages.at(-2)?.rubricFocus && !item.skipped && item.status !== 'supported');
+  const target = (input.practiceGoal ? { aspect: input.practiceGoal } : null) || frustrationTarget || (contradictionIndex >= 0 && !checked.criteria[contradictionIndex].skipped ? checked.criteria[contradictionIndex] : null) || checked?.criteria.find(item => !item.skipped && item.status === 'flawed') || checked?.criteria.find(item => !item.skipped && item.status !== 'supported');
   const transferNeeded = checked?.criteria.every(c => c.status === 'supported') && checked?.refined?.judgments.find(j => j.criterionId === 'level_task')?.blockers.some(code => /transfer/.test(code));
   const focus = checked ? `Ask ONE small diagnostic question about this unresolved requirement: ${JSON.stringify(target?.aspect || 'the overall task')}. Use the evaluator's next evidence objective to choose the actual probe: ${JSON.stringify(checked.nextQuestionFocus || '')}. Probe the learner's latest claim, not every part of this requirement at once. Do not request a full solution, multiple metrics, or all requirements together. Use at most 55 words for the question, with enough context to make it answerable. If an earlier probe did not help, use a concrete single-entity example or one controlled comparison instead of repeating it. For paper review prioritize a specifically contradicted claim or incorrectly accepted step; do not restart with a correctly justified paper. Supply any missing simulated readings needed by the objective before asking for their interpretation; do not re-ask an already supported prediction. Never teach or supply its answer.${transferNeeded ? ' The rubric is supported, but independent transfer is missing. Introduce ONE materially changed condition, not merely new numbers or a renamed setting, with all necessary givens. Ask for the consequence and its reason. Keep the same concept and level; do not repeat every rubric item. For quantitative Analyze preserve the existing papers and ask one changed-condition question. For design use a near-boundary constraint or supplied uncertainty; for experiments supply a changed setup and any needed simulated readings. Do not reveal the reasoning or answer.' : ''}` : '';
-  const responseSystem = prompts.text('chat.response', { context: context, classroomRole: prompts.text('chat.classroomRole'), paperInstructions: needsPaper ? prompts.text('chat.submitPapers') : paperAnalysis ? prompts.text('chat.discussPapers') : '', scenarioInstructions: needsScenarioOpening(level, learningType) ? openingScenario ? prompts.text('chat.openScenario', { scenario: profile.scenarios[level] }) : prompts.text('chat.continueScenario', { task: profile.tasks[level] }) : '', followUp: checked ? learner === 'focused' ? focus : followUpFocus(checked, prompts) : prompts.text('chat.levelOpening') }) + (openingScenario ? '\nKeep the opening compact: include only conditions needed to answer the initial question and interpret the supplied data. Retain units, measurement nodes, and uncertainty needed for a fair inference. Introduce additional instrumentation details and changed constraints only when the dialogue needs them. Check simulated numbers against the stated setup before returning them; label them simulated. Do not imply aggregate data uniquely establishes a mechanism. Later ask for a discriminating measurement when several causes fit.' : '') + (freshCheck ? '\nThe preceding prerequisite review is assistance, not evidence. Introduce a DIFFERENT self-contained situation to check the helped prerequisite independently. Ask one question without repeating the example, formula or answer supplied in the review. For quantitative Analyze keep the existing paper review and use an additional changed-condition check; do not replace the papers.' : '');
-  const inlineStrategies = learner === 'focused' && checked && !paperAnalysis ? inlineQuestionStrategies({ ...input, aspects, learningType }) : null;
+  const responseSystem = prompts.text('chat.response', { context: context, classroomRole: prompts.text('chat.classroomRole'), paperInstructions: needsPaper ? prompts.text('chat.submitPapers') : paperAnalysis ? prompts.text('chat.discussPapers') : '', scenarioInstructions: needsScenarioOpening(level, learningType) ? openingScenario ? prompts.text('chat.openScenario', { scenario: profile.scenarios[level] }) : prompts.text('chat.continueScenario', { task: profile.tasks[level] }) : '', followUp: checked ? learner === 'focused' || skipped.size ? focus : followUpFocus(checked, prompts) : prompts.text('chat.levelOpening') }) + (skipped.size ? `\nThe learner chose to skip these requirements: ${JSON.stringify([...skipped])}. Do not ask about or require them again. Focus only on the unresolved requirement specified above.` : '') + (openingScenario ? '\nKeep the opening compact: include only conditions needed to answer the initial question and interpret the supplied data. Retain units, measurement nodes, and uncertainty needed for a fair inference. Introduce additional instrumentation details and changed constraints only when the dialogue needs them. Check simulated numbers against the stated setup before returning them; label them simulated. Do not imply aggregate data uniquely establishes a mechanism. Later ask for a discriminating measurement when several causes fit.' : '') + (freshCheck ? '\nThe preceding prerequisite review is assistance, not evidence. Introduce a DIFFERENT self-contained situation to check the helped prerequisite independently. Ask one question without repeating the example, formula or answer supplied in the review. For quantitative Analyze keep the existing paper review and use an additional changed-condition check; do not replace the papers.' : '');
+  const inlineStrategies = learner === 'focused' && checked && !paperAnalysis && !skipped.size && !frustrationTarget ? inlineQuestionStrategies({ ...input, aspects, learningType }) : null;
   const responseTool = tool('respond_to_student', { ...responseProperties, ...(inlineStrategies ? { strategyChoice: inlineStrategies.property } : {}), ...(needsPaper ? { paper: paperProperty } : {}) });
   let learnerModel;
-  if (learner === 'strategy' && checked && !paperAnalysis) {
+  if (learner === 'strategy' && checked && !paperAnalysis && !skipped.size && !frustrationTarget) {
     const planned = await generateStrategyQuestion({ ...input, aspects, learningType }, { assessment: checked }, { instructions: responseSystem, messages: transcript, response: responseTool }, query);
     learnerModel = { state: planned.state, strategyId: planned.strategy?.id ?? null, questionPlan: planned.questionPlan, coverageGap: planned.coverageGap, ...(planned.enhanced?.background ? { background: planned.enhanced.background } : {}) };
     if (planned.enhanced?.message) return { ...planned.enhanced, expression: responseProperties.expression.enum.includes(planned.enhanced.expression) ? planned.enhanced.expression : 'attentive', learnerModel };
@@ -335,7 +355,7 @@ export async function chat(input, query, prompts = loadPrompts(), { evaluator = 
   for (let attempt = 0; attempt < (needsPaper ? 3 : 2); attempt++) {
     const retryInstruction = needsPaper ? prompts.text('chat.retryPaper') : prompts.text('chat.retryQuestion', { previousQuestion: JSON.stringify(previousQuestion) });
     try {
-      result = await repairQuery(query, attempt, responseDeadline)(`${responseSystem}\n${inlineStrategies?.instructions || ''}\n${inlineStrategies?.backgroundInstructions || ''}\n${targetedQuestionInstructions}\n${needsPaper ? '' : questionIntegrityInstructions}${attempt ? `\n${retryInstruction}\nThe previous response failed validation: ${questionRejection}. Ask neutrally about the unresolved claim without supplying its solution.` : ''}`, transcript, responseTool);
+      result = await repairQuery(query, attempt, responseDeadline)(`${responseSystem}\n${input.practiceGoal ? `The learner selected this rubric goal for practice: ${JSON.stringify(input.practiceGoal)}. Open with one small question targeting that goal in a fresh situation. Do not supply its answer or copy factual answers out of the rubric. Keep the assigned concept, level, and any required paper task.` : ''}\n${inlineStrategies?.instructions || ''}\n${inlineStrategies?.backgroundInstructions || ''}\n${targetedQuestionInstructions}\n${needsPaper ? '' : questionIntegrityInstructions}${attempt ? `\n${retryInstruction}\nThe previous response failed validation: ${questionRejection}. Ask neutrally about the unresolved claim without supplying its solution.` : ''}`, transcript, responseTool);
       if (typeof result?.message !== 'string' || !result.message.trim() || result.message.length > 12000) throw new InvalidOutputError('The model returned an empty or oversized message. Please retry.');
       if (!needsPaper) { assertTargetedQuestion(result.message); assertQuestionIntegrity(result.message); }
       if (inlineStrategies) learnerModel = { ...inlineStrategies.validate(result.strategyChoice), state: learnerStateFromAssessment(input, checked) };
@@ -353,7 +373,7 @@ export async function chat(input, query, prompts = loadPrompts(), { evaluator = 
   }
   if (typeof result?.message !== 'string' || !result.message.trim() || result.message.length > 12000) throw new Error('The model returned an empty message. Please retry.');
   if (!paper && previousQuestion && result.message.trim().toLocaleLowerCase() === previousQuestion.trim().toLocaleLowerCase()) throw new Error('The model repeated its previous question. Please retry.');
-  return { paper, message: paper ? 'I tried three exercises and wrote out my steps. Could you grade each paper Pass or Fail?' : withoutEmDashes(result.message), expression: responseProperties.expression.enum.includes(result.expression) ? result.expression : 'attentive', assessment: checked, evaluationReused, ...(freshCheck ? { independentCheck: true } : {}), ...(learnerModel?.background ? { background: learnerModel.background } : {}), ...(learnerModel ? { learnerModel } : {}) };
+  return { paper, message: paper ? 'I tried three exercises and wrote out my steps. Could you grade each paper Pass or Fail?' : withoutEmDashes(result.message), expression: responseProperties.expression.enum.includes(result.expression) ? result.expression : 'attentive', assessment: checked, ...(target && !learnerModel?.background ? { rubricFocus: learnerModel?.rubricItem || target.aspect } : {}), evaluationReused, ...(freshCheck ? { independentCheck: true } : {}), ...(learnerModel?.background ? { background: learnerModel.background } : {}), ...(learnerModel ? { learnerModel } : {}) };
 }
 
 export async function conceptsFromStudyTest(file, query, prompts = loadPrompts()) {

@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from 'react'
 import { accountSignal, type Account } from '../accounts'
+import { canTeachCourses } from '../coursePermissions'
 import { createCourse, type EnrollmentMode } from '../courseStore'
 import { CourseSubjectTags } from './CourseSubjectTags'
 import { BackButton } from './BackButton'
@@ -42,7 +43,7 @@ export function CourseCreatePage({ account, onNavigate }: { account: Account; on
 
   return <main className="bg-background text-foreground">
     <nav className="back-navigation" aria-label="Course creation navigation"><BackButton destination="courses" onClick={() => onNavigate('/courses')} /></nav>
-    {account.role !== 'instructor' ? <section className="courses-page"><h1>Create course</h1><p>Instructor access required.</p></section> : <section className="chat-section chat-section-setup course-create-section" aria-label="Course setup">
+    {!canTeachCourses(account.role) ? <section className="courses-page"><h1>Create course</h1><p>Instructor access required.</p></section> : <section className="chat-section chat-section-setup course-create-section" aria-label="Course setup">
       <div className="chat-panel">
         <SetupTitleForm heading="Create course" headingLevel={1} inputId="course-name" inputLabel="Course name" value={name} onChange={value => { setName(value); setInvalidName(false); setError('') }} onSubmit={() => void submit()} actionLabel={saving ? 'Creating…' : 'Create course →'} placeholder="e.g. Physics 101" disabled={saving} invalid={invalidName} error={error}>
           <fieldset className="course-create-enrollment" disabled={saving}>

@@ -21,6 +21,15 @@ export function primaryAssessmentTool(context, task) {
     observation.properties.evidenceId = { type: 'string' };
     observation.required = observation.required.filter(key => !['messageId', 'quote'].includes(key));
     observation.required.push('evidenceId');
+    if (context.researchScoring) {
+      variant.properties.reason = { type: 'string', minLength: 1, maxLength: 2000 };
+      variant.required.push('reason');
+      variant.properties.partialCredit = { type: 'object', properties: { awarded: { type: 'boolean' }, reason: { type: 'string', maxLength: 2000 } }, required: ['awarded', 'reason'], additionalProperties: false };
+      variant.required.push('partialCredit');
+      observation.properties.assistance = { type: 'string', enum: ['none', 'clarification', 'hint', 'explanation_or_answer', 'unknown'] };
+      observation.properties.assistanceMessageIds = { type: 'array', maxItems: 20, items: { type: 'string' } };
+      observation.required = [...new Set([...observation.required, 'assistance', 'assistanceMessageIds'])];
+    }
   }
   tool.schema.properties.evidence = { type: 'array', maxItems: 400, items: { type: 'object', properties: { id: { type: 'string' }, messageId: { type: 'string' }, quote: { type: 'string', maxLength: 2000 } }, required: ['id', 'messageId', 'quote'], additionalProperties: false } };
   tool.schema.required.push('evidence');
@@ -45,28 +54,33 @@ export function primaryAssessmentTool(context, task) {
 }
 
 export function normalizePrimaryAssessment(result, context, task) {
+  if (context.researchScoring && result?.judgments?.some(j => typeof j.partialCredit?.awarded !== 'boolean' || typeof j.partialCredit?.reason !== 'string' || j.partialCredit.reason.length > 2000 || (j.partialCredit.awarded && !j.partialCredit.reason.trim()))) {
+    throw new InvalidOutputError('Return an explicit partialCredit judgment and a specific reason for any partial credit.');
+  }
   // A single rationale replaces repeated prose, without defaulting any judgment,
   // correctness, opportunity, reasoning, citation, or policy-check fields.
   let source = result;
   if (result?.evidence !== undefined) {
-    const fail = () => { throw new InvalidOutputError('Invalid shared evidence: use unique IDs, exact learner quotes, and valid references; omit unused evidence.'); };
-    if (!Array.isArray(result.evidence) || result.evidence.length > 400 || !Array.isArray(result.judgments)) fail();
+    const fail = detail => { throw new InvalidOutputError(`Invalid shared evidence: ${detail}`); };
+    if (!Array.isArray(result.evidence) || result.evidence.length > 400 || !Array.isArray(result.judgments)) fail('Expected evidence and judgments arrays, with at most 400 evidence entries.');
     const pool = new Map(), used = new Set();
     for (const e of result.evidence) {
-      if (!e || !/^[a-zA-Z0-9_-]{1,100}$/.test(e.id) || pool.has(e.id) || typeof e.messageId !== 'string' || typeof e.quote !== 'string' || e.quote.length > 2000) fail();
+      if (!e || !/^[a-zA-Z0-9_-]{1,100}$/.test(e.id) || pool.has(e.id) || typeof e.messageId !== 'string' || typeof e.quote !== 'string' || e.quote.length > 2000) fail(`Evidence ${JSON.stringify(e?.id)} has a duplicate/invalid ID or invalid messageId/quote fields.`);
       pool.set(e.id, e);
     }
     source = { ...result, judgments: result.judgments.map(j => {
-      if (!Array.isArray(j.observations)) fail();
+      if (!Array.isArray(j?.observations)) fail(`Criterion ${j?.criterionId} is missing observations.`);
       return { ...j, observations: j.observations.map(o => {
         const evidence = pool.get(o?.evidenceId);
-        if (!evidence || o.messageId !== undefined || o.quote !== undefined) fail();
+        if (!evidence || o.messageId !== undefined || o.quote !== undefined) fail(`Criterion ${j.criterionId} references missing evidence ${JSON.stringify(o?.evidenceId)} or includes inline messageId/quote fields; use evidenceId only.`);
         used.add(o.evidenceId);
         const { evidenceId: _reference, ...policy } = o;
         return { ...policy, messageId: evidence.messageId, quote: evidence.quote };
       }) };
     }) };
-    if (used.size !== pool.size) fail();
+    // Unreferenced entries contribute nothing to scoring. Drop them rather than
+    // failing the conversation; referenced evidence still receives full validation.
+    source.evidence = result.evidence.filter(e => used.has(e.id));
   }
   const judgments = Array.isArray(source?.judgments) ? source.judgments.map(j => ({ ...j, reason: j?.reason === undefined ? source.reason : j.reason })) : source?.judgments;
   return normalizeLeanAssessment({ ...source, judgments }, context, task);

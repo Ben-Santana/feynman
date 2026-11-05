@@ -1,0 +1,36 @@
+.topic-report { color: var(--foreground); }
+.topic-report-header { display: flex; justify-content: space-between; align-items: center; gap: 24px; margin-bottom: 32px; }
+.topic-report-header h1 { font-size: clamp(1.5rem, 3vw, 2rem); line-height: 1.2; margin: 0; overflow-wrap: anywhere; }
+.topic-report button { padding: 10px 14px; border: 1px solid var(--border); border-radius: 6px; background: var(--background); color: var(--foreground); font: inherit; font-size: .875rem; cursor: pointer; flex-shrink: 0; }
+.topic-report button:hover { background: var(--muted); }
+.topic-report button:focus-visible { outline: 2px solid var(--primary); outline-offset: 4px; }
+.topic-report button:disabled { opacity: .5; cursor: wait; }
+/* Three equal metrics share one surface; the chart aligns with both outer edges. */
+.topic-report-scores { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 24px; padding: 28px; margin: 0 0 36px; background: var(--muted); border-radius: 12px; }
+.topic-report-scores dt { font-size: .875rem; color: var(--muted-foreground); }
+.topic-report-scores dd { font-size: 2.5rem; line-height: 1.2; margin: 12px 0 0; font-variant-numeric: tabular-nums; }
+.topic-report-scores dd small { font-size: 1.125rem; color: var(--muted-foreground); }
+.topic-report-chart { --completion-ink: var(--foreground); --completion-mid: var(--muted-foreground); --completion-track: var(--border); padding: 28px; border: 1px solid var(--border); border-radius: 12px; }
+.topic-report-chart h2 { font-size: 1.125rem; font-weight: 500; margin: 0 0 16px; }
+.topic-report-legend { display: flex; flex-wrap: wrap; gap: 12px 24px; padding: 0; margin: 0 0 32px; list-style: none; }
+.topic-report-legend li { display: flex; align-items: center; gap: 8px; font-size: .8125rem; color: var(--muted-foreground); }
+.topic-report-legend i { width: 10px; height: 10px; border-radius: 2px; }
+.completion-demonstrated { background: var(--completion-ink); }
+.completion-partial { background: var(--completion-mid); }
+.completion-remaining { background: var(--completion-track); }
+.topic-report-bars { list-style: none; padding: 0; margin: 0; display: grid; gap: 28px; }
+.topic-report-bar-label { display: flex; align-items: baseline; justify-content: space-between; gap: 16px; margin-bottom: 10px; font-size: .9375rem; }
+.topic-report-bar-label > span:first-child { min-width: 0; overflow-wrap: anywhere; }
+.topic-report-bar-label > span:last-child { flex-shrink: 0; font-variant-numeric: tabular-nums; }
+.topic-report-bar-label small { color: var(--muted-foreground); font-size: inherit; }
+.topic-report-bar { display: flex; height: 14px; background: var(--completion-track); border-radius: 4px; overflow: hidden; }
+.topic-report-bar > span { height: 100%; }
+.topic-report-empty { color: var(--muted-foreground); font-size: .875rem; }
+.topic-report-error { padding: 16px; border: 1px solid var(--border); margin-bottom: 24px; }
+@media (max-width: 600px) {
+  .topic-report-header { align-items: flex-start; flex-direction: column; gap: 16px; }
+  .topic-report-scores { padding: 20px; gap: 20px; grid-template-columns: 1fr; }
+  .topic-report-scores > div { display: flex; align-items: center; justify-content: space-between; gap: 16px; }
+  .topic-report-scores dd { margin: 0; font-size: 2rem; white-space: nowrap; }
+  .topic-report-chart { padding: 20px; }
+}

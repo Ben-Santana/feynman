@@ -57,6 +57,6 @@
 .chat-data-table th { background: var(--secondary, #f4f4f4); }
 .learning-actions { display: flex; flex-wrap: wrap; gap: 8px; padding: 12px 0; }
 .learning-actions p { flex-basis: 100%; margin: 0; font-size: .85rem; }
-.learning-actions button { padding: 8px 12px; border: 1px solid var(--border, #ddd); border-radius: 8px; background: var(--background, white); color: inherit; cursor: pointer; }
+.learning-actions button:not(.level-divider-continue) { padding: 8px 12px; border: 1px solid var(--border, #ddd); border-radius: 8px; background: var(--background, white); color: inherit; cursor: pointer; }
 .learning-actions button:focus-visible, .chat-table-scroll:focus-visible { outline: 2px solid var(--primary); outline-offset: 2px; }
 .learning-actions button:disabled { opacity: .5; cursor: not-allowed; }

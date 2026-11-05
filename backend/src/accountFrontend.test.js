@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { activateAccount, accountSignal, savePendingAccountRole, completeAccountCallback, signInWithWpi, signInWithEmail, signUpWithEmail, requestPasswordReset, updateAccountPassword, saveAccountDisplayName, loadAccountAuthMode, supabase } from '../../frontend/src/accounts.ts';
+import { activateAccount, accountSignal, completeAccountCallback, signInWithWpi, signInWithEmail, signUpWithEmail, requestPasswordReset, updateAccountPassword, saveAccountDisplayName, loadAccountAuthMode, supabase } from '../../frontend/src/accounts.ts';
 import { createAppearanceStore } from '../../frontend/src/cloudAppearance.ts';
 import { defaultAppearance } from '../../frontend/src/characterAppearance.ts';
 import { aiPreferences, saveAIPreferences } from '../../frontend/src/aiPreferences.ts';
@@ -30,7 +30,7 @@ test('missing frontend account configuration fails closed', () => {
 });
 test('profile saves only the trimmed name on the signed-in profile and returns the confirmed server values', async t => {
   t.after(() => activateAccount(null));
-  const account = { id: 'learner', display_name: 'Old name', role: 'student', email: 'learner@wpi.edu' };
+  const account = { id: 'learner', display_name: 'Old name', role: 'instructor', email: 'learner@wpi.edu' };
   activateAccount(account);
   const calls = [];
   const query = {
@@ -54,9 +54,9 @@ test('profile saves only the trimmed name on the signed-in profile and returns t
 });
 test('account lifecycle aborts requests on logout and account switching, without aborting same-user role refreshes', t => {
   t.after(() => activateAccount(null));
-  activateAccount({ id: 'first', role: 'student' }); const first = accountSignal();
+  activateAccount({ id: 'first', role: 'instructor' }); const first = accountSignal();
   activateAccount({ id: 'first', role: 'admin' }); assert.equal(first.aborted, false);
-  activateAccount({ id: 'second', role: 'student' }); assert.equal(first.aborted, true);
+  activateAccount({ id: 'second', role: 'instructor' }); assert.equal(first.aborted, true);
   const second = accountSignal(); activateAccount(null); assert.equal(second.aborted, true);
 });
 test('AI preferences start fresh and do not leak provider connections between accounts', t => {
@@ -67,7 +67,7 @@ test('AI preferences start fresh and do not leak provider connections between ac
   values.set('feynman-ai-preferences', JSON.stringify({ provider: 'chatgpt', accountId: 'anonymous-account' }));
   activateAccount({ id: 'first', role: 'admin' }); assert.equal(aiPreferences().provider, 'anthropic'); assert.equal(aiPreferences().accountId, '');
   saveAIPreferences({ provider: 'chatgpt', accountId: 'first-connection', model: 'model' });
-  activateAccount({ id: 'second', role: 'student' }); assert.equal(aiPreferences().accountId, '');
+  activateAccount({ id: 'second', role: 'instructor' }); assert.equal(aiPreferences().accountId, '');
   activateAccount({ id: 'first', role: 'admin' }); assert.equal(aiPreferences().accountId, 'first-connection');
 });
 test('cloud appearance restores across devices, preserves failed drafts, and isolates account recovery', async t => {
@@ -100,22 +100,18 @@ test('cloud appearance restores across devices, preserves failed drafts, and iso
   assert.ok(values.has('feynman.character.v1'));
 });
 
-test('email signup accepts any email without an invite, confirmation redirect, or verification step', async () => {
+test('email signup requests an instructor account without a role choice or invite', async () => {
   let request, calls = 0;
   const client = { auth: { async signUp(value) { calls++; request = value; return { data: { session: { access_token: 'session' } }, error: null }; } } };
   for (const email of [' Learner@Example.com ', 'user@wpi.edu', 'user@alum.wpi.edu']) {
-    await signUpWithEmail(email, 'separate-app-password', 'student', client);
-    assert.deepEqual(request, { email: email.trim().toLowerCase(), password: 'separate-app-password', options: { data: { role: 'student' } } });
+    await signUpWithEmail(email, 'separate-app-password', client);
+    assert.deepEqual(request, { email: email.trim().toLowerCase(), password: 'separate-app-password', options: { data: { role: 'instructor' } } });
   }
-  for (const email of ['', 'user', 'user@@example.com', 'user@ example.com']) await assert.rejects(signUpWithEmail(email, 'separate-app-password', 'student', client));
-  await assert.rejects(signUpWithEmail('learner@example.com', 'short', 'student', client));
+  for (const email of ['', 'user', 'user@@example.com', 'user@ example.com']) await assert.rejects(signUpWithEmail(email, 'separate-app-password', client));
+  await assert.rejects(signUpWithEmail('learner@example.com', 'short', client));
   assert.equal(calls, 3);
-  await signUpWithEmail('instructor@example.com', 'separate-app-password', 'instructor', client);
-  assert.equal(request.options.data.role, 'instructor');
-  await assert.rejects(signUpWithEmail('learner@example.com', 'separate-app-password', 'admin', client), /Choose Instructor or Student/);
-  assert.equal(calls, 4);
   client.auth.signUp = async () => ({ error: new Error('Signup unavailable') });
-  await assert.rejects(signUpWithEmail('learner@example.com', 'separate-app-password', 'student', client), /Signup unavailable/);
+  await assert.rejects(signUpWithEmail('learner@example.com', 'separate-app-password', client), /Signup unavailable/);
 });
 test('signup signs in if Supabase creates the account without returning a session', async () => {
   let login;
@@ -123,7 +119,7 @@ test('signup signs in if Supabase creates the account without returning a sessio
     async signUp() { return { data: { session: null }, error: null }; },
     async signInWithPassword(value) { login = value; return { error: null }; },
   } };
-  await signUpWithEmail(' Learner@Example.com ', 'separate-app-password', 'student', client);
+  await signUpWithEmail(' Learner@Example.com ', 'separate-app-password', client);
   assert.deepEqual(login, { email: 'learner@example.com', password: 'separate-app-password' });
 });
 test('password login and reset use Supabase, propagate errors, and do not change the password text', async () => {
@@ -144,7 +140,7 @@ test('password login and reset use Supabase, propagate errors, and do not change
   await assert.rejects(signInWithEmail('learner@wpi.edu', 'password', client), /Invalid credentials/);
 });
 test('login mode comes from the database and fails closed for missing or unknown settings', async () => {
-  for (const mode of ['email', 'wpi']) assert.equal(await loadAccountAuthMode({ rpc: async () => ({ data: mode, error: null }) }), mode);
+  for (const mode of ['email', 'wpi', 'both']) assert.equal(await loadAccountAuthMode({ rpc: async () => ({ data: mode, error: null }) }), mode);
   for (const result of [{ data: null }, { data: 'anything' }, { data: 'email', error: new Error('offline') }]) await assert.rejects(loadAccountAuthMode({ rpc: async () => result }));
 });
 test('recovery callback exchanges its code and stays on the password update page', async () => {
@@ -152,19 +148,4 @@ test('recovery callback exchanges its code and stays on the password update page
   const client = { auth: { async exchangeCodeForSession() { return { error: null }; } } };
   await completeAccountCallback(new URL('https://learning.example/account/reset-password?code=recovery-code'), client, path => { replaced = path; });
   assert.equal(replaced, '/account/reset-password');
-});
-
-test('pending account role saves only public roles and reports failed saves', async () => {
-  const calls = [];
-  const client = { async rpc(name, args) { calls.push({ name, args }); return { data: args.new_role, error: null }; } };
-  for (const role of ['instructor', 'student']) assert.equal(await savePendingAccountRole(role, client), role);
-  assert.deepEqual(calls, ['instructor', 'student'].map(role => ({ name: 'set_pending_account_role', args: { new_role: role } })));
-  await assert.rejects(savePendingAccountRole('admin', client), /Choose Instructor or Student/);
-  assert.equal(calls.length, 2);
-  client.rpc = async () => ({ error: { code: '42501' } });
-  await assert.rejects(savePendingAccountRole('student', client), /account status changed/);
-  client.rpc = async () => ({ error: { code: 'PGRST202' } });
-  await assert.rejects(savePendingAccountRole('student', client), /Account setup is incomplete/);
-  client.rpc = async () => ({ error: { code: 'unknown' } });
-  await assert.rejects(savePendingAccountRole('student', client), /Could not update/);
 });

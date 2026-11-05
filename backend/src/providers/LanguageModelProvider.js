@@ -40,7 +40,7 @@ export async function invokeProvider(provider, request) {
       throw new AIError(`${label} does not support this attachment type. Choose another provider in AI settings.`, 400);
     }
   }
-  const longRequest = ['extract_concepts', 'suggest_concepts', 'generate_rubric'].includes(request.response.name);
+  const longRequest = ['extract_concepts', 'suggest_concepts', 'generate_rubric', 'generate_apply_puzzle'].includes(request.response.name);
   const timeout = AbortSignal.timeout(longRequest ? 180_000 : 60_000);
   const signal = request.signal ? AbortSignal.any([timeout, request.signal]) : timeout;
   try {
@@ -50,7 +50,7 @@ export async function invokeProvider(provider, request) {
     if (!result || typeof result !== 'object' || Array.isArray(result)) throw new InvalidOutputError(`${label} returned invalid structured data. Please retry.`);
     return result;
   } catch (error) {
-    if (signal.aborted || error?.name === 'TimeoutError' || error?.name === 'AbortError') throw new AIError(longRequest ? 'Rubric generation took too long. Please retry with shorter files.' : `${label} took too long. Please retry.`, 504);
+    if (signal.aborted || error?.name === 'TimeoutError' || error?.name === 'AbortError') throw new AIError(longRequest ? request.response.name === 'generate_apply_puzzle' ? 'Puzzle generation took too long. Try a shorter description.' : 'Rubric generation took too long. Please retry with shorter files.' : `${label} took too long. Please retry.`, 504);
     if (error instanceof AIError || error instanceof InvalidOutputError) throw error;
     // Unexpected transport errors can contain URLs, headers, or credentials.
     throw new AIError(`Could not complete the ${label} request. Please retry.`);

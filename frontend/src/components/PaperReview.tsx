@@ -41,7 +41,8 @@ export function PaperReview({ paper, review, busy, error, onSubmit, characterNam
   const reviewedGrades = review?.grades || (review?.grade ? [{ paperId: paper.id, grade: review.grade, selectedSteps: review.selectedSteps || [] }] : [])
   const [grades, setGrades] = useState<PaperGrade[]>([])
   const [drafts, setDrafts] = useState<Record<string, number[]>>({})
-  const [confirmedPasses, setConfirmedPasses] = useState<Record<string, boolean>>({})
+  const [correctSteps, setCorrectSteps] = useState<Record<string, number[]>>({})
+  const confirmedPasses = Object.fromEntries(exercises.map(exercise => [exercise.id, paperParts(exercise).steps.length > 0 && correctSteps[exercise.id]?.length === paperParts(exercise).steps.length]))
   const [order, setOrder] = useState(() => exercises.map((_, index) => index))
   const [turning, setTurning] = useState(false)
   const [sorting, setSorting] = useState(false)
@@ -87,11 +88,12 @@ export function PaperReview({ paper, review, busy, error, onSubmit, characterNam
       { transform: 'translate(0, 0) rotate(0deg) scale(1)', opacity: 1 },
     ], { duration: 560, easing: 'cubic-bezier(.2,.8,.2,1)' })
   }
-  function toggle(step: number) {
+  function toggle(step: number, correct = false) {
     if (review || locked || gradeLock.current) return
-    const next = selected.includes(step) ? selected.filter(n => n !== step) : [...selected, step].sort((a, b) => a - b)
+    const checked = correctSteps[current.id] || []
+    const next = correct ? selected.filter(n => n !== step) : selected.includes(step) ? selected.filter(n => n !== step) : [...selected, step].sort((a, b) => a - b)
     setDrafts(items => ({ ...items, [current.id]: next }))
-    setConfirmedPasses(items => ({ ...items, [current.id]: false }))
+    setCorrectSteps(items => ({ ...items, [current.id]: correct ? checked.includes(step) ? checked.filter(n => n !== step) : [...checked, step] : checked.filter(n => n !== step) }))
     setGrades(items => items.filter(item => item.paperId !== current.id))
     setStamped(false)
   }
@@ -251,14 +253,19 @@ export function PaperReview({ paper, review, busy, error, onSubmit, characterNam
               <div className="paper-heading">
                 <div className="paper-problem"><strong className="paper-problem-number">{index + 1}.</strong><div className="paper-problem-text"><MathText>{problem}</MathText></div></div>
                 <div className={`paper-stamp-target paper-grade-${sheetGrade} ${saved || top && stamped ? 'paper-is-inked' : ''}`}>
-                  {review ? <div className="paper-grade-field" aria-label={`Grade: ${sheetGrade}`}><span className="paper-grade-label">Reviewed</span></div> : <><button ref={top ? gradeButton : undefined} type="button" className="paper-grade-field" onClick={() => void finalizeGrade()} disabled={!top || locked || !sheetGrade} aria-label={sheetGrade ? `Grade paper ${index + 1} ${sheetGrade}; click to finalize` : `Choose a grade for paper ${index + 1}`}><span className="paper-grade-label">{!sheetGrade ? 'Choose a grade' : top && sorting ? 'Stamping' : saved ? 'Re-stamp' : 'Click to stamp'}</span><span className="paper-grade-ghost" aria-hidden="true">{sheetGrade}</span></button>{!sheetGrade && <button type="button" disabled={!top || locked} onClick={() => setConfirmedPasses(items => ({ ...items, [exercise.id]: true }))}>Mark all steps correct</button>}</>}
+                  {review ? <div className="paper-grade-field" aria-label={`Grade: ${sheetGrade}`}><span className="paper-grade-label">Reviewed</span></div> : <><button ref={top ? gradeButton : undefined} type="button" className="paper-grade-field" onClick={() => void finalizeGrade()} disabled={!top || locked || !sheetGrade} aria-label={sheetGrade ? `Grade paper ${index + 1} ${sheetGrade}; click to finalize` : `Choose a grade for paper ${index + 1}`}><span className="paper-grade-label">{!sheetGrade ? 'Choose a grade' : top && sorting ? 'Stamping' : saved ? 'Re-stamp' : 'Click to stamp'}</span><span className="paper-grade-ghost" aria-hidden="true">{sheetGrade}</span></button></>}
                   <span ref={top ? ink : undefined} className="paper-stamp-ink" aria-hidden="true"><span>{sheetGrade}</span><small>{characterName} · reviewed</small></span>
                   <span ref={top ? impact : undefined} className="paper-stamp-impact" aria-hidden="true" />
                 </div>
               </div>
               <div className="paper-steps">{steps.map((step, i) => {
                 const marked = marks.includes(i + 1)
-                return <button type="button" key={i} className={`paper-step ${marked ? 'paper-step-selected' : ''}`} onClick={() => toggle(i + 1)} disabled={!top || Boolean(review) || locked} aria-pressed={marked} aria-label={`Step ${i + 1}${marked ? ', marked incorrect' : ''}`}><span className="paper-step-body"><MathText>{step}</MathText></span><svg className="paper-step-mark" viewBox="0 0 44 44" fill="none" stroke="currentColor" strokeWidth="4.5" strokeLinecap="round" aria-hidden="true"><path d="M6 7 C16 14 24 27 38 38" /><path d="M37 6 C29 16 17 29 6 37" /></svg></button>
+                const correct = review ? saved?.grade === 'pass' || Boolean(saved && !marked) : (correctSteps[exercise.id] || []).includes(i + 1)
+                const disabled = !top || Boolean(review) || locked
+                return <div key={i} className={`paper-step ${marked ? 'paper-step-selected' : ''}`}><span className="paper-step-body"><MathText>{step}</MathText></span><span className="paper-step-actions">
+                  <button type="button" className="paper-step-choice paper-step-incorrect" onClick={() => toggle(i + 1)} disabled={disabled} aria-pressed={marked} aria-label={`Mark step ${i + 1} incorrect`}><svg viewBox="0 0 44 44" fill="none" stroke="currentColor" strokeWidth="4.5" strokeLinecap="round" aria-hidden="true"><path d="M6 7 C16 14 24 27 38 38" /><path d="M37 6 C29 16 17 29 6 37" /></svg></button>
+                  <button type="button" className="paper-step-choice paper-step-correct" onClick={() => toggle(i + 1, true)} disabled={disabled} aria-pressed={correct} aria-label={`Mark step ${i + 1} correct`}><svg viewBox="0 0 44 44" fill="none" stroke="currentColor" strokeWidth="4.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="M6 23 C10 27 14 33 17 37 C23 27 30 15 38 7" /><path d="M7 24 C11 28 14 32 17 36 C24 26 31 14 37 8" strokeWidth="1.4" opacity=".45" /></svg></button>
+                </span></div>
               })}</div>
               <h2 className="sr-only">Final answer</h2><div className="paper-conclusion"><MathText>{conclusion}</MathText></div>
               {top && error && <p className="paper-error" role="alert">{error}</p>}

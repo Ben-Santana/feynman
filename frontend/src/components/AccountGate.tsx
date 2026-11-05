@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState, type FormEvent, type ReactNode } from 'react'
-import { accountFetch, activateAccount, completeAccountCallback, currentAccount, loadAccountAuthMode, navigateAccountPage, requestPasswordReset, savePendingAccountRole, signInWithEmail, signInWithWpi, signUpWithEmail, supabase, updateAccountPassword, type Account, type AccountAuthMode, type SignupRole } from '../accounts'
+import { accountFetch, activateAccount, completeAccountCallback, currentAccount, loadAccountAuthMode, navigateAccountPage, requestPasswordReset, signInWithEmail, signInWithWpi, signUpWithEmail, supabase, updateAccountPassword, type Account, type AccountAuthMode, type AccountSignInMethod } from '../accounts'
 import { Bloub } from './Bloub'
 import { CornerDrops } from './CornerDrops'
 import { AccountLoading, LoadingAnimation } from './AccountLoading'
@@ -12,54 +12,22 @@ function AccountAvatar() {
   return <div className="account-avatar" aria-hidden="true"><Bloub mode="studio" expression="attentive" showControls={false} followPointer /></div>
 }
 
-function AccountRoleSelector({ role, disabled, onChange }: { role: string; disabled: boolean; onChange: (role: SignupRole) => void }) {
-  return <fieldset className="account-role" disabled={disabled}>
-    <legend>Are you a...</legend>
-    <div className="account-role-options">
-      {(['instructor', 'student'] as const).map(option => <label key={option}>
-        <input type="radio" name="account-type" value={option} checked={role === option} onChange={() => onChange(option)} />
-        <span>{option === 'instructor' ? 'Instructor' : 'Student'}</span>
-      </label>)}
-    </div>
-  </fieldset>
-}
-
-export function AccountGate({ children }: { children: (account: Account, onProfileUpdated: (account: Account) => void, authMode: AccountAuthMode) => ReactNode }) {
+export function AccountGate({ children }: { children: (account: Account, onProfileUpdated: (account: Account) => void, authMode: AccountSignInMethod) => ReactNode }) {
   const [page, setPage] = useState(window.location.pathname.replace(/\/$/, '') || '/')
   const [account, setAccount] = useState<Account | null>(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
   const [signingIn, setSigningIn] = useState(false)
   const [authMode, setAuthMode] = useState<AccountAuthMode | null>(null)
-  const [formMode, setFormMode] = useState<'sign-in' | 'sign-up' | 'reset-request'>('sign-in')
+  const [signInMethod, setSignInMethod] = useState<AccountSignInMethod | null>(null)
+  const [formMode, setFormMode] = useState<'choose' | 'sign-in' | 'sign-up' | 'reset-request'>('choose')
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [confirmPassword, setConfirmPassword] = useState('')
-  const [signupRole, setSignupRole] = useState<SignupRole>('student')
-  const [editingAccountId, setEditingAccountId] = useState<string | null>(null)
-  const editingPending = Boolean(account && !account.approved && editingAccountId === account.id)
   const [notice, setNotice] = useState('')
   const [resettingPassword, setResettingPassword] = useState(window.location.pathname === '/account/reset-password')
-  const [hasSession, setHasSession] = useState(false)
   const [attempt, setAttempt] = useState(0)
   const generation = useRef(0)
-  const wpiRedirectStarted = useRef(false)
-  const redirectToWpi = !loading && authMode === 'wpi' && !account && !error && page !== '/' && page !== '/account/callback'
-  useEffect(() => {
-    if (account) wpiRedirectStarted.current = false
-    if (!redirectToWpi || wpiRedirectStarted.current) return
-    let disposed = false
-    queueMicrotask(() => {
-      if (disposed || wpiRedirectStarted.current) return
-      wpiRedirectStarted.current = true
-      setSigningIn(true)
-      void signInWithWpi().catch(reason => {
-        setError(reason instanceof Error ? reason.message : 'Could not open WPI sign-in. Please try again.')
-        setSigningIn(false)
-      })
-    })
-    return () => { disposed = true }
-  }, [redirectToWpi, account])
   useEffect(() => {
     const onPopState = () => setPage(window.location.pathname.replace(/\/$/, '') || '/')
     window.addEventListener('popstate', onPopState)
@@ -79,7 +47,7 @@ export function AccountGate({ children }: { children: (account: Account, onProfi
       try {
         const mode = await loadAccountAuthMode()
         const { data, error: sessionError } = await supabase().auth.getSession()
-        if (!disposed && ticket === generation.current) { setAuthMode(mode); setHasSession(Boolean(data.session)) }
+        if (!disposed && ticket === generation.current) setAuthMode(mode)
         if (sessionError) throw sessionError
         if (!data.session) {
           if (!disposed && ticket === generation.current) { waitingForApproval = false; activateAccount(null); setAccount(null) }
@@ -88,7 +56,19 @@ export function AccountGate({ children }: { children: (account: Account, onProfi
         const response = await accountFetch('/api/account', { signal: AbortSignal.timeout(15000) })
         const result = await response.json()
         if (!response.ok) throw new Error(result.error || 'Could not load your account.')
-        if (!disposed && ticket === generation.current) { waitingForApproval = result.approved !== true; activateAccount(result.approved === true && !result.consent_required ? result : null); setAccount(result); setError('') }
+        let method: AccountSignInMethod = mode === 'wpi' ? 'wpi' : 'email'
+        if (mode === 'both') {
+          const { data: assurance, error } = await supabase().auth.mfa.getAuthenticatorAssuranceLevel()
+          if (error) throw error
+          if (assurance.currentAuthenticationMethods.some(method => typeof method === 'object' && method.method === 'oauth')) method = 'wpi'
+        }
+        if (!disposed && ticket === generation.current) {
+          waitingForApproval = result.approved !== true
+          activateAccount(result.approved === true && !result.consent_required ? result : null)
+          setAccount(result)
+          setSignInMethod(method)
+          setError('')
+        }
       } catch (reason) {
         if (!disposed && ticket === generation.current) {
           activateAccount(null); setAccount(null)
@@ -109,7 +89,18 @@ export function AccountGate({ children }: { children: (account: Account, onProfi
       const url = new URL(window.location.href)
       if (url.pathname === '/account/callback' || (url.pathname === '/account/reset-password' && (url.searchParams.has('code') || url.searchParams.has('error')))) {
         if (callback?.href !== url.href) callback = { href: url.href, promise: completeAccountCallback(url) }
-        void callback.promise.then(refresh).catch(reason => { if (!disposed) { setError(reason.message); setResettingPassword(false); setLoading(false); window.history.replaceState(null, '', '/') } })
+        void callback.promise.then(() => {
+          if (disposed) return
+          setPage(window.location.pathname)
+          return refresh()
+        }).catch(reason => {
+          if (disposed) return
+          setError(reason.message)
+          setResettingPassword(false)
+          window.history.replaceState(null, '', '/account/login')
+          setPage('/account/login')
+          return refresh()
+        })
       } else void refresh()
     } catch (reason) { queueMicrotask(() => { if (!disposed) { setError((reason as Error).message); setLoading(false) } }) }
     const interval = window.setInterval(() => { if (!disposed && document.visibilityState === 'visible' && waitingForApproval) void refresh() }, 15000)
@@ -120,19 +111,12 @@ export function AccountGate({ children }: { children: (account: Account, onProfi
   async function submitEmail(event: FormEvent) {
     event.preventDefault(); setSigningIn(true); setError(''); setNotice('')
     try {
-      if (editingPending && account) {
-        const id = account.id
-        ++generation.current
-        const role = await savePendingAccountRole(signupRole)
-        setAccount(current => current?.id === id && !current.approved ? { ...current, role } : current)
-        setEditingAccountId(null)
-        setNotice('Account type saved.')
-      } else if (formMode === 'reset-request') {
+      if (formMode === 'reset-request') {
         await requestPasswordReset(email)
         setNotice('If an account exists for this address, you will receive a password reset link. Open it in this browser.')
       } else if (formMode === 'sign-up') {
         if (password !== confirmPassword) throw new Error('The passwords do not match.')
-        await signUpWithEmail(email, password, signupRole)
+        await signUpWithEmail(email, password)
       } else await signInWithEmail(email, password)
       setPassword(''); setConfirmPassword('')
     } catch (reason) { setError(reason instanceof Error ? reason.message : 'Could not sign in. Please try again.') }
@@ -142,20 +126,16 @@ export function AccountGate({ children }: { children: (account: Account, onProfi
     setFormMode(mode); setError(''); setNotice(''); setPassword(''); setConfirmPassword('')
   }
   if (!loading && account?.consent_required && !resettingPassword) return <ConsentAgreement key={account.id} onSigned={() => { setLoading(true); setAttempt(value => value + 1) }} />
-  if (!loading && account && account.approved !== true && !resettingPassword && !editingPending) return <main className="account-login account-pending"><section aria-labelledby="pending-title">
+  if (!loading && account && account.approved !== true && !resettingPassword) return <main className="account-login account-pending"><section aria-labelledby="pending-title">
     <div className="account-card">
       <AccountAvatar />
-      <header className="account-heading"><h1 id="pending-title">Pending approval</h1><p>An admin needs to approve your account before you can start learning.</p></header>
+      <header className="account-heading"><h1 id="pending-title">Pending approval</h1><p>An admin needs to approve your account before you can continue.</p></header>
       {notice && <p className="account-notice" role="status">{notice}</p>}
       <div className="account-links"><button className="account-secondary" type="button" onClick={() => { void downloadSignedConsent().catch(reason => setError(reason.message)) }}>Download signed agreement</button></div>
       <button type="button" disabled={signingIn} onClick={() => {
         setSigningIn(true); setError('')
         void supabase().auth.signOut().then(({ error }) => { if (error) throw error }).catch(reason => setError(reason.message)).finally(() => setSigningIn(false))
       }}>Sign out</button>
-      <div className="account-links"><button className="account-secondary" type="button" disabled={signingIn} onClick={() => {
-        setSignupRole(account.role === 'instructor' ? 'instructor' : 'student')
-        setEmail(account.email); changeForm('sign-up'); setEditingAccountId(account.id)
-      }}>Make changes to account</button></div>
       {error && <p className="account-error" role="alert">{error}</p>}
     </div>
   </section></main>
@@ -169,12 +149,14 @@ export function AccountGate({ children }: { children: (account: Account, onProfi
     </div></div>
   </section></main>
   if (loading) return <AccountLoading />
-  if (redirectToWpi || (authMode === 'wpi' && signingIn && !account)) return <AccountLoading />
-  if (resettingPassword && authMode === 'email') return <main className="account-login"><section aria-labelledby="account-title">
+  const emailEnabled = authMode === 'email' || authMode === 'both'
+  const wpiEnabled = authMode === 'wpi' || authMode === 'both'
+  const showEmailForm = emailEnabled && (authMode === 'email' || formMode !== 'choose')
+  if (resettingPassword && emailEnabled) return <main className="account-login"><section aria-labelledby="account-title">
     <div className="account-card">
       <AccountAvatar />
-      <header className="account-heading"><h1 id="account-title">A fresh start.</h1><p>Choose a new password for your account.</p></header>
-      {hasSession ? <form onSubmit={event => {
+      <header className="account-heading"><h1 id="account-title">Reset password</h1></header>
+      {account && signInMethod === 'email' ? <form onSubmit={event => {
         event.preventDefault(); setSigningIn(true); setError('')
         void (async () => {
           try {
@@ -194,35 +176,42 @@ export function AccountGate({ children }: { children: (account: Account, onProfi
       {error && <p className="account-error" role="alert">{error}</p>}
     </div>
   </section></main>
-  if (account && authMode && !editingPending) return children(account, updated => {
+  if (account && signInMethod) return children(account, updated => {
     const current = currentAccount()
     if (!current || current.id !== updated.id) return
     const next = { ...current, display_name: updated.display_name, updated_at: updated.updated_at }
     activateAccount(next); setAccount(next)
-  }, authMode)
-  return <main className="account-login"><section aria-labelledby="account-title">
+  }, signInMethod)
+  return <main className="account-login account-entry"><section aria-labelledby="account-title">
     <div className="account-card">
       <AccountAvatar />
       <header className="account-heading">
-        <h1 id="account-title">{editingPending ? 'Edit account.' : authMode === 'wpi' ? 'Sign in with WPI' : formMode === 'sign-up' ? 'Create an account.' : formMode === 'reset-request' ? 'Forgot your password?' : 'Welcome back.'}</h1>
-        {formMode === 'reset-request' && <p>We’ll send a reset link to your email.</p>}
+        <h1 id="account-title">{formMode === 'sign-up' ? 'Create an instructor account' : formMode === 'reset-request' ? 'Reset password' : showEmailForm ? 'Sign in with email' : 'Sign in to Feynman'}</h1>
+        {formMode === 'sign-up' && <p>An admin must approve your account.</p>}
       </header>
-      {(authMode === 'email' || editingPending) && <>
-        <form onSubmit={event => void submitEmail(event)}>
-          {formMode === 'sign-up' && <AccountRoleSelector role={signupRole} disabled={signingIn} onChange={setSignupRole} />}
-          <label>Email<input type="email" autoComplete="email" inputMode="email" placeholder="you@example.com" required maxLength={254} value={email} readOnly={editingPending} disabled={signingIn} onChange={event => setEmail(event.target.value)} /></label>
-          {!editingPending && formMode !== 'reset-request' && <label>Password<input type="password" autoComplete={formMode === 'sign-up' ? 'new-password' : 'current-password'} required minLength={formMode === 'sign-up' ? 12 : undefined} value={password} disabled={signingIn} onChange={event => setPassword(event.target.value)} /></label>}
-          {!editingPending && formMode === 'sign-up' && <label>Confirm password<input type="password" autoComplete="new-password" required minLength={12} value={confirmPassword} disabled={signingIn} onChange={event => setConfirmPassword(event.target.value)} /></label>}
-          <button disabled={signingIn}>{signingIn ? <LoadingAnimation label="Submitting" compact /> : editingPending ? 'Save changes' : formMode === 'sign-up' ? 'Create account' : formMode === 'reset-request' ? 'Send reset link' : 'Sign in'}</button>
-        </form>
-        {!editingPending && formMode === 'sign-up' && <small className="account-hint">Use at least 12 characters for your password.</small>}
-        <div className="account-links">
-          {editingPending ? <button className="account-secondary" type="button" disabled={signingIn} onClick={() => { setEditingAccountId(null); setError(''); setNotice('') }}>Back to pending approval</button> : <button className="account-secondary" type="button" disabled={signingIn} onClick={() => changeForm(formMode === 'sign-in' ? 'sign-up' : 'sign-in')}>{formMode === 'sign-in' ? 'Create an account' : 'Back to sign in'}</button>}
-          {formMode === 'sign-in' && <button className="account-secondary" type="button" disabled={signingIn} onClick={() => changeForm('reset-request')}>Forgot password?</button>}
-        </div>
+      {wpiEnabled && !showEmailForm && <>
+        <button className="account-method" type="button" disabled={signingIn} onClick={() => {
+          setSigningIn(true); setError('')
+          void signInWithWpi().catch(reason => { setError(reason.message); setSigningIn(false) })
+        }}>{signingIn ? 'Opening WPI sign-in…' : 'Sign in with WPI SSO'}</button>
+        {emailEnabled && <>
+          <button className="account-method account-method-email" type="button" disabled={signingIn} aria-describedby="account-email-hint" onClick={() => changeForm('sign-in')}>Sign in with email</button>
+          <p className="account-method-hint" id="account-email-hint">For instructors</p>
+        </>}
       </>}
-      {authMode === 'wpi' && !editingPending && <>
-        <button type="button" disabled={signingIn} onClick={() => { setSigningIn(true); setError(''); void signInWithWpi().catch(reason => { setError(reason.message); setSigningIn(false) }) }}>{signingIn ? 'Opening WPI sign-in…' : 'Continue with WPI'}</button>
+      {showEmailForm && <>
+        <form onSubmit={event => void submitEmail(event)}>
+          <label>Email<input type="email" autoComplete="email" inputMode="email" placeholder="you@example.com" required maxLength={254} value={email} disabled={signingIn} onChange={event => setEmail(event.target.value)} /></label>
+          {formMode !== 'reset-request' && <label>Password<input type="password" autoComplete={formMode === 'sign-up' ? 'new-password' : 'current-password'} required minLength={formMode === 'sign-up' ? 12 : undefined} value={password} disabled={signingIn} onChange={event => setPassword(event.target.value)} /></label>}
+          {formMode === 'sign-up' && <label>Confirm password<input type="password" autoComplete="new-password" required minLength={12} value={confirmPassword} disabled={signingIn} onChange={event => setConfirmPassword(event.target.value)} /></label>}
+          <button disabled={signingIn}>{signingIn ? <LoadingAnimation label="Submitting" compact /> : formMode === 'sign-up' ? 'Create account' : formMode === 'reset-request' ? 'Send reset link' : 'Sign in'}</button>
+        </form>
+        {formMode === 'sign-up' && <small className="account-hint">Use at least 12 characters for your password.</small>}
+        <div className="account-links">
+          <button className="account-secondary" type="button" disabled={signingIn} onClick={() => changeForm(formMode === 'sign-up' || formMode === 'reset-request' ? 'sign-in' : 'sign-up')}>{formMode === 'sign-up' || formMode === 'reset-request' ? 'Back to email sign-in' : 'Create an instructor account'}</button>
+          {formMode !== 'sign-up' && formMode !== 'reset-request' && <button className="account-secondary" type="button" disabled={signingIn} onClick={() => changeForm('reset-request')}>Forgot password?</button>}
+          {authMode === 'both' && <button className="account-secondary" type="button" disabled={signingIn} onClick={() => changeForm('choose')}>All sign-in options</button>}
+        </div>
       </>}
       {notice && <p className="account-notice" role="status">{notice}</p>}
       {error && <><p className="account-error" role="alert">{error}</p><button type="button" onClick={() => { setLoading(true); setSigningIn(false); setAttempt(value => value + 1) }}>Retry checking login</button></>}

@@ -34,13 +34,14 @@ test('student tasks only include unstarted published modules in enrolled courses
   assert.equal(result.recentClasses.length, 3);
 });
 
-test('instructors get editable drafts in their own classes and no student module tasks', () => {
+test('instructors and admins get editable drafts in their own classes and no student module tasks', () => {
   const data = { courses: [course('a'), { ...course('other'), instructor_id: 'another' }], enrollments: [], modules: [module('published', 'a'), module('draft', 'a', false), module('other-draft', 'other', false)] };
-  const result = dashboardData(instructor, [], data);
-  assert.deepEqual(result.todos.map(todo => todo.id), ['module-draft']);
-  assert.equal(result.todos[0].path, '/courses/a/modules/draft/edit');
-  assert.deepEqual(result.recentClasses.map(item => item.course.id), ['a']);
-  assert.deepEqual(dashboardData({ id: 'admin', role: 'admin' }, [], data).recentClasses, []);
+  for (const role of ['instructor', 'admin']) {
+    const result = dashboardData({ ...instructor, role }, [], data);
+    assert.deepEqual(result.todos.map(todo => todo.id), ['module-draft']);
+    assert.equal(result.todos[0].path, '/courses/a/modules/draft/edit');
+    assert.deepEqual(result.recentClasses.map(item => item.course.id), ['a']);
+  }
 });
 
 test('recent classes use session and module activity rather than only creation dates', () => {

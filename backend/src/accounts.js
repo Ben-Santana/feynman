@@ -1,6 +1,7 @@
 import { checklistItems } from '../../frontend/src/rubricChecklist.js';
 import { createClient } from '@supabase/supabase-js';
 import { buildSignedConsent } from './consent.js';
+import { createTopicReportService } from './topicReportService.js';
 
 export class AccountError extends Error {
   constructor(message, status = 401) { super(message); this.status = status; }
@@ -29,6 +30,7 @@ export function createAccountService(env = process.env, clientFactory = createCl
     return clientFactory(url, env.SUPABASE_SECRET_KEY, options);
   }
   return {
+    topicReports: createTopicReportService(adminClient),
     async recordUsage(record) {
       const { error } = await adminClient().from('ai_usage_events').insert(record);
       if (error) throw new AccountError('Could not record AI usage.', 503);
@@ -60,7 +62,7 @@ export function createAccountService(env = process.env, clientFactory = createCl
       if (error || !data?.user) throw new AccountError('Your login expired. Sign in again.');
       if (!validAccountEmail(data.user)) throw new AccountError('A valid email address is required.', 403);
       // The same database function protects direct REST/Storage access and
-      // rejects password sessions after the setting switches to WPI SSO.
+      // enforces the configured providers and their account eligibility rules.
       const allowed = await client.rpc('account_signed_in');
       if (allowed.error?.code === 'PGRST202') throw new AccountError('Account setup is incomplete. Apply the account approval migration (202610160003_account_approval.sql) in Supabase, then retry.', 503);
       if (allowed.error) throw new AccountError('Could not verify the sign-in method. Contact the app administrator.', 503);

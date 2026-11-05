@@ -1,3 +1,4 @@
+import { createStudyGuidanceGenerator } from './studyGuidance.js';
 import { usageFeatures, usageRecord } from './usage.js';
 import { InvalidOutputError } from './structuredOutput.js';
 import { createServer } from 'node:http';
@@ -18,10 +19,12 @@ import { createEvaluationContext, EvaluatorInputError, evaluatorVersion } from '
 import { evaluatorComparisonCases, evaluatorTestCases } from './evaluatorTestCases.js';
 import { screenEvaluatorComparison } from './evaluatorBenchmark.js';
 import { EvaluationCache } from './turnCache.js';
+import { generatePuzzle, puzzlePrompt, validatePuzzleDescription } from './puzzleGeneration.js';
 
 const evaluatorCases = evaluatorComparisonCases;
 
 export function createApiServer({ query, hosted = false, env = process.env, promptsPath = promptFile, chatgpt = hosted ? null : createChatGPT(), providers = createProviderRegistry({ chatgpt, env }), accountService = createAccountService(env) } = {}) {
+  const generateStudyGuidance = createStudyGuidanceGenerator();
   const allowedOrigins = hosted
     ? [env.APP_ORIGIN, ...[env.VERCEL_URL, env.VERCEL_PROJECT_PRODUCTION_URL, env.VERCEL_BRANCH_URL].filter(Boolean).map(host => `https://${host}`)].filter(Boolean).map(origin => new URL(origin).origin)
     : ['http://localhost:5173', 'http://127.0.0.1:5173', 'http://localhost:3001', 'http://127.0.0.1:3001'];
@@ -31,6 +34,7 @@ export function createApiServer({ query, hosted = false, env = process.env, prom
     const send = (status, data) => { res.writeHead(status); res.end(JSON.stringify(data)); };
     const calls = req.url === '/api/chat' && req.headers['x-feynman-trace'] === '1' ? [] : null;
     const developer = req.url === '/api/developer/prompts';
+    const puzzleGeneration = req.url === '/api/developer/puzzles';
     const comparison = req.url === '/api/developer/question-comparison';
     const questionReview = req.url === '/api/developer/question-review';
     const evaluatorComparison = req.url === '/api/developer/evaluator-comparison';
@@ -59,6 +63,26 @@ export function createApiServer({ query, hosted = false, env = process.env, prom
       const account = await accountService.authenticate(req, { allowPending: (url.pathname === '/api/account' && req.method === 'GET') || consentRoute });
       if (req.method === 'POST' && ['/api/chat', '/api/concepts', '/api/concept-suggestions', '/api/rubric'].includes(url.pathname)) await accountService.assertLearningSurvey?.(req, account);
       if (url.pathname === '/api/account' && req.method === 'GET') return send(200, account);
+      const studyGuidanceRoute = /^\/api\/sessions\/([^/]+)\/report\/guidance$/.exec(url.pathname);
+      if (studyGuidanceRoute && req.method === 'GET') {
+        if (!accountService.topicReports) throw new AccountError('Topic reports are not configured.', 503);
+        const saved = await accountService.topicReports.report(account, studyGuidanceRoute[1], { snapshotId: url.searchParams.get('snapshot') || undefined });
+        const adapter = providers.resolve('anthropic');
+        if (!query && !adapter.getStatus().configured) throw new AIError('Configure the Anthropic API key to generate your study summary.', 503);
+        const claudeQuery = query || createProviderQuery(adapter);
+        const guidanceQuery = (instructions, messages, response, options = {}) => claudeQuery(instructions, messages, response, { ...options, onUsage: async ({ model, usage }) => {
+          try { await accountService.recordUsage?.(usageRecord({ userId: account.id, feature: 'Study summaries', operation: response.name, provider: 'anthropic', model: model || adapter.getStatus().model, usage })); }
+          catch { console.error('Could not save study summary usage.'); }
+        } });
+        return send(200, await generateStudyGuidance(account.id, saved.report, guidanceQuery));
+      }
+      const topicReport = /^\/api\/sessions\/([^/]+)\/report$/.exec(url.pathname);
+      if (topicReport && ['GET', 'POST'].includes(req.method)) {
+        if (!accountService.topicReports) throw new AccountError('Topic reports are not configured.', 503);
+        return send(200, await accountService.topicReports.report(account, topicReport[1], {
+          save: req.method === 'POST', mode: url.searchParams.get('mode') || 'early', snapshotId: url.searchParams.get('snapshot') || undefined,
+        }));
+      }
       const adminConsent = /^\/api\/admin\/users\/([^/]+)\/consent$/.exec(url.pathname);
       if ((consentRoute || adminConsent) && req.method === 'GET') {
         const pdf = await accountService.downloadConsent(account, adminConsent?.[1]);
@@ -76,8 +100,15 @@ export function createApiServer({ query, hosted = false, env = process.env, prom
       }
       if (url.pathname.startsWith('/api/admin/')) {
         if (account.role !== 'admin') throw new AccountError('Admin access required.', 403);
-        if (url.pathname === '/api/admin/courses' && req.method === 'GET') return send(200, await accountService.listCourses(account, url.searchParams));
+        if (url.pathname === '/api/admin/research/export' && req.method === 'GET') {
+          const file = await accountService.topicReports.export(account, url.searchParams);
+          res.setHeader('Content-Type', file.type);
+          res.setHeader('Content-Disposition', `attachment; filename="${file.filename}"`);
+          res.setHeader('X-Content-Type-Options', 'nosniff');
+          res.writeHead(200); return res.end(file.content);
+        }
         if (url.pathname === '/api/admin/usage' && req.method === 'GET') return send(200, await accountService.usageAnalytics(account, url.searchParams));
+        if (url.pathname === '/api/admin/courses' && req.method === 'GET') return send(200, await accountService.listCourses(account, url.searchParams));
         const courseTarget = /^\/api\/admin\/courses\/([^/]+)$/.exec(url.pathname);
         if (courseTarget && req.method === 'GET') return send(200, await accountService.viewCourse(account, courseTarget[1]));
         if (url.pathname === '/api/admin/users' && req.method === 'GET') return send(200, await accountService.listUsers(account, url.searchParams));
@@ -93,6 +124,7 @@ export function createApiServer({ query, hosted = false, env = process.env, prom
       }
       const privileged = req.url.startsWith('/api/developer/') || calls || ['/api/ai/sign-in', '/api/ai/sign-out', '/api/ai/remove-account'].includes(req.url);
       if (privileged && account.role !== 'admin') throw new AccountError('Admin access required.', 403);
+      if (puzzleGeneration && req.method === 'GET') return send(200, puzzlePrompt());
       if (developer && req.method === 'GET') return send(200, { ...listPrompts(promptsPath), editable: !hosted });
       if (comparison && req.method === 'GET') return send(200, { cases: comparisonCases, corpusVersion, savedEvaluation: readSavedQuestionEvaluation() });
       if (evaluatorComparison && req.method === 'GET') return send(200, { cases: evaluatorCases, evaluatorVersion, deferred: deferredEvaluatorWork });
@@ -111,11 +143,11 @@ export function createApiServer({ query, hosted = false, env = process.env, prom
       if (req.method === 'GET' && req.url === '/api/ai/models') return send(200, { models: await adapter.listModels() });
       const aiControl = ['/api/ai/sign-in', '/api/ai/sign-out', '/api/ai/remove-account'].includes(req.url);
       if (aiControl && (!req.headers.origin || !/^application\/json(?:;|$)/i.test(req.headers['content-type'] || ''))) return send(403, { error: 'Open AI settings in the local Feynman app to manage accounts.' });
-      if (req.method !== 'POST' || !['/api/chat', '/api/concepts', '/api/concept-suggestions', '/api/rubric', '/api/developer/rubric', '/api/developer/prompts', '/api/developer/question-comparison', '/api/developer/question-review', '/api/developer/evaluator-comparison', '/api/ai/sign-in', '/api/ai/sign-out', '/api/ai/remove-account'].includes(req.url)) return send(404, { error: 'Not found' });
+      if (req.method !== 'POST' || !['/api/chat', '/api/concepts', '/api/concept-suggestions', '/api/rubric', '/api/developer/rubric', '/api/developer/prompts', '/api/developer/question-comparison', '/api/developer/question-review', '/api/developer/evaluator-comparison', '/api/developer/puzzles', '/api/ai/sign-in', '/api/ai/sign-out', '/api/ai/remove-account'].includes(req.url)) return send(404, { error: 'Not found' });
       let body = '';
       for await (const chunk of req) {
         body += chunk;
-        const limit = aiControl ? 10_000 : developer ? 200_000 : req.url === '/api/chat' || evaluatorComparison ? 12_000_000 : 7_000_000;
+        const limit = puzzleGeneration ? 40_000 : aiControl ? 10_000 : developer ? 200_000 : req.url === '/api/chat' || evaluatorComparison ? 12_000_000 : 7_000_000;
         if (Buffer.byteLength(body) > limit) return send(413, { error: 'Request is too large.' });
       }
       let input;
@@ -132,13 +164,20 @@ export function createApiServer({ query, hosted = false, env = process.env, prom
       req.once('aborted', () => disconnected.abort());
       res.once?.('close', () => { if (!res.writableEnded) disconnected.abort(); });
       const providerQuery = query || createProviderQuery(adapter);
+      const operationModels = new Map();
       const selectedQuery = (instructions, messages, response, options = {}) => providerQuery(instructions, messages, response, {
         ...options, onUsage: async ({ model: actualModel, usage }) => {
+          if (actualModel) operationModels.set(response.name, actualModel);
           try { await accountService.recordUsage?.(usageRecord({ userId: account.id, feature: usageFeatures[url.pathname] || 'Other AI requests', operation: response.name, provider, model: actualModel || model, usage })); }
           catch { console.error('Could not save AI usage. Check the usage migration and Supabase service configuration.'); }
         }, signal: options.signal ? AbortSignal.any([options.signal, disconnected.signal]) : disconnected.signal,
       });
       const configurationError = adapter.metadata.configurationHelp;
+      if (puzzleGeneration) {
+        try { validatePuzzleDescription(input); } catch (error) { return send(400, { error: error.message }); }
+        if (!configured) return send(503, { error: configurationError });
+        return send(200, await generatePuzzle(input, selectedQuery, { provider, model }));
+      }
       if (evaluatorComparison) {
         let evaluationOptions;
         try { evaluationOptions = comparisonOptions({ mode: input.mode, shadow: input.shadow }); }
@@ -180,6 +219,14 @@ export function createApiServer({ query, hosted = false, env = process.env, prom
         } catch (error) { return send(error instanceof InvalidOutputError ? 502 : error instanceof AIError ? error.status : /^(Upload|Choose|Enter|Could not read|Could not generate)/.test(error.message) ? 400 : /^Rubric generation took too long/.test(error.message) ? 504 : 502, { error: error.message }); }
       }
       if ('assignmentSessionId' in input || 'assignmentConceptId' in input) input = await accountService.resolveAssignment(req, input);
+      // The flag and evaluator metadata are internal, never client policy.
+      delete input.researchScoring;
+      delete input.evaluatorCriteria;
+      let prepared;
+      if (accountService.topicReports && (input.assignmentSessionId || input.sessionId)) {
+        prepared = await accountService.topicReports.prepare(account, input);
+        input = prepared.input;
+      }
       try { input = validate(input); } catch (error) { return send(400, { error: error.message }); }
       if (!configured) return send(503, { error: configurationError });
       const tracedQuery = calls ? async (instructions, messages, response, options) => {
@@ -193,9 +240,19 @@ export function createApiServer({ query, hosted = false, env = process.env, prom
         } catch (error) { call.error = error.message; throw error; }
         finally { call.durationMs = Date.now() - started; }
       } : selectedQuery;
-      const result = await chat(input, tracedQuery, loadPrompts(promptsPath), { evaluationCache, cacheScope: [account.id, provider, model] });
-      return send(200, { ...result, ...(calls ? { calls } : {}) });
-    } catch (error) { return send(error instanceof AccountError || error instanceof PromptError || error instanceof AIError ? error.status : 502, { error: error.name === 'TimeoutError' ? 'The model took too long. Please retry.' : error.message, ...(calls ? { calls } : {}) }); }
+      let assessmentRecord;
+      const prompts = loadPrompts(promptsPath);
+      const result = await chat(input, tracedQuery, prompts, { evaluationCache, cacheScope: [account.id, provider, model],
+        persistedAssessment: prepared?.previous?.payload.assessment,
+        onAssessment: prepared ? async assessment => {
+          assessmentRecord = await accountService.topicReports.record(account, prepared, assessment, { provider, model: operationModels.get('evaluate_refined') || model, prompt: prompts.version });
+          if (assessment.complete || assessment.readyToAdvance) await accountService.topicReports.report?.(account, prepared.sessionId, { save: true, mode: 'completed', onlyIfComplete: true });
+        } : undefined,
+      });
+      return send(200, { ...result, ...(assessmentRecord ? { assessmentRecord: { id: assessmentRecord.id, sequence: assessmentRecord.sequence, goals: assessmentRecord.payload.goals } } : {}), ...(calls ? { calls } : {}) });
+    } catch (error) {
+      console.error('Feynman API request failed', { method: req.method, error });
+      return send(error instanceof AccountError || error instanceof PromptError || error instanceof AIError ? error.status : 502, { error: error.name === 'TimeoutError' ? 'The model took too long. Please retry.' : error.message, ...(calls ? { calls } : {}) }); }
   });
   const evaluationCache = new EvaluationCache();
   server.on('clientError', (error, socket) => {
@@ -206,7 +263,52 @@ export function createApiServer({ query, hosted = false, env = process.env, prom
   server.on('close', () => chatgpt?.close());
   return server;
 }
+// Development reloads send SIGTERM. Keep accepting requests until current work
+// finishes, then release the port so the launcher can start the new source.
+export function installGracefulShutdown(server, { signals = process, exit = code => process.exit(code), graceMs = 240_000, log = console.info } = {}) {
+  const active = new Set();
+  let requested = false, closing = false, finished = false, deadline;
+  function complete(code) {
+    if (finished) return;
+    finished = true; clearTimeout(deadline); exit(code);
+  }
+  function closeWhenIdle() {
+    if (!requested || closing || active.size) return;
+    closing = true;
+    server.close(() => complete(0));
+    server.closeIdleConnections?.();
+  }
+  function track(_req, res) {
+    active.add(res);
+    let settled = false;
+    const settle = () => {
+      if (settled) return;
+      settled = true; active.delete(res); closeWhenIdle();
+    };
+    res.once('finish', settle); res.once('close', settle);
+  }
+  function force() {
+    closing = true;
+    server.close(); server.closeAllConnections?.(); complete(1);
+  }
+  function shutdown() {
+    if (requested) { force(); return; }
+    requested = true;
+    if (active.size) log(`Feynman API: waiting for ${active.size} active request${active.size === 1 ? '' : 's'} before shutdown.`);
+    deadline = setTimeout(force, graceMs); deadline.unref?.();
+    closeWhenIdle();
+  }
+  server.prependListener('request', track);
+  signals.on('SIGTERM', shutdown); signals.on('SIGINT', shutdown);
+  return () => {
+    clearTimeout(deadline); server.removeListener('request', track);
+    signals.removeListener('SIGTERM', shutdown); signals.removeListener('SIGINT', shutdown);
+  };
+}
+
 if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) {
   const port = Number(process.env.PORT || 3001);
-  createApiServer().listen(port, '127.0.0.1', () => console.log(`Feynman API: http://127.0.0.1:${port}`));
+  const server = createApiServer();
+  installGracefulShutdown(server);
+  server.listen(port, '127.0.0.1', () => console.log(`Feynman API: http://127.0.0.1:${port}`));
 }

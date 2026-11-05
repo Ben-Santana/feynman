@@ -26,3 +26,6 @@
   .chat-message[data-arrival="flight"] { opacity: 1; }
   .chat-message[data-arrival="typing"] > * { animation: none; }
 }
+
+.chat-message-text-inline > .chat-plain-text { display: inline; }
+.chat-message-text-inline > .level-divider-continue { margin-left: 8px; vertical-align: baseline; }

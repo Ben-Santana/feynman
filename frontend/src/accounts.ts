@@ -1,8 +1,8 @@
 import { createClient, type SupabaseClient } from '@supabase/supabase-js'
 
 export type UserRole = 'student' | 'instructor' | 'admin'
-export type SignupRole = Exclude<UserRole, 'admin'>
-export type AccountAuthMode = 'email' | 'wpi'
+export type AccountSignInMethod = 'email' | 'wpi'
+export type AccountAuthMode = AccountSignInMethod | 'both'
 export type AccountProfile = { id: string; email: string; display_name: string; created_at: string; updated_at: string; last_login_at: string | null }
 export type Account = AccountProfile & { role: UserRole; approved: boolean; consent_required?: boolean }
 let client: SupabaseClient | undefined
@@ -42,7 +42,7 @@ export async function signInWithWpi(client = supabase(), origin = window.locatio
 }
 export async function loadAccountAuthMode(client = supabase()): Promise<AccountAuthMode> {
   const { data, error } = await client.rpc('get_account_auth_mode')
-  if (error || (data !== 'email' && data !== 'wpi')) throw new Error('Sign-in is not configured. Contact the app administrator.')
+  if (error || (data !== 'email' && data !== 'wpi' && data !== 'both')) throw new Error('Sign-in is not configured. Contact the app administrator.')
   return data
 }
 function accountEmail(email: string) {
@@ -57,24 +57,15 @@ export async function signInWithEmail(email: string, password: string, client = 
   const { error } = await client.auth.signInWithPassword({ email: accountEmail(email), password })
   if (error) throw error
 }
-export async function signUpWithEmail(email: string, password: string, role: SignupRole, client = supabase()) {
+export async function signUpWithEmail(email: string, password: string, client = supabase()) {
   checkPassword(password)
-  if (role !== 'student' && role !== 'instructor') throw new Error('Choose Instructor or Student.')
-  const { data, error } = await client.auth.signUp({ email: accountEmail(email), password, options: { data: { role } } })
+  const { data, error } = await client.auth.signUp({ email: accountEmail(email), password, options: { data: { role: 'instructor' } } })
   if (error) throw error
   if (!data.session) await signInWithEmail(email, password, client)
 }
 export async function requestPasswordReset(email: string, client = supabase(), origin = window.location.origin) {
   const { error } = await client.auth.resetPasswordForEmail(accountEmail(email), { redirectTo: `${origin}/account/reset-password` })
   if (error) throw error
-}
-export async function savePendingAccountRole(role: SignupRole, client = supabase()): Promise<SignupRole> {
-  if (role !== 'student' && role !== 'instructor') throw new Error('Choose Instructor or Student.')
-  const { data, error } = await client.rpc('set_pending_account_role', { new_role: role })
-  if (error?.code === 'PGRST202') throw new Error('Account setup is incomplete. Contact the app administrator to enable account changes.')
-  if (error?.code === '42501') throw new Error('Your account status changed. Refresh the page before making changes.')
-  if (error || (data !== 'student' && data !== 'instructor')) throw new Error('Could not update your account type. Please retry.')
-  return data
 }
 export async function updateAccountPassword(password: string, client = supabase()) {
   checkPassword(password)

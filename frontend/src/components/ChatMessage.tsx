@@ -31,10 +31,10 @@ function ReplyText({ content, progress }: { content: string; progress: number })
   </div>
 }
 
-export function ChatMessage({ role, name, content, className = '', avatarRef, arrive = false, onArrived, feedback, boardImage, children }: {
+export function ChatMessage({ role, name, content, className = '', avatarRef, arrive = false, onArrived, feedback, boardImage, inlineAction, children }: {
   role: 'user' | 'assistant'; name: string; content: string; className?: string
   avatarRef: RefObject<HTMLDivElement | null>; arrive?: boolean; onArrived: () => void
-  feedback?: ReactNode; boardImage?: string; children?: ReactNode
+  feedback?: ReactNode; boardImage?: string; inlineAction?: ReactNode; children?: ReactNode
 }) {
   const bubble = useRef<HTMLDivElement>(null)
   const orb = useRef<HTMLDivElement>(null)
@@ -140,7 +140,7 @@ export function ChatMessage({ role, name, content, className = '', avatarRef, ar
     <div ref={bubble} className={`chat-message ${role} ${className}`} data-arrival={phase} aria-busy={phase !== 'done'}>
       <div className="chat-message-copy">
         <span>{name}</span>
-        <div className="chat-message-text"><ReplyText content={content} progress={progress} /></div>
+        <div className={`chat-message-text${inlineAction ? ' chat-message-text-inline' : ''}`}><ReplyText content={content} progress={progress} />{phase === 'done' && inlineAction}</div>
         {feedback}
         {boardImage && <img className="chat-board-image" src={boardImage} alt="Whiteboard shared with this message" />}
       </div>

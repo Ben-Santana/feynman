@@ -82,3 +82,17 @@
   .paper-stamp-dialog::backdrop { animation: none; }
   .paper-stamp-target *, .paper-sheet, .paper-stamp-dialog .paper-step { transition: none; }
 }
+
+.paper-stamp-dialog .paper-document .paper-step { padding-right: 116px; }
+.paper-step-actions { position: absolute; top: 10px; right: 10px; display: flex; gap: 4px; }
+.paper-step-choice { display: grid; place-items: center; width: 44px; height: 44px; padding: 0; border: 0; background: transparent; border-radius: 4px; cursor: pointer; }
+.paper-step-choice svg { width: 40px; height: 40px; opacity: 0; transition: opacity 150ms ease; }
+.paper-step-incorrect { color: var(--primary); }
+.paper-step-correct { color: var(--black); }
+.paper-step:hover .paper-step-choice:not(:disabled) svg,
+.paper-step:focus-within .paper-step-choice:not(:disabled) svg { opacity: .4; }
+.paper-step-choice:hover:not(:disabled) svg { opacity: .55; }
+.paper-step-choice[aria-pressed="true"] svg { opacity: 1; }
+.paper-step-choice:focus-visible { outline: 2px solid currentColor; outline-offset: 2px; }
+.paper-step-choice:disabled { cursor: default; }
+@media (prefers-reduced-motion: reduce) { .paper-step-choice svg { transition: none; } }
