@@ -16,7 +16,7 @@ export const courseSubjects = (course: Course): string[] => course.subjects ?? [
 export type Enrollment = { course_id: string; student_id: string; status: EnrollmentStatus }
 export type CourseModule = { id: string; course_id: string; title: string; document: CloudSession['document']; revision: number; published_at: string | null; created_at: string }
 export type StudentProgress = { studentId: string; name: string; email: string; status: EnrollmentStatus; modules: { moduleId: string; started: boolean; concepts: { id: string; name: string; target: Level; passed: number }[] }[] }
-export type ModuleProgress = { moduleId: string; complete: boolean }
+export type ModuleProgress = { moduleId: string; sessionId: string; complete: boolean }
 export type CoursePerson = { id: string; name: string; role: 'instructor' | 'student'; appearance: CharacterAppearance }
 export type ModuleSession = SavedSession<Concept, Session>
 
@@ -97,7 +97,7 @@ export async function loadCourse(id: string) {
       if (saved.error) throw new Error('Could not load assignment progress. Please retry.')
       for (const link of relevant) {
         const concepts = saved.data.find(row => row.id === link.session_id)?.concepts
-        ownProgress.push({ moduleId: link.module_id, complete: Array.isArray(concepts) && sessionComplete(concepts as Concept[]) })
+        ownProgress.push({ moduleId: link.module_id, sessionId: link.session_id, complete: Array.isArray(concepts) && sessionComplete(concepts as Concept[]) })
       }
     }
   }
@@ -143,6 +143,13 @@ export async function startModule(id: string, personal = false) {
   signal.throwIfAborted()
   if (getSaveStatus().state === 'conflict') throw new Error('Resolve the session save conflict before opening a topic.')
   const row = await rpc<CloudSession>(personal ? 'take_community_topic' : 'start_course_module', { target_module: id })
+  signal.throwIfAborted()
+  return decodeSession<Concept, Session>(row, true)
+}
+
+export async function restartModule(moduleId: string, sessionId: string) {
+  const signal = accountSignal()
+  const row = await rpc<CloudSession>('restart_course_module', { target_module: moduleId, previous_session: sessionId })
   signal.throwIfAborted()
   return decodeSession<Concept, Session>(row, true)
 }

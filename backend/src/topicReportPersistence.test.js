@@ -61,6 +61,31 @@ test('server persistence freezes configuration, deduplicates retries, preserves 
   assert.ok(roster.content.includes(`${student}@example.com`)); assert.ok(roster.content.includes(report.report.researchCode));
 });
 
+test('restarting an assigned module keeps its previous report and resumes a clean attempt', async t => {
+  const f = await fixture(t);
+  const args = [moduleId, f.session.id];
+  const restart = 'select * from public.restart_course_module($1,$2)';
+  await f.as(student);
+  await assert.rejects(f.one(restart, args), error => error.code === '23514');
+  await f.db.exec('reset role');
+  await f.service.record(f.account, await f.service.prepare(f.account, f.input), f.assessment, { prompt: 'v1' });
+  const saved = await f.service.report(f.account, f.session.id, { save: true, mode: 'completed' });
+
+  await f.as(student);
+  const fresh = await f.one(restart, args);
+  assert.notEqual(fresh.id, f.session.id);
+  assert.deepEqual(fresh.document.session.assignment, f.session.document.session.assignment);
+  assert.equal(fresh.document.session.concepts[0].passed, 0);
+  assert.equal(fresh.document.session.concepts[0].messages.length, 1);
+  assert.equal((await f.one(restart, args)).id, fresh.id);
+  assert.equal((await f.one('select * from public.start_course_module($1)', [moduleId])).id, fresh.id);
+  await f.as(instructor);
+  await assert.rejects(f.one(restart, args), error => error.code === '42501');
+  await f.db.exec('reset role');
+  assert.equal((await f.service.report(f.account, f.session.id, { snapshotId: saved.id })).report.final.percent, 100);
+  assert.equal((await f.service.report(f.account, fresh.id)).report.first.scored, 0);
+});
+
 test('students cannot write score tables, call server RPCs, export, read other reports, or access after leaving', async t => {
   const f = await fixture(t);
   await f.service.prepare(f.account, f.input);

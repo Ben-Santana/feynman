@@ -35,10 +35,19 @@ function CompletionChart({ report }: { report: TopicReportData }) {
   </section>
 }
 
-export function TopicReport({ sessionId, complete, onBack, onNewSession, backDestination = 'sessions' }: { backDestination?: string; sessionId: string; complete: boolean; onBack: () => void; onNewSession: () => void }) {
+export function TopicReport({ sessionId, complete, onBack, onRestart, backDestination = 'sessions' }: { backDestination?: string; sessionId: string; complete: boolean; onBack: () => void; onRestart: () => Promise<void> }) {
   const [data, setData] = useState<ReportResponse | null>(null)
   const [error, setError] = useState('')
   const [loading, setLoading] = useState(true)
+  const [restarting, setRestarting] = useState(false)
+  const [restartError, setRestartError] = useState('')
+  async function restart() {
+    setRestarting(true)
+    setRestartError('')
+    try { await onRestart() }
+    catch (reason) { setRestartError(reason instanceof Error ? reason.message : 'Could not restart the session. Please retry.') }
+    finally { setRestarting(false) }
+  }
   const [revision, setRevision] = useState(0)
   useEffect(() => {
     const controller = new AbortController()
@@ -54,7 +63,8 @@ export function TopicReport({ sessionId, complete, onBack, onNewSession, backDes
   return <section className="summary-page topic-report" aria-labelledby="topic-report-title">
     <nav className="back-navigation summary-nav" aria-label="Report navigation"><BackButton onClick={onBack} destination={backDestination} /></nav>
     <div className="summary-shell">
-      <header className="topic-report-header"><h1 id="topic-report-title">{report?.title || 'Topic report'}</h1><button onClick={onNewSession}>Start a new session</button></header>
+      <header className="topic-report-header"><h1 id="topic-report-title">{report?.title || 'Topic report'}</h1><button type="button" disabled={!data || loading || restarting} onClick={() => void restart()}>{restarting ? 'Restarting…' : 'Restart session'}</button></header>
+      {restartError && <p role="alert" className="topic-report-error">{restartError}</p>}
       {loading && <p role="status">Saving your topic report…</p>}
       {error && <div role="alert" className="topic-report-error"><p>{error}</p><>{!data && <button disabled={loading} onClick={() => setRevision(value => value + 1)}>Retry saving report</button>}</></div>}
       {report && <>

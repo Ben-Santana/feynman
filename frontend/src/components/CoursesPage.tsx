@@ -137,8 +137,8 @@ export function CoursesPage({ account, courseId, collection = 'enrolled', sessio
           {ownCourse && view === 'modules' && <button className="course-primary-action" disabled={busy} onClick={() => onNavigate(`/courses/${courseId}/modules/${crypto.randomUUID()}/edit?new=1`)}><span aria-hidden="true">＋</span>New topic</button>}
         </div>
         {view === 'modules' || !member ? <section aria-labelledby="course-modules-title"><h2 id="course-modules-title" className="sr-only">Topics</h2><div className="course-list">{detail.modules.map(module => {
-          const session = sessions.find(value => value.assignment?.moduleId === module.id)
           const cloudProgress = detail.ownProgress?.find(value => value.moduleId === module.id)
+          const session = sessions.find(value => value.id === cloudProgress?.sessionId)
           const started = Boolean(session || cloudProgress)
           const complete = Boolean(session && sessionComplete(session.concepts)) || cloudProgress?.complete
           const moduleCopy = <>

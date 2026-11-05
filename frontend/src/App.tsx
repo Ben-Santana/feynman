@@ -30,7 +30,7 @@ import { DashboardPage } from './components/DashboardPage'
 import { SetupTitleForm } from './components/SetupTitleForm'
 import { CourseCreatePage } from './components/CourseCreatePage'
 import { CoursesPage } from './components/CoursesPage'
-import { loadModuleDraft, saveModule, publishModule, type ModuleSession } from './courseStore'
+import { loadModuleDraft, saveModule, publishModule, restartModule, type ModuleSession } from './courseStore'
 import { SessionsPage } from './components/SessionsPage'
 import { PaperReview, type Review } from './components/PaperReview'
 import { ReviewFeedback } from './components/ReviewFeedback'
@@ -363,11 +363,31 @@ export default function App({ account, onProfileUpdated, authMode }: { account: 
   async function openSession(record: SavedSession<Concept, Session>) {
     if (busy) return
     if (!(record.started && sessionComplete(record.concepts)) && !await survey.guard()) return
+    showSession(record)
+  }
+  function showSession(record: SavedSession<Concept, Session>) {
     const restored = restoreLearning(record)
     if (!restored) return
     const draft = restoreDraft(record)
     setConcepts(restored.concepts); setStarted(restored.started); setActive(restored.activeId || ''); setSessionId(record.id); setTitle(draft.title); setSetupStep(draft.step); setFiles(draft.files); setSelectedTargets(draft.selectedTargets); setAiByName(draft.aiByName); setRubricInstructions(draft.rubricInstructions); setLearningType(draft.learningType); setPendingLearningType(null); setError('')
     navigate(`/${record.started && (record.reportFinishedAt || sessionComplete(restored.concepts)) ? 'summary' : 'chat'}?session=${encodeURIComponent(record.id)}`)
+  }
+  async function restartSession() {
+    if (busy || !await survey.guard()) return
+    const previous = sessionsRef.current.find(record => record.id === sessionId)
+    if (!previous) throw new Error('Could not find this session.')
+    if (previous.assignment) {
+      const record = await restartModule(previous.assignment.moduleId, previous.id)
+      const local = sessionsRef.current.find(item => item.id === record.id)
+      const next = local && local.updatedAt >= record.updatedAt ? local : record
+      sessionsRef.current = [next, ...sessionsRef.current.filter(item => item.id !== next.id)]
+      setSavedSessions(sessionsRef.current)
+      showSession(next)
+    } else {
+      const freshConcepts = startConcepts(previous.concepts.map(({ id, name, target, rubric }) => ({ ...newConcept(), id, name, target, rubric })))
+      const record = { ...previous, id: crypto.randomUUID(), reportFinishedAt: undefined, concepts: freshConcepts, activeId: freshConcepts[0]?.id ?? null }
+      showSession(record)
+    }
   }
   async function createSession() {
     if (busy || !await survey.guard()) return
@@ -601,7 +621,7 @@ export default function App({ account, onProfileUpdated, authMode }: { account: 
     if (isDeveloperPage) return <main className="bg-background text-foreground"><DeveloperPage characterName={appearance.name} onDirtyChange={onDeveloperDirtyChange} /></main>
     if (!isSessionsPage && !isSummaryPage && !started && setupStep === 'loading') return <main className="bg-background text-foreground"><LoadingScreen label="Creating your rubric" delayMs={0} /></main>
     return <main className="bg-background text-foreground">
-      {isSessionsPage ? <SessionsPage sessions={savedSessions} onCreateSession={createSession} renderSession={renderSessionCard} error={error} /> : isSummaryPage ? started ? <TopicReport key={sessionId} backDestination={assignment ? 'course' : 'sessions'} sessionId={sessionId} complete={sessionComplete(concepts)} onBack={() => navigate(sessionBackPath)} onNewSession={createSession} /> : <SummaryUnavailable hasSession={Boolean(sessionId)} onBack={() => navigate(sessionBackPath)} onContinue={sessionId ? () => navigate(`/chat?session=${encodeURIComponent(sessionId)}`) : createSession} /> : <>
+      {isSessionsPage ? <SessionsPage sessions={savedSessions} onCreateSession={createSession} renderSession={renderSessionCard} error={error} /> : isSummaryPage ? started ? <TopicReport key={sessionId} backDestination={assignment ? 'course' : 'sessions'} sessionId={sessionId} complete={sessionComplete(concepts)} onBack={() => navigate(sessionBackPath)} onRestart={restartSession} /> : <SummaryUnavailable hasSession={Boolean(sessionId)} onBack={() => navigate(sessionBackPath)} onContinue={sessionId ? () => navigate(`/chat?session=${encodeURIComponent(sessionId)}`) : createSession} /> : <>
         <nav className={`back-navigation chat-nav ${isModuleEditor ? 'module-editor-navigation' : ''} ${started ? 'chat-nav-started' : ''}`} aria-label="Learning navigation">
           <BackButton onClick={() => { if (!started && setupStep !== 'title' && setupStep !== 'loading') { if (setupStep === 'rubric') setAiByName(false); setSetupStep(setupStep === 'rubric' ? 'concepts' : setupStep === 'concepts' ? 'class-type' : 'title'); setValidationError(null); setError('') } else navigate(isModuleEditor ? `/courses/${moduleCourseId}` : sessionBackPath) }} destination={!started && setupStep !== 'title' && setupStep !== 'loading' ? 'previous step' : assignment || isModuleEditor ? 'course' : 'sessions'} />
           {!started && title.trim() && <h1 className="rubric-page-title" title={title.trim()}>{title.trim()}</h1>}
