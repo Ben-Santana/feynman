@@ -42,7 +42,7 @@ export class AnthropicProvider extends LanguageModelProvider {
     if (!models.length) throw new AIError('No Claude models are available for this API key. Check your workspace permissions.', 403);
     return models;
   }
-  async generateStructured({ instructions, messages, response: output, signal }) {
+  async generateStructured({ instructions, messages, response: output, signal, onUsage }) {
     const model = this.getStatus().model;
     // These models reject forced tool_choice; require our tool in the prompt
     // and keep validating the returned tool call below.
@@ -60,6 +60,7 @@ export class AnthropicProvider extends LanguageModelProvider {
       throw new AIError(response.status === 401 ? 'Claude rejected the API key. Check backend/.env.' : response.status === 429 ? 'Claude is rate limited. Please retry shortly.' : `Claude request failed (${response.status}). Check your model in AI settings and workspace in backend/.env.`, [401, 403, 429].includes(response.status) ? response.status : 502);
     }
     const data = await response.json();
+    await onUsage?.({ model: data.model || model, usage: data.usage });
     const calls = Array.isArray(data?.content) ? data.content.filter(block => block?.type === 'tool_use' && block.name === output.name) : [];
     if (data.stop_reason === 'max_tokens' || calls?.length !== 1) throw new InvalidOutputError('Claude returned an incomplete response. Please retry.');
     return calls[0].input;

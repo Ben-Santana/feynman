@@ -17,7 +17,7 @@ export function responseInput(messages) {
   }) }));
 }
 
-export async function readResponseStream(response, toolName) {
+export async function readResponseStream(response, toolName, onUsage) {
   const reader = response.body.getReader();
   const decoder = new TextDecoder();
   let pending = '';
@@ -42,6 +42,7 @@ export async function readResponseStream(response, toolName) {
       if (done) break;
     }
     if (pending.trim()) consume(pending.replaceAll('\r\n', '\n'));
+    await onUsage?.({ model: completed?.model, usage: completed?.usage });
     if (!completed || completed.status !== 'completed') throw new AIError('ChatGPT disconnected before completing its response. Please retry.');
     // ChatGPT plan streams can leave the terminal output array empty even
     // after emitting complete tool arguments in response.output_item.done.
@@ -69,7 +70,7 @@ export class ChatGPTProvider extends LanguageModelProvider {
     return { configured: this.runtime.accounts().some(item => item.id === this.accountId && item.connected), model: this.model || 'Account default' };
   }
   async listModels() { return this.runtime.listModels(this.accountId); }
-  async generateStructured({ instructions, messages, response: output, signal }) {
+  async generateStructured({ instructions, messages, response: output, signal, onUsage }) {
     const available = await this.listModels();
     const model = this.model || available[0]?.slug;
     if (!available.some(item => item.slug === model)) throw new AIError('Choose a model available to this ChatGPT account in AI settings.', 400);
@@ -85,6 +86,6 @@ export class ChatGPTProvider extends LanguageModelProvider {
       const error = await response.json().catch(() => null);
       throw responseError(response.status, error?.error?.code);
     }
-    return readResponseStream(response, output.name);
+    return readResponseStream(response, output.name, onUsage);
   }
 }

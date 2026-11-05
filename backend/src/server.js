@@ -1,3 +1,4 @@
+import { usageFeatures, usageRecord } from './usage.js';
 import { InvalidOutputError } from './structuredOutput.js';
 import { createServer } from 'node:http';
 import { randomUUID } from 'node:crypto';
@@ -76,6 +77,7 @@ export function createApiServer({ query, hosted = false, env = process.env, prom
       if (url.pathname.startsWith('/api/admin/')) {
         if (account.role !== 'admin') throw new AccountError('Admin access required.', 403);
         if (url.pathname === '/api/admin/courses' && req.method === 'GET') return send(200, await accountService.listCourses(account, url.searchParams));
+        if (url.pathname === '/api/admin/usage' && req.method === 'GET') return send(200, await accountService.usageAnalytics(account, url.searchParams));
         const courseTarget = /^\/api\/admin\/courses\/([^/]+)$/.exec(url.pathname);
         if (courseTarget && req.method === 'GET') return send(200, await accountService.viewCourse(account, courseTarget[1]));
         if (url.pathname === '/api/admin/users' && req.method === 'GET') return send(200, await accountService.listUsers(account, url.searchParams));
@@ -131,7 +133,10 @@ export function createApiServer({ query, hosted = false, env = process.env, prom
       res.once?.('close', () => { if (!res.writableEnded) disconnected.abort(); });
       const providerQuery = query || createProviderQuery(adapter);
       const selectedQuery = (instructions, messages, response, options = {}) => providerQuery(instructions, messages, response, {
-        ...options, signal: options.signal ? AbortSignal.any([options.signal, disconnected.signal]) : disconnected.signal,
+        ...options, onUsage: async ({ model: actualModel, usage }) => {
+          try { await accountService.recordUsage?.(usageRecord({ userId: account.id, feature: usageFeatures[url.pathname] || 'Other AI requests', operation: response.name, provider, model: actualModel || model, usage })); }
+          catch { console.error('Could not save AI usage. Check the usage migration and Supabase service configuration.'); }
+        }, signal: options.signal ? AbortSignal.any([options.signal, disconnected.signal]) : disconnected.signal,
       });
       const configurationError = adapter.metadata.configurationHelp;
       if (evaluatorComparison) {

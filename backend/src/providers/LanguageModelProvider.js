@@ -3,7 +3,7 @@ import { InvalidOutputError } from '../structuredOutput.js';
  * @typedef {{type: 'text', text: string} | {type: 'image' | 'document', mimeType: string, data: string}} ContentBlock
  * @typedef {{role: 'user' | 'assistant', content: string | ContentBlock[]}} ModelMessage
  * @typedef {{name: string, description?: string, schema: object}} StructuredResponse
- * @typedef {{instructions: string, messages: ModelMessage[], response: StructuredResponse, signal?: AbortSignal}} GenerationRequest
+ * @typedef {{instructions: string, messages: ModelMessage[], response: StructuredResponse, signal?: AbortSignal, onUsage?: (event: {model?: string, usage?: object}) => Promise<void>}} GenerationRequest
  * @typedef {{configured: boolean, model: string}} ProviderStatus
  * @typedef {{slug: string, name: string}} Model
  * @typedef {{id: string, label: string, description: string, configurationKind: 'api-key' | 'chatgpt', configurationHelp: string, configuredMessage: string, supportsModelSelection: boolean, capabilities: {images: boolean, pdfs: boolean}}} ProviderMetadata
@@ -57,7 +57,7 @@ export async function invokeProvider(provider, request) {
   }
 }
 
-/** @returns {(instructions: string, messages: ModelMessage[], response: StructuredResponse, options?: {signal?: AbortSignal}) => Promise<object>} */
+/** @returns {(instructions: string, messages: ModelMessage[], response: StructuredResponse, options?: {signal?: AbortSignal, onUsage?: (event: {model?: string, usage?: object}) => Promise<void>}) => Promise<object>} */
 export function createProviderQuery(provider) {
-  return (instructions, messages, response, options = {}) => invokeProvider(provider, { instructions, messages, response, signal: options.signal });
+  return (instructions, messages, response, options = {}) => invokeProvider(provider, { instructions, messages, response, signal: options.signal, onUsage: options.onUsage });
 }

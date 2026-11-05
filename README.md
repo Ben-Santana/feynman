@@ -226,3 +226,28 @@ and written responses. **Download individual responses (CSV)** exports one row p
 student with all answers, student identity, topic, timestamps, and survey version.
 Survey responses are available only to admins; students can access only their own
 survey status and submit their own pending response.
+
+### Credit usage analytics
+
+Apply `supabase/migrations/202610260001_ai_usage.sql` to enable
+**Administration → Analytics → Credit usage**. The backend uses the existing
+`SUPABASE_SECRET_KEY` to save provider-reported token counts, the authenticated
+user, the feature and model, and a USD cost estimate. No prompts, responses, or
+API credentials are stored in the usage table. Only the service role can write
+usage events; the reporting function verifies the administrator's role.
+
+The overview includes 7/30/90-day UTC charts, total spend or tokens, averages per
+user with recorded calls, ranked users, and feature breakdowns. Select a user to
+filter the totals, daily chart and features. The user ranking remains across all
+users for comparison. Each provider invocation is one call, so retries and
+multiple model calls within a learning request are counted separately when the
+provider returns usage, including incomplete Claude outputs.
+
+Tracking starts with deployment of this code and migration; historical usage
+cannot be reconstructed. USD figures estimate standard global Claude API token
+charges using the rates in `backend/src/usage.js`, including cache reads and
+writes, and exclude discounts and taxes. Update that rate list when prices or
+models change. ChatGPT subscription usage and unknown models have no USD
+estimate; their reported tokens and call counts remain visible. Transport
+failures without a provider usage response cannot be metered. Usage persistence
+failures are logged by the API without interrupting learning requests.

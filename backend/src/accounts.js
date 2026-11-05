@@ -29,6 +29,20 @@ export function createAccountService(env = process.env, clientFactory = createCl
     return clientFactory(url, env.SUPABASE_SECRET_KEY, options);
   }
   return {
+    async recordUsage(record) {
+      const { error } = await adminClient().from('ai_usage_events').insert(record);
+      if (error) throw new AccountError('Could not record AI usage.', 503);
+    },
+    async usageAnalytics(account, params) {
+      if (account.role !== 'admin') throw new AccountError('Admin access required.', 403);
+      const days = Number(params.get('days') || 30);
+      if (![7, 30, 90].includes(days)) throw new AccountError('Choose a valid date range.', 400);
+      const user = params.get('user') || null;
+      if (user && !/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(user)) throw new AccountError('Choose a valid user.', 400);
+      const { data, error } = await adminClient().rpc('admin_usage_analytics', { actor_id: account.id, window_days: days, target_user: user });
+      if (error) throw new AccountError(error.code === '42501' ? 'Admin access required.' : 'Could not load credit usage. Apply the latest Supabase migration and retry.', error.code === '42501' ? 403 : 503);
+      return data;
+    },
     async assertLearningSurvey(req, account) {
       if (account.role !== 'student') return;
       requireConfig();
