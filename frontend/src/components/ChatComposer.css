@@ -1,6 +1,6 @@
 .chat-composer.math-composer { align-items: flex-start; flex-wrap: nowrap; gap: 0; --composer-input-height: 44px; --composer-send-gap: 12px; }
+.composer-menu, .send-icon { display: none; }
 .composer-send-slot { flex: none; width: 0; height: var(--composer-input-height); overflow: hidden; --send-width: 88px; transition: width 240ms cubic-bezier(.22, 1, .36, 1); }
-.composer-send-slot[data-busy="true"] { --send-width: 104px; }
 .composer-send-slot[data-visible="true"] { width: calc(var(--send-width) + var(--composer-send-gap)); }
 .composer-send-slot .send-button { width: var(--send-width); height: var(--composer-input-height); margin-left: var(--composer-send-gap); padding: 0; white-space: nowrap; transform: translateX(calc(100% + var(--composer-send-gap))); transition: transform 240ms cubic-bezier(.22, 1, .36, 1), background-color 150ms ease; }
 .composer-send-slot[data-visible="true"] .send-button { transform: translateX(0); }
@@ -8,7 +8,7 @@
 .math-composer-body { position: relative; flex: 1; min-width: 0; }
 .mixed-draft { box-sizing: border-box; min-height: var(--composer-input-height); max-height: 300px; overflow-y: auto; padding: 9px 14px; background: var(--muted); border: 1px solid var(--border); border-radius: 12px; white-space: pre-wrap; overflow-wrap: anywhere; cursor: text; line-height: 24px; }
 .mixed-draft:empty::before { content: attr(data-placeholder); color: var(--muted-foreground); pointer-events: none; }
-.mixed-draft[aria-disabled="true"] { cursor: default; }
+.mixed-draft[aria-disabled="true"] { cursor: default; opacity: .45; }
 .inline-equation-line { display: block; width: 100%; margin: 4px 0; min-height: 56px; border: 0; background: transparent; white-space: normal; transition: background-color 180ms ease; }
 .inline-equation-line:focus-within { background: var(--neutral-100); }
 .inline-equation-line math-field { display: block; width: 100%; min-height: 56px; padding: 10px 8px; border: 0; border-radius: 0; outline: none; background: transparent; color: var(--foreground); font-size: 1.1em; --caret-color: var(--primary); --selection-background-color: color-mix(in srgb, var(--primary) 16%, transparent); --selection-color: var(--foreground); --placeholder-color: var(--muted-foreground); }
@@ -47,8 +47,42 @@
   .composer-send-slot, .composer-send-slot .send-button { transition: none; }
 }
 .equation-hint { position: absolute; z-index: 2; bottom: calc(100% + 8px); left: 0; box-sizing: border-box; width: max-content; max-width: 100%; margin: 0; padding: 6px 10px; border: 1px solid var(--primary); border-radius: 8px; background: var(--background); font-size: 0.75rem; line-height: 1.5; color: var(--primary); box-shadow: 0 2px 8px rgb(0 0 0 / .08); pointer-events: none; }
+/* Phone composer: a plus menu, a pill input, and a round send button inside the pill. */
+@media (max-width: 700px) {
+  .math-composer { --send-size: calc(var(--composer-input-height) - 8px); align-items: flex-end; gap: 0; }
+  .chat-composer.math-composer { align-items: flex-end; --composer-input-height: 38px; }
+  .math-composer .insert-equation { display: none; }
+  form.math-composer .mixed-draft { padding: calc((var(--composer-input-height) - 26px) / 2) calc(var(--send-size) + 8px) calc((var(--composer-input-height) - 26px) / 2) 14px; border-radius: calc(var(--composer-input-height) / 2); background: var(--background); font-size: 1rem; }
+  .composer-menu { position: relative; display: block; flex: none; margin-right: 8px; }
+  .composer-menu-toggle { position: relative; display: grid; place-items: center; width: var(--composer-input-height); height: var(--composer-input-height); padding: 0; border-radius: 50%; background: var(--surface); color: var(--muted-foreground); cursor: pointer; transition: background-color 150ms ease; }
+  .composer-menu-toggle::after { content: ""; position: absolute; inset: -3px; }
+  .composer-menu-toggle svg { transition: transform 200ms cubic-bezier(.22, 1, .36, 1); }
+  .composer-menu-toggle[aria-expanded="true"] { background: var(--surface-hover); }
+  .composer-menu-toggle[aria-expanded="true"] svg { transform: rotate(45deg); }
+  .composer-menu-panel { position: absolute; z-index: 9; left: 0; bottom: calc(100% + 10px); min-width: 216px; padding: 6px; border-radius: 20px; background: var(--background); box-shadow: 0 6px 24px #14141426; transform-origin: 19px 100%; }
+  .composer-menu-panel:not([hidden]) { animation: composer-menu-open 200ms cubic-bezier(.22, 1, .36, 1) both; }
+  .composer-menu-panel button { display: flex; align-items: center; gap: 12px; width: 100%; min-height: 44px; padding: 8px 12px; border-radius: 14px; color: var(--foreground); font-size: .9375rem; font-weight: 500; text-align: left; white-space: nowrap; cursor: pointer; }
+  .composer-menu-panel button:hover:not(:disabled) { background: var(--surface); }
+  .composer-menu-panel button svg { flex: none; width: 20px; height: 20px; color: var(--muted-foreground); }
+  .composer-send-slot, .composer-send-slot[data-visible="true"] { position: relative; z-index: 1; width: var(--send-size); height: var(--send-size); margin: 0 4px 4px calc(-1 * (var(--send-size) + 4px)); overflow: visible; transition: none; }
+  .composer-send-slot .send-button { position: relative; display: grid; place-items: center; width: var(--send-size); height: var(--send-size); margin: 0; border-radius: 50%; opacity: 0; transform: scale(.6); transition: transform 180ms cubic-bezier(.22, 1, .36, 1), opacity 120ms ease, background-color 150ms ease; }
+  .composer-send-slot[data-visible="true"] .send-button { opacity: 1; transform: scale(1); }
+  .math-composer .composer-send-slot .send-button:disabled { opacity: 0; }
+  .composer-send-slot .send-button::after { content: ""; position: absolute; inset: -7px; }
+  .send-label { display: none; }
+  .send-icon { display: block; }
+}
+@keyframes composer-menu-open {
+  from { opacity: 0; transform: scale(.7); }
+  to { opacity: 1; transform: scale(1); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .composer-menu-toggle svg, .composer-send-slot .send-button { transition: none; }
+  .composer-menu-panel:not([hidden]) { animation: none; }
+}
 .math-composer button:disabled { opacity: .45; cursor: not-allowed; }
-.math-composer :is(button, [role="textbox"]):focus-visible { outline: 2px solid var(--primary); outline-offset: 2px; }
+.math-composer button:focus-visible { outline: 2px solid var(--primary); outline-offset: 2px; }
+.mixed-draft:focus, .mixed-draft:focus-visible { outline: none; }
 .chat-plain-text > .chat-equation { display: inline-block; vertical-align: middle; max-width: 100%; overflow-x: auto; padding: 2px 0; font-size: 1.08em; }
 .chat-plain-text > .chat-equation-display { display: block; padding: 8px 0; }
 .chat-table-scroll { max-width: 100%; overflow-x: auto; margin: 12px 0; }

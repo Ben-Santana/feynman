@@ -2,9 +2,14 @@ import { accountFetch } from './accounts'
 import type { Level } from './learningFlow'
 
 export type GoalStatus = 'demonstrated' | 'partial' | 'needs_work' | 'skipped' | 'not_assessed'
-export type ReportGoal = { id: string; conceptId: string; concept: string; level: Level; text: string; status: GoalStatus; firstCredit: number | null; finalCredit: number | null; firstLimitation: string | null; reason: string; evidence: { quote: string; messageIndex: number }[]; assisted: boolean; assistanceUnknown: boolean; independentCheck: string; legacy: boolean }
+// New reports never produce 'slow'; immutable saved snapshots can still contain it.
+export type GoalOutcome = 'correct' | 'corrected' | 'slow' | 'skipped' | 'unfinished'
+export type GoalProof = { gotAt: string | null; gotOnReply: number; reason: string; quote: string; replies: number; mistake: { reason: string; quote: string } | null; returnedAfterSkip: boolean; attempts: string[] }
+export type ReportGoal = { id: string; conceptId: string; concept: string; level: Level; text: string; status: GoalStatus; score: number | null; outcome: GoalOutcome; firstCredit: number | null; finalCredit: number | null; firstLimitation: string | null; reason: string; evidence: { quote: string; messageIndex: number }[]; proof: GoalProof; assisted: boolean; assistanceUnknown: boolean; independentCheck: string; legacy: boolean }
 export type ReportScore = { percent: number | null; scored: number; assigned: number; coverage: number; points: number }
-export type TopicReportData = { title: string; startedAt: string; learningType: string; finishMode: 'early' | 'completed'; legacy: boolean; demonstrated: number; assigned: number; first: ReportScore; final: ReportScore; goals: ReportGoal[]; levelChecks: { conceptId: string; concept: string; level: Level; supported: boolean; independentCheck: string; transferCheck: string; reason: string; rubricDemonstrated: boolean; goalId: string }[]; priorities: { goalId: string; conceptId: string; level: Level; concept: string; reason: string; action: string }[]; scoringPolicyVersion: string }
+export type PointsSummary = { earned: number; possible: number; percent: number | null; unfinished: number }
+export type ConceptScore = PointsSummary & { id: string; name: string }
+export type TopicReportData = { score: PointsSummary; concepts: ConceptScore[]; title: string; startedAt: string; learningType: string; finishMode: 'early' | 'completed'; legacy: boolean; demonstrated: number; assigned: number; first: ReportScore; final: ReportScore; goals: ReportGoal[]; levelChecks: { conceptId: string; concept: string; level: Level; supported: boolean; independentCheck: string; transferCheck: string; reason: string; rubricDemonstrated: boolean; goalId: string }[]; priorities: { goalId: string; conceptId: string; level: Level; concept: string; reason: string; action: string }[]; scoringPolicyVersion: string }
 export type ReportResponse = { id?: string; createdAt?: string; report: TopicReportData; snapshots: { id: string; createdAt: string; finishMode: string; watermark: number }[] }
 export async function loadTopicReport(sessionId: string, signal: AbortSignal, mode: 'early' | 'completed'): Promise<ReportResponse> {
   const response = await accountFetch(`/api/sessions/${encodeURIComponent(sessionId)}/report?mode=${mode}`, { method: 'POST', signal })

@@ -1,0 +1,29 @@
+.sessions-tabs { display: flex; align-items: center; gap: 20px; margin-bottom: 20px; border-bottom: 1px solid var(--dashboard-line); }
+.sessions-tabs button { position: relative; display: inline-flex; align-items: center; gap: 8px; padding: 10px 0 12px; border: 0; background: transparent; color: var(--muted-foreground); font: inherit; font-size: 0.8125rem; cursor: pointer; }
+.sessions-tabs button:hover { color: var(--foreground); }
+.sessions-tabs button[aria-pressed="true"] { color: var(--foreground); font-weight: 600; }
+.sessions-tabs button[aria-pressed="true"]::after { content: ''; position: absolute; right: 0; bottom: -1px; left: 0; height: 2px; background: var(--primary); }
+.sessions-tabs button > span { display: inline-flex; align-items: center; justify-content: center; min-width: 19px; padding: 1px 6px; border-radius: 5px; background: var(--surface); font-size: 0.625rem; font-weight: 500; font-variant-numeric: tabular-nums; }
+
+.sessions-rows { margin: 0; padding: 0; overflow: hidden; border: 1px solid var(--dashboard-line); border-radius: 12px; background: var(--background); box-shadow: 0 2px 8px #00000008; list-style: none; }
+.sessions-rows > li + li { border-top: 1px solid var(--dashboard-line); }
+.session-row { display: flex; align-items: center; gap: 24px; width: 100%; min-height: 72px; padding: 14px 20px; border: 0; background: transparent; color: var(--foreground); font: inherit; text-align: left; cursor: pointer; transition: background .15s; }
+.session-row:hover { background: color-mix(in srgb, var(--foreground) 3%, transparent); }
+.session-row:focus-visible { outline: 2px solid var(--ring); outline-offset: -2px; border-radius: 12px; }
+.session-row-copy { display: flex; flex: 1; flex-direction: column; gap: 3px; min-width: 0; }
+.session-row-copy > strong { overflow: hidden; font-size: 0.9375rem; font-weight: 500; line-height: 1.4; text-overflow: ellipsis; white-space: nowrap; transition: color .15s; }
+.session-row-copy > span { overflow: hidden; color: var(--muted-foreground); font-size: 0.75rem; line-height: 1.5; text-overflow: ellipsis; white-space: nowrap; }
+.session-row:hover .session-row-copy > strong { color: var(--primary-hover); }
+.session-row-status { display: flex; flex: none; align-items: center; justify-content: flex-end; gap: 6px; width: 104px; color: var(--muted-foreground); font-size: 0.75rem; }
+.session-row-status > svg { width: 15px; height: 15px; }
+.session-row-status .dashboard-session-progress { width: 100%; font-size: 0.75rem; }
+.session-row-arrow { flex: none; width: 17px; height: 17px; color: var(--muted-foreground); transition: transform .15s; }
+
+@media (hover: hover) { .session-row:hover .session-row-arrow { transform: translateX(2px); } }
+@media (max-width: 640px) {
+  .session-row { gap: 14px; padding: 12px 14px; }
+  .session-row-status { width: 64px; }
+  .session-row-concepts { display: none; }
+  .session-row-arrow { display: none; }
+}
+@media (prefers-reduced-motion: reduce) { .session-row, .session-row-copy > strong, .session-row-arrow { transition: none; } .session-row:hover .session-row-arrow { transform: none; } }

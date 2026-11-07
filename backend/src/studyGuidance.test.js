@@ -2,7 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { createStudyGuidanceGenerator } from './studyGuidance.js';
 
-const report = { title: 'Ohm’s law', demonstrated: 1, assigned: 2, goals: [{ id: 'g', text: 'Rearrange V = IR', status: 'needs_work', reason: 'Divided only one side by R.', evidence: [{ quote: 'I = VR' }] }], levelChecks: [] };
+const report = { title: 'Ohm’s law', demonstrated: 1, assigned: 2, goals: [{ id: 'g', text: 'Rearrange V = IR', status: 'needs_work', reason: 'Divided only one side by R.', evidence: [{ quote: 'I = VR' }] }], levelChecks: [], concepts: [{ id: 'ohm', name: 'Ohm’s law', earned: 0.5, possible: 1, percent: 50, unfinished: 0 }] };
 const guidance = { nextSteps: ['Practice rearranging Ohm’s law to solve for current and resistance.'] };
 
 test('guidance uses student evidence, deduplicates requests, and isolates owners and changed results', async () => {
@@ -12,10 +12,12 @@ test('guidance uses student evidence, deduplicates requests, and isolates owners
     calls++;
     assert.match(instructions, /untrusted data/);
     assert.match(instructions, /missing evidence does not prove misunderstanding/);
+    assert.match(instructions, /lowest scores/);
     assert.equal(response.name, 'summarize_student_results');
     const input = JSON.parse(messages[0].content);
     assert.equal(input.goals[0].evidence[0].quote, 'I = VR');
     assert.equal(input.goals[0].reason, 'Divided only one side by R.');
+    assert.equal(input.concepts[0].earned, 0.5);
     return guidance;
   };
   const [first, second] = await Promise.all([generate('student', report, query), generate('student', report, query)]);

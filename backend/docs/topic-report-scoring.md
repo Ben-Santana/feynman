@@ -25,6 +25,21 @@ Final credit comes from the latest valid result for that criterion at the report
 
 The rubric for an assigned topic is frozen from published instructor configuration. Personal sessions can extend their target using Continue, while earlier rubric goals remain fixed. Historical reports retain their original rubric version and denominator. Only assigned topics enter the research export.
 
+## Student topic score
+
+The summary page and course score tables use a separate per-item score. The research credits above and their exports are unchanged.
+
+- **1:** finished with no incorrect statement. Students cannot see the rubric, so omissions are not mistakes. Follow-up questions, reply counts, and an earlier skip do not reduce the score.
+- **0.5:** finished after stating something incorrect: the evaluator judged the item `flawed` or cited a contradiction. An item marked `needs_work` only for an incomplete answer does not count.
+- **0:** skipped and not finished later.
+- **No score:** unfinished. These items earn no points but stay in the total.
+
+There is no way to reopen a skipped item directly. It is checked off if the student's later teaching demonstrates it, in the same level or a later level of that concept. While an earlier-level skip is open, each teaching turn runs one extra evaluation of those items; it never blocks advancing, and a failed check is retried by the next turn. Recovered items are stored as extra goals on that turn's assessment event, so their final research credit also updates.
+
+Hovering, focusing, or tapping an item's score shows its proof: when a 1 was earned, what went wrong and how the student recovered for a 0.5, and the skip plus the student's attempts for a 0. Snapshots saved before this rule can still show the older “Took extra time” outcome. Replies are saved on assessment events for this; older events only have evaluator citations, so their attempts can be incomplete.
+
+Concept and topic scores are earned points divided by assigned items. Completed reports saved before this score existed keep their original final percentage in course tables.
+
 ## Persistence and APIs
 
 `POST /api/chat` includes `assignmentSessionId`/`assignmentConceptId` for assigned work or `sessionId`/`conceptId` for personal work. The server resolves the saved rubric, requests explicit partial-credit and assistance judgments, verifies evidence, and persists the assessment **before** generating the next question or feedback. Responses include `assessmentRecord` with its server ID, sequence and criterion credits. Browser documents retain these references for recovery but never supply authoritative scores.

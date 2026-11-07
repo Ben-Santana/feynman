@@ -4,14 +4,14 @@ import { loadPrompts } from './promptStore.js';
 import { checklistItems, checklistText } from '../../frontend/src/rubricChecklist.js';
 import { extractArchiveText } from './uploadExtract.js';
 import { randomUUID } from 'node:crypto';
-import { targetedQuestionInstructions, assertTargetedQuestion, questionIntegrityInstructions, assertQuestionIntegrity } from './questionTargeting.js';
+import { targetedQuestionInstructions, assertTargetedQuestion, questionIntegrityInstructions, assertQuestionIntegrity, withoutOpeningPraise, withoutRepeatedConfirmation } from './questionTargeting.js';
 import { learningTypes, resolveLearningType, needsScenarioOpening } from '../../frontend/src/learningTypes.js';
 import { evaluateRefined, conversationAssessment } from './refinedEvaluator.js';
 import { generateStrategyQuestion } from './strategyLearner.js';
 import { inlineQuestionStrategies } from './inlineQuestionStrategies.js';
 import { learnerStateFromAssessment } from './strategyLearnerState.js';
 import { validateBackgroundHistory } from './backgroundQuestions.js';
-import { scoreJudgment } from './topicReports.js';
+import { scoreJudgment, statedMistake } from './topicReports.js';
 const initialPrompts = loadPrompts();
 export const rubrics = Object.fromEntries(['remember', 'understand', 'apply', 'analyze'].map(level => [level, initialPrompts.text('chat.rubric.' + level)]));
 const statuses = ['supported', 'needs_clarification', 'flawed', 'missing'];
@@ -267,7 +267,25 @@ function followUpFocus(checked, prompts) {
   const instruction = target.status === 'flawed' ? prompts.text('chat.focusFlawed') : prompts.text('chat.focusMissing');
   return prompts.text('chat.followUpFocus', { focus: JSON.stringify(focus), instruction: instruction });
 }
-export async function chat(input, query, prompts = loadPrompts(), { evaluator = 'refined', learner = 'focused', evaluationCache, cacheScope, persistedAssessment, onAssessment } = {}) {
+// Later teaching can finish an item skipped at an earlier level. This runs apart
+// from the level's own evaluation so those items never block advancing, and a
+// failure here never fails the turn: the next turn re-reads the whole stage.
+async function recoverOpenSkips({ topic, learningType, messages }, openSkips, query, prompts) {
+  const results = await Promise.all([...new Set(openSkips.map(goal => goal.level))].map(async level => {
+    const goals = openSkips.filter(goal => goal.level === level);
+    const refined = await evaluateRefined({ topic, learningType, level, aspects: goals.map(goal => goal.text), messages, researchScoring: true }, query, prompts);
+    return goals.flatMap((goal, index) => {
+      const judgment = refined?.judgments.find(j => j.criterionId === `criterion_${index + 1}`);
+      const { credit, status } = scoreJudgment(judgment);
+      const mistake = statedMistake({ status }, judgment);
+      if (status !== 'demonstrated' && !mistake) return [];
+      // A false statement is remembered, but the item stays open to recovery.
+      return [{ id: goal.id, level, aspect: goal.text, credit: status === 'demonstrated' ? credit : null, status: status === 'demonstrated' ? status : 'skipped', mistake, reason: judgment.reason, evidence: judgment.observations.map(o => ({ messageId: o.messageId, messageIndex: o.messageIndex, quote: o.quote })) }];
+    });
+  }));
+  return results.flat();
+}
+export async function chat(input, query, prompts = loadPrompts(), { evaluator = 'refined', learner = 'focused', evaluationCache, cacheScope, persistedAssessment, onAssessment, openSkips = [] } = {}) {
   const { level, topic, messages, criterion } = validate(input);
   const learningType = resolveLearningType(input.learningType);
   const profile = { ...learningTypes[learningType], ...prompts.profile(learningType) };
@@ -304,11 +322,22 @@ export async function chat(input, query, prompts = loadPrompts(), { evaluator = 
   let evaluationReused = false;
   if (messages.length && !freshCheck && (!paperAnalysis || review)) {
     const cacheKey = evaluationCache?.key(cacheScope, `${prompts.version}:shared-evidence-v1:background-v1`, input, evaluator);
+    const latest = messages.at(-1);
+    const recovering = openSkips.length && !persistedAssessment && !latest.skipRubricItem && !latest.helpRequest && !latest.finishAssessment
+      ? recoverOpenSkips({ topic, learningType, messages }, openSkips, query, prompts).catch(error => { console.error('Skipped item check failed', { error }); return []; })
+      : null;
     checked = persistedAssessment || (cacheKey ? evaluationCache.get(cacheKey) : undefined);
     evaluationReused = Boolean(checked);
     if (!checked) {
-      checked = evaluator === 'legacy' ? await evaluateLegacy(input, query, prompts) : conversationAssessment(await evaluateRefined(input, query, prompts, { requireTransfer: true }), input);
+      checked = evaluator === 'legacy' ? await evaluateLegacy(input, query, prompts) : conversationAssessment(await evaluateRefined(input, query, prompts, { requireTransfer: !paperAnalysis }), input);
       if (cacheKey && checked) evaluationCache.set(cacheKey, checked);
+    }
+    if (recovering && checked) checked = { ...checked, skipRecovery: await recovering };
+    // A skip lasts until the learner's own later teaching demonstrates the item.
+    for (const aspect of [...skipped]) {
+      const skipIndex = messages.findIndex(m => m.skipRubricItem === aspect);
+      const item = checked?.criteria.find(c => c.aspect === aspect);
+      if (item?.status === 'supported' && item.evidence.some(e => e.messageIndex > skipIndex)) skipped.delete(aspect);
     }
     if (skipped.size && checked) {
       checked = structuredClone(checked);
@@ -330,17 +359,17 @@ export async function chat(input, query, prompts = loadPrompts(), { evaluator = 
       });
       return { message: 'Your learning report is ready.', assessment: checked, expression: 'excited', finalSummary: withoutEmDashes(summaryResponse.summary.trim()), analysisGrade: grade, evaluationReused };
     }
-    if (checked.complete || checked.readyToAdvance) return { message: skipped.size ? 'This level is finished. Skipped items remain available in your rubric checklist.' : 'Thank you for teaching me!', assessment: checked, expression: 'excited' };
+    if (checked.complete || checked.readyToAdvance) return { message: skipped.size ? 'This level is finished. Skipped items still count if you teach them later.' : 'Thank you for teaching me!', assessment: checked, expression: 'excited' };
   }
   const contradictionIndex = checked?.refined?.judgments.filter(j => j.criterionId !== 'level_task').findIndex(j => j.status !== 'supported' && j.contradictions.length);
   const frustrationTarget = expressesFrustration(messages.at(-1)?.content || '')
     && checked?.criteria.find(item => item.aspect === messages.at(-2)?.rubricFocus && !item.skipped && item.status !== 'supported');
   const target = (input.practiceGoal ? { aspect: input.practiceGoal } : null) || frustrationTarget || (contradictionIndex >= 0 && !checked.criteria[contradictionIndex].skipped ? checked.criteria[contradictionIndex] : null) || checked?.criteria.find(item => !item.skipped && item.status === 'flawed') || checked?.criteria.find(item => !item.skipped && item.status !== 'supported');
   const transferNeeded = checked?.criteria.every(c => c.status === 'supported') && checked?.refined?.judgments.find(j => j.criterionId === 'level_task')?.blockers.some(code => /transfer/.test(code));
-  const focus = checked ? `Ask ONE small diagnostic question about this unresolved requirement: ${JSON.stringify(target?.aspect || 'the overall task')}. Use the evaluator's next evidence objective to choose the actual probe: ${JSON.stringify(checked.nextQuestionFocus || '')}. Probe the learner's latest claim, not every part of this requirement at once. Do not request a full solution, multiple metrics, or all requirements together. Use at most 55 words for the question, with enough context to make it answerable. If an earlier probe did not help, use a concrete single-entity example or one controlled comparison instead of repeating it. For paper review prioritize a specifically contradicted claim or incorrectly accepted step; do not restart with a correctly justified paper. Supply any missing simulated readings needed by the objective before asking for their interpretation; do not re-ask an already supported prediction. Never teach or supply its answer.${transferNeeded ? ' The rubric is supported, but independent transfer is missing. Introduce ONE materially changed condition, not merely new numbers or a renamed setting, with all necessary givens. Ask for the consequence and its reason. Keep the same concept and level; do not repeat every rubric item. For quantitative Analyze preserve the existing papers and ask one changed-condition question. For design use a near-boundary constraint or supplied uncertainty; for experiments supply a changed setup and any needed simulated readings. Do not reveal the reasoning or answer.' : ''}` : '';
+  const focus = checked ? `Ask ONE small question about this unresolved requirement: ${JSON.stringify(target?.aspect || 'the overall task')}. Use the evaluator's next evidence objective to choose the actual probe: ${JSON.stringify(checked.nextQuestionFocus || '')}. Probe the learner's latest claim, not every part of this requirement at once. Do not request a full solution, multiple metrics, or all requirements together. Use at most 55 words for the question, with enough context to make it answerable. If an earlier probe did not help, use a concrete single-entity example or one controlled comparison instead of repeating it. For paper review prioritize a specifically contradicted claim or incorrectly accepted step; do not restart with a correctly justified paper. Supply any missing simulated readings needed by the objective before asking for their interpretation; do not re-ask an already supported prediction. Never teach or supply its answer.${transferNeeded ? ' The rubric is supported, but independent transfer is missing. Introduce ONE materially changed condition, not merely new numbers or a renamed setting, with all necessary givens. Ask for the consequence and its reason. Keep the same concept and level; do not repeat every rubric item. For design use a near-boundary constraint or supplied uncertainty; for experiments supply a changed setup and any needed simulated readings. Do not reveal the reasoning or answer.' : ''}` : '';
   const responseSystem = prompts.text('chat.response', { context: context, classroomRole: prompts.text('chat.classroomRole'), paperInstructions: needsPaper ? prompts.text('chat.submitPapers') : paperAnalysis ? prompts.text('chat.discussPapers') : '', scenarioInstructions: needsScenarioOpening(level, learningType) ? openingScenario ? prompts.text('chat.openScenario', { scenario: profile.scenarios[level] }) : prompts.text('chat.continueScenario', { task: profile.tasks[level] }) : '', followUp: checked ? learner === 'focused' || skipped.size ? focus : followUpFocus(checked, prompts) : prompts.text('chat.levelOpening') }) + (skipped.size ? `\nThe learner chose to skip these requirements: ${JSON.stringify([...skipped])}. Do not ask about or require them again. Focus only on the unresolved requirement specified above.` : '') + (openingScenario ? '\nKeep the opening compact: include only conditions needed to answer the initial question and interpret the supplied data. Retain units, measurement nodes, and uncertainty needed for a fair inference. Introduce additional instrumentation details and changed constraints only when the dialogue needs them. Check simulated numbers against the stated setup before returning them; label them simulated. Do not imply aggregate data uniquely establishes a mechanism. Later ask for a discriminating measurement when several causes fit.' : '') + (freshCheck ? '\nThe preceding prerequisite review is assistance, not evidence. Introduce a DIFFERENT self-contained situation to check the helped prerequisite independently. Ask one question without repeating the example, formula or answer supplied in the review. For quantitative Analyze keep the existing paper review and use an additional changed-condition check; do not replace the papers.' : '');
   const inlineStrategies = learner === 'focused' && checked && !paperAnalysis && !skipped.size && !frustrationTarget ? inlineQuestionStrategies({ ...input, aspects, learningType }) : null;
-  const responseTool = tool('respond_to_student', { ...responseProperties, ...(inlineStrategies ? { strategyChoice: inlineStrategies.property } : {}), ...(needsPaper ? { paper: paperProperty } : {}) });
+  const responseTool = tool('reply_to_teacher', { ...responseProperties, ...(inlineStrategies ? { strategyChoice: inlineStrategies.property } : {}), ...(needsPaper ? { paper: paperProperty } : {}) });
   let learnerModel;
   if (learner === 'strategy' && checked && !paperAnalysis && !skipped.size && !frustrationTarget) {
     const planned = await generateStrategyQuestion({ ...input, aspects, learningType }, { assessment: checked }, { instructions: responseSystem, messages: transcript, response: responseTool }, query);
@@ -351,14 +380,27 @@ export async function chat(input, query, prompts = loadPrompts(), { evaluator = 
   let paper = null;
   let questionRejection = '';
   const previousQuestion = (messages.length ? messages : input.priorMessages || []).findLast(m => m.role === 'assistant')?.content;
+  // Models repeat their own earlier openings, so name them instead of relying on a general rule.
+  const recentReplies = (messages.length ? messages : input.priorMessages || []).filter(m => m.role === 'assistant').slice(-3).map(m => m.content);
+  const recentOpenings = recentReplies.map(content => content.trim().split(/\s+/).slice(0, 3).join(' '));
+  const openingInstruction = recentOpenings.length ? `\nYour recent messages opened with ${JSON.stringify(recentOpenings)}. Open this one differently, and if you confirm, use different words, not a close variation.` : '';
   const responseDeadline = AbortSignal.timeout(60_000);
   for (let attempt = 0; attempt < (needsPaper ? 3 : 2); attempt++) {
     const retryInstruction = needsPaper ? prompts.text('chat.retryPaper') : prompts.text('chat.retryQuestion', { previousQuestion: JSON.stringify(previousQuestion) });
     try {
-      result = await repairQuery(query, attempt, responseDeadline)(`${responseSystem}\n${input.practiceGoal ? `The learner selected this rubric goal for practice: ${JSON.stringify(input.practiceGoal)}. Open with one small question targeting that goal in a fresh situation. Do not supply its answer or copy factual answers out of the rubric. Keep the assigned concept, level, and any required paper task.` : ''}\n${inlineStrategies?.instructions || ''}\n${inlineStrategies?.backgroundInstructions || ''}\n${targetedQuestionInstructions}\n${needsPaper ? '' : questionIntegrityInstructions}${attempt ? `\n${retryInstruction}\nThe previous response failed validation: ${questionRejection}. Ask neutrally about the unresolved claim without supplying its solution.` : ''}`, transcript, responseTool);
+      result = await repairQuery(query, attempt, responseDeadline)(`${responseSystem}\n${input.practiceGoal ? `The learner selected this rubric goal for practice: ${JSON.stringify(input.practiceGoal)}. Open with one small question targeting that goal in a fresh situation. Do not supply its answer or copy factual answers out of the rubric. Keep the assigned concept, level, and any required paper task.` : ''}\n${inlineStrategies?.instructions || ''}\n${inlineStrategies?.backgroundInstructions || ''}\n${targetedQuestionInstructions}\n${needsPaper ? '' : `${questionIntegrityInstructions}\n${prompts.text('chat.studentVoice')}${openingInstruction}`}${attempt ? `\n${retryInstruction}\nThe previous response failed validation: ${questionRejection}. Ask neutrally about the unresolved claim without supplying its solution.` : ''}`, transcript, responseTool);
       if (typeof result?.message !== 'string' || !result.message.trim() || result.message.length > 12000) throw new InvalidOutputError('The model returned an empty or oversized message. Please retry.');
       if (!needsPaper) { assertTargetedQuestion(result.message); assertQuestionIntegrity(result.message); }
-      if (inlineStrategies) learnerModel = { ...inlineStrategies.validate(result.strategyChoice), state: learnerStateFromAssessment(input, checked) };
+      if (inlineStrategies) {
+        let choice;
+        try { choice = inlineStrategies.validate(result.strategyChoice); }
+        catch (error) {
+          // The question already passed its checks, so bad strategy metadata must not cost the learner the turn.
+          if (attempt === 0 || !(error instanceof InvalidOutputError)) throw error;
+          choice = { strategyId: null, selectionMethod: 'inline_response', rationale: '', coverageGap: { stage: 'inline_selection', reason: error.message } };
+        }
+        learnerModel = { ...choice, state: learnerStateFromAssessment(input, checked) };
+      }
     } catch (error) {
       questionRejection = error.message;
       if (responseDeadline.aborted || attempt === (needsPaper ? 2 : 1) || !(error instanceof InvalidOutputError)) throw error;
@@ -373,7 +415,7 @@ export async function chat(input, query, prompts = loadPrompts(), { evaluator = 
   }
   if (typeof result?.message !== 'string' || !result.message.trim() || result.message.length > 12000) throw new Error('The model returned an empty message. Please retry.');
   if (!paper && previousQuestion && result.message.trim().toLocaleLowerCase() === previousQuestion.trim().toLocaleLowerCase()) throw new Error('The model repeated its previous question. Please retry.');
-  return { paper, message: paper ? 'I tried three exercises and wrote out my steps. Could you grade each paper Pass or Fail?' : withoutEmDashes(result.message), expression: responseProperties.expression.enum.includes(result.expression) ? result.expression : 'attentive', assessment: checked, ...(target && !learnerModel?.background ? { rubricFocus: learnerModel?.rubricItem || target.aspect } : {}), evaluationReused, ...(freshCheck ? { independentCheck: true } : {}), ...(learnerModel?.background ? { background: learnerModel.background } : {}), ...(learnerModel ? { learnerModel } : {}) };
+  return { paper, message: paper ? 'I tried three exercises and wrote out my steps. Could you grade each paper Pass or Fail?' : withoutEmDashes(withoutRepeatedConfirmation(withoutOpeningPraise(result.message), recentReplies)), expression: responseProperties.expression.enum.includes(result.expression) ? result.expression : 'attentive', assessment: checked, ...(target && !learnerModel?.background ? { rubricFocus: learnerModel?.rubricItem || target.aspect } : {}), evaluationReused, ...(freshCheck ? { independentCheck: true } : {}), ...(learnerModel?.background ? { background: learnerModel.background } : {}), ...(learnerModel ? { learnerModel } : {}) };
 }
 
 export async function conceptsFromStudyTest(file, query, prompts = loadPrompts()) {

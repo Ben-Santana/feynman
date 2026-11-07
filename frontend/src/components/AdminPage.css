@@ -4,13 +4,9 @@
 .admin-page button:disabled { opacity: .4; cursor: default; }
 .admin-page :is(button, input, select):focus-visible { outline: 2px solid var(--primary); outline-offset: 3px; }
 .admin-search { display: flex; align-items: center; gap: 12px; margin: 0 0 24px; }
-.admin-search-field { position: relative; flex: 1; min-width: 0; }
-.admin-search-field > svg { position: absolute; top: 13px; left: 14px; width: 17px; height: 17px; color: var(--muted-foreground); pointer-events: none; }
-.admin-search input { width: 100%; height: 44px; padding: 10px 14px 10px 40px; border: 1px solid var(--border); border-radius: 10px; background: var(--background); color: var(--foreground); font: inherit; font-size: 0.8125rem; }
-.admin-search input::placeholder { color: var(--muted-foreground); opacity: 1; }
-.admin-search button { min-height: 44px; background: var(--primary); color: var(--primary-foreground); }
-.admin-search button:hover:not(:disabled) { background: var(--primary-hover); }
-.admin-directory { --admin-role-width: 140px; overflow: hidden; border: 1px solid var(--dashboard-line, var(--border)); border-radius: 14px; background: var(--background); }
+.admin-search button[type="submit"] { min-height: 44px; background: var(--primary); color: var(--primary-foreground); }
+.admin-search button[type="submit"]:hover:not(:disabled) { background: var(--primary-hover); }
+.admin-directory { --admin-role-width: 188px; overflow: hidden; border: 1px solid var(--dashboard-line, var(--border)); border-radius: 14px; background: var(--background); }
 .admin-list-heading, .admin-users li { display: grid; grid-template-columns: minmax(0, 1fr) var(--admin-role-width); align-items: center; gap: 24px; padding: 18px 24px; }
 .admin-list-heading { padding-block: 13px; border-bottom: 1px solid var(--dashboard-line, var(--border)); background: var(--muted); color: var(--muted-foreground); font-size: 0.6875rem; font-weight: 500; }
 .admin-users { margin: 0; padding: 0; list-style: none; }
@@ -38,8 +34,8 @@
 @media (max-width: 600px) {
   .admin-shell h1 { margin-bottom: 24px; }
   .admin-search { gap: 8px; }
-  .admin-search input, .admin-role-control select { font-size: 1rem; }
-  .admin-search button { padding-inline: 12px; }
+  .admin-role-control select { font-size: 1rem; }
+  .admin-search button[type="submit"] { padding-inline: 12px; }
   .admin-list-heading { display: none; }
   .admin-users li { grid-template-columns: minmax(0, 1fr); gap: 12px; padding: 18px 16px; }
   .admin-role-control { width: 160px; }
@@ -52,7 +48,17 @@
 }
 @media (prefers-reduced-motion: reduce) { .admin-page button, .admin-role-control select { transition: none; } }
 
-.admin-user-actions { display: grid; gap: 8px; }
-.admin-page .admin-approve { background: var(--primary); color: var(--primary-foreground); }
-.admin-page .admin-approve:hover:not(:disabled) { background: var(--primary-hover); }
+.admin-user-actions { display: grid; grid-template-columns: minmax(0, 1fr) auto; align-items: center; gap: 8px; }
 .admin-user-identity > .admin-approval-status { margin-top: 6px; font-weight: 500; color: var(--foreground); }
+
+.admin-model-form { max-width: 480px; margin-bottom: 16px; }
+.admin-model-page h1 { font-size: clamp(1.5rem, 3vw, 2rem); }
+.admin-model-form .ai-settings-field { margin-top: 0; }
+.admin-model-form select { min-width: 0; }
+.admin-model-actions button { background: var(--primary); color: var(--primary-foreground); }
+.admin-model-actions button:hover:not(:disabled) { background: var(--primary-hover); }
+.admin-model-actions button:disabled { background: var(--muted); color: var(--muted-foreground); opacity: 1; }
+.admin-model-actions span { font-size: 0.875rem; }
+.admin-grant-field { display: grid; gap: 8px; font-size: 0.875rem; }
+.admin-grant-field input { width: 100%; box-sizing: border-box; min-height: 44px; padding: 8px 12px; border: 1px solid var(--border); border-radius: 12px; background: var(--background); color: var(--foreground); font: inherit; font-size: 1rem; }
+.admin-grant-field input:focus-visible { outline: 2px solid var(--primary); outline-offset: 2px; }

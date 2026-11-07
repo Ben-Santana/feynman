@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState, type FormEvent, type ReactNode } from 'react'
+import { useEffect, useId, useRef, useState, type ComponentProps, type FormEvent, type ReactNode } from 'react'
 import { accountFetch, activateAccount, completeAccountCallback, currentAccount, loadAccountAuthMode, navigateAccountPage, requestPasswordReset, signInWithEmail, signInWithWpi, signUpWithEmail, supabase, updateAccountPassword, type Account, type AccountAuthMode, type AccountSignInMethod } from '../accounts'
 import { Bloub } from './Bloub'
 import { CornerDrops } from './CornerDrops'
@@ -8,8 +8,35 @@ import { ConsentAgreement } from './ConsentAgreement'
 import { downloadSignedConsent } from '../accounts'
 
 let callback: { href: string; promise: Promise<void> } | undefined
-function AccountAvatar() {
-  return <div className="account-avatar" aria-hidden="true"><Bloub mode="studio" expression="attentive" showControls={false} followPointer /></div>
+function AccountAvatar({ squint = false }: { squint?: boolean }) {
+  return <div className="account-avatar" data-squint={squint} aria-hidden="true">
+    <Bloub mode="studio" expression="attentive" showControls={false} followPointer={!squint} />
+  </div>
+}
+
+function PasswordField({ label, visible, onToggle, ...input }: Omit<ComponentProps<'input'>, 'type'> & {
+  label: string
+  visible: boolean
+  onToggle: () => void
+}) {
+  const id = useId()
+  return <div className="account-password">
+    <label htmlFor={id}>{label}</label>
+    <div className="account-password-row">
+      <input {...input} id={id} type={visible ? 'text' : 'password'} spellCheck={false} autoCapitalize="off" />
+      <button className="account-password-toggle" type="button" disabled={input.disabled}
+        aria-label={`${visible ? 'Hide' : 'Show'} ${label === 'Confirm password' ? 'password confirmation' : label.toLowerCase()}`} aria-controls={id} onClick={onToggle}>
+        <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+          {!visible ? <>
+            <path d="M3 3l18 18M10.6 10.6a2 2 0 0 0 2.8 2.8M6.2 6.2C3.5 8 2 12 2 12s3.5 6 10 6c1.7 0 3.2-.4 4.5-1.1M10 6.2c.6-.1 1.3-.2 2-.2 6.5 0 10 6 10 6s-.7 1.2-2 2.5" />
+          </> : <>
+            <path d="M2 12s3.5-6 10-6 10 6 10 6-3.5 6-10 6-10-6-10-6Z" />
+            <circle cx="12" cy="12" r="2.5" />
+          </>}
+        </svg>
+      </button>
+    </div>
+  </div>
 }
 
 export function AccountGate({ children }: { children: (account: Account, onProfileUpdated: (account: Account) => void, authMode: AccountSignInMethod) => ReactNode }) {
@@ -24,6 +51,10 @@ export function AccountGate({ children }: { children: (account: Account, onProfi
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [confirmPassword, setConfirmPassword] = useState('')
+  const [visiblePassword, setVisiblePassword] = useState<'password' | 'confirmation' | null>(null)
+  function togglePassword(field: NonNullable<typeof visiblePassword>) {
+    setVisiblePassword(current => current === field ? null : field)
+  }
   const [notice, setNotice] = useState('')
   const [resettingPassword, setResettingPassword] = useState(window.location.pathname === '/account/reset-password')
   const [attempt, setAttempt] = useState(0)
@@ -57,14 +88,14 @@ export function AccountGate({ children }: { children: (account: Account, onProfi
         const result = await response.json()
         if (!response.ok) throw new Error(result.error || 'Could not load your account.')
         let method: AccountSignInMethod = mode === 'wpi' ? 'wpi' : 'email'
-        if (mode === 'both') {
+        if (mode === 'both' || result.wpi_role_choice_pending) {
           const { data: assurance, error } = await supabase().auth.mfa.getAuthenticatorAssuranceLevel()
           if (error) throw error
           if (assurance.currentAuthenticationMethods.some(method => typeof method === 'object' && method.method === 'oauth')) method = 'wpi'
         }
         if (!disposed && ticket === generation.current) {
-          waitingForApproval = result.approved !== true
-          activateAccount(result.approved === true && !result.consent_required ? result : null)
+          waitingForApproval = result.approved !== true || result.instructor_application_pending === true
+          activateAccount(result.approved === true && !result.consent_required && !(method === 'wpi' && result.wpi_role_choice_pending) ? result : null)
           setAccount(result)
           setSignInMethod(method)
           setError('')
@@ -118,13 +149,32 @@ export function AccountGate({ children }: { children: (account: Account, onProfi
         if (password !== confirmPassword) throw new Error('The passwords do not match.')
         await signUpWithEmail(email, password)
       } else await signInWithEmail(email, password)
-      setPassword(''); setConfirmPassword('')
+      setPassword(''); setConfirmPassword(''); setVisiblePassword(null)
     } catch (reason) { setError(reason instanceof Error ? reason.message : 'Could not sign in. Please try again.') }
     finally { setSigningIn(false) }
   }
   function changeForm(mode: typeof formMode) {
-    setFormMode(mode); setError(''); setNotice(''); setPassword(''); setConfirmPassword('')
+    setFormMode(mode); setError(''); setNotice(''); setPassword(''); setConfirmPassword(''); setVisiblePassword(null)
   }
+  async function chooseWpiRole(applyAsInstructor: boolean) {
+    setSigningIn(true); setError('')
+    try {
+      const { error } = await supabase().rpc('choose_wpi_account_role', { apply_as_instructor: applyAsInstructor })
+      if (error) throw error
+      setLoading(true); setAttempt(value => value + 1)
+    } catch (reason) {
+      setError(reason instanceof Error ? reason.message : 'Could not save your choice. Please try again.')
+    } finally { setSigningIn(false) }
+  }
+  if (!loading && account?.wpi_role_choice_pending && signInMethod === 'wpi' && !resettingPassword) return <main className="account-login"><section aria-labelledby="account-title">
+    <div className="account-card">
+      <AccountAvatar />
+      <header className="account-heading"><h1 id="account-title">Apply to be an instructor?</h1><p>An admin must approve your application.</p></header>
+      <button className="account-method" type="button" disabled={signingIn} onClick={() => void chooseWpiRole(true)}>Apply as an instructor</button>
+      <button className="account-method account-method-email" type="button" disabled={signingIn} onClick={() => void chooseWpiRole(false)}>Continue as a student</button>
+      {error && <p className="account-error" role="alert">{error}</p>}
+    </div>
+  </section></main>
   if (!loading && account?.consent_required && !resettingPassword) return <ConsentAgreement key={account.id} onSigned={() => { setLoading(true); setAttempt(value => value + 1) }} />
   if (!loading && account && account.approved !== true && !resettingPassword) return <main className="account-login account-pending"><section aria-labelledby="pending-title">
     <div className="account-card">
@@ -154,7 +204,7 @@ export function AccountGate({ children }: { children: (account: Account, onProfi
   const showEmailForm = emailEnabled && (authMode === 'email' || formMode !== 'choose')
   if (resettingPassword && emailEnabled) return <main className="account-login"><section aria-labelledby="account-title">
     <div className="account-card">
-      <AccountAvatar />
+      <AccountAvatar squint={visiblePassword !== null && !!account && signInMethod === 'email'} />
       <header className="account-heading"><h1 id="account-title">Reset password</h1></header>
       {account && signInMethod === 'email' ? <form onSubmit={event => {
         event.preventDefault(); setSigningIn(true); setError('')
@@ -162,17 +212,17 @@ export function AccountGate({ children }: { children: (account: Account, onProfi
           try {
             if (password !== confirmPassword) throw new Error('The passwords do not match.')
             await updateAccountPassword(password)
-            setPassword(''); setConfirmPassword(''); setResettingPassword(false)
+            setPassword(''); setConfirmPassword(''); setVisiblePassword(null); setResettingPassword(false)
             navigateAccountPage('/dashboard'); setAttempt(value => value + 1)
           } catch (reason) { setError(reason instanceof Error ? reason.message : 'Could not update your password.') }
           finally { setSigningIn(false) }
         })()
       }}>
-        <label>New password<input type="password" autoComplete="new-password" required minLength={12} value={password} disabled={signingIn} onChange={event => setPassword(event.target.value)} /></label>
-        <label>Confirm password<input type="password" autoComplete="new-password" required minLength={12} value={confirmPassword} disabled={signingIn} onChange={event => setConfirmPassword(event.target.value)} /></label>
+        <PasswordField label="New password" visible={visiblePassword === 'password'} onToggle={() => togglePassword('password')} autoComplete="new-password" required minLength={12} value={password} disabled={signingIn} onChange={event => setPassword(event.target.value)} />
+        <PasswordField label="Confirm password" visible={visiblePassword === 'confirmation'} onToggle={() => togglePassword('confirmation')} autoComplete="new-password" required minLength={12} value={confirmPassword} disabled={signingIn} onChange={event => setConfirmPassword(event.target.value)} />
         <button disabled={signingIn}>{signingIn ? 'Saving…' : 'Save password'}</button>
       </form> : <p>This reset link has expired. Request a new link from the sign-in screen.</p>}
-      <div className="account-links"><button className="account-secondary" type="button" disabled={signingIn} onClick={() => { setResettingPassword(false); setPassword(''); setConfirmPassword(''); navigateAccountPage('/account/login') }}>Back to sign in</button></div>
+      <div className="account-links"><button className="account-secondary" type="button" disabled={signingIn} onClick={() => { setResettingPassword(false); setPassword(''); setConfirmPassword(''); setVisiblePassword(null); navigateAccountPage('/account/login') }}>Back to sign in</button></div>
       {error && <p className="account-error" role="alert">{error}</p>}
     </div>
   </section></main>
@@ -184,9 +234,9 @@ export function AccountGate({ children }: { children: (account: Account, onProfi
   }, signInMethod)
   return <main className="account-login account-entry"><section aria-labelledby="account-title">
     <div className="account-card">
-      <AccountAvatar />
+      <AccountAvatar squint={visiblePassword !== null && showEmailForm && formMode !== 'reset-request'} />
       <header className="account-heading">
-        <h1 id="account-title">{formMode === 'sign-up' ? 'Create an instructor account' : formMode === 'reset-request' ? 'Reset password' : showEmailForm ? 'Sign in with email' : 'Sign in to Feynman'}</h1>
+        <h1 id="account-title">{formMode === 'sign-up' ? 'Create outside instructor account' : formMode === 'reset-request' ? 'Reset password' : showEmailForm ? 'Sign in with email' : 'Sign in to Feynman'}</h1>
         {formMode === 'sign-up' && <p>An admin must approve your account.</p>}
       </header>
       {wpiEnabled && !showEmailForm && <>
@@ -196,19 +246,19 @@ export function AccountGate({ children }: { children: (account: Account, onProfi
         }}>{signingIn ? 'Opening WPI sign-in…' : 'Sign in with WPI SSO'}</button>
         {emailEnabled && <>
           <button className="account-method account-method-email" type="button" disabled={signingIn} aria-describedby="account-email-hint" onClick={() => changeForm('sign-in')}>Sign in with email</button>
-          <p className="account-method-hint" id="account-email-hint">For instructors</p>
+          <p className="account-method-hint" id="account-email-hint">For outside instructors</p>
         </>}
       </>}
       {showEmailForm && <>
         <form onSubmit={event => void submitEmail(event)}>
           <label>Email<input type="email" autoComplete="email" inputMode="email" placeholder="you@example.com" required maxLength={254} value={email} disabled={signingIn} onChange={event => setEmail(event.target.value)} /></label>
-          {formMode !== 'reset-request' && <label>Password<input type="password" autoComplete={formMode === 'sign-up' ? 'new-password' : 'current-password'} required minLength={formMode === 'sign-up' ? 12 : undefined} value={password} disabled={signingIn} onChange={event => setPassword(event.target.value)} /></label>}
-          {formMode === 'sign-up' && <label>Confirm password<input type="password" autoComplete="new-password" required minLength={12} value={confirmPassword} disabled={signingIn} onChange={event => setConfirmPassword(event.target.value)} /></label>}
+          {formMode !== 'reset-request' && <PasswordField label="Password" visible={visiblePassword === 'password'} onToggle={() => togglePassword('password')} autoComplete={formMode === 'sign-up' ? 'new-password' : 'current-password'} required minLength={formMode === 'sign-up' ? 12 : undefined} value={password} disabled={signingIn} onChange={event => setPassword(event.target.value)} />}
+          {formMode === 'sign-up' && <PasswordField label="Confirm password" visible={visiblePassword === 'confirmation'} onToggle={() => togglePassword('confirmation')} autoComplete="new-password" required minLength={12} value={confirmPassword} disabled={signingIn} onChange={event => setConfirmPassword(event.target.value)} />}
           <button disabled={signingIn}>{signingIn ? <LoadingAnimation label="Submitting" compact /> : formMode === 'sign-up' ? 'Create account' : formMode === 'reset-request' ? 'Send reset link' : 'Sign in'}</button>
         </form>
         {formMode === 'sign-up' && <small className="account-hint">Use at least 12 characters for your password.</small>}
         <div className="account-links">
-          <button className="account-secondary" type="button" disabled={signingIn} onClick={() => changeForm(formMode === 'sign-up' || formMode === 'reset-request' ? 'sign-in' : 'sign-up')}>{formMode === 'sign-up' || formMode === 'reset-request' ? 'Back to email sign-in' : 'Create an instructor account'}</button>
+          <button className="account-secondary" type="button" disabled={signingIn} onClick={() => changeForm(formMode === 'sign-up' || formMode === 'reset-request' ? 'sign-in' : 'sign-up')}>{formMode === 'sign-up' || formMode === 'reset-request' ? 'Back to email sign-in' : 'Create outside instructor account'}</button>
           {formMode !== 'sign-up' && formMode !== 'reset-request' && <button className="account-secondary" type="button" disabled={signingIn} onClick={() => changeForm('reset-request')}>Forgot password?</button>}
           {authMode === 'both' && <button className="account-secondary" type="button" disabled={signingIn} onClick={() => changeForm('choose')}>All sign-in options</button>}
         </div>

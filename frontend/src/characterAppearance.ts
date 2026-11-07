@@ -1,40 +1,40 @@
 export const characterColors = [
-  { id: 'red', name: 'Original red', hex: '#e8483f' },
-  { id: 'coral', name: 'Coral', hex: '#e8663f' },
-  { id: 'peach', name: 'Orange', hex: '#e8943f' },
-  { id: 'butter', name: 'Mustard', hex: '#d8b358' },
-  { id: 'mint', name: 'Sage', hex: '#70ad81' },
-  { id: 'sky', name: 'Blue', hex: '#3fa4e8' },
-  { id: 'lavender', name: 'Lavender', hex: '#a17bc4' },
-  { id: 'rose', name: 'Dusty rose', hex: '#d47796' },
-  { id: 'graphite', name: 'Graphite', hex: '#62666b' },
+  { id: 'red', name: 'Original red', hex: '#e8483f', price: 0 },
+  { id: 'coral', name: 'Coral', hex: '#e8663f', price: 50 },
+  { id: 'peach', name: 'Orange', hex: '#e8943f', price: 50 },
+  { id: 'butter', name: 'Mustard', hex: '#d8b358', price: 50 },
+  { id: 'mint', name: 'Sage', hex: '#70ad81', price: 50 },
+  { id: 'sky', name: 'Blue', hex: '#3fa4e8', price: 50 },
+  { id: 'lavender', name: 'Lavender', hex: '#a17bc4', price: 50 },
+  { id: 'rose', name: 'Dusty rose', hex: '#d47796', price: 50 },
+  { id: 'graphite', name: 'Graphite', hex: '#62666b', price: 50 },
 ] as const
 export const characterShapes = [
-  { id: 'hexagon', name: 'Hexagon', family: 'Geometric', pin: [-43, 56] },
-  { id: 'circle', name: 'Circle', family: 'Geometric', pin: [-43, 56] },
-  { id: 'square', name: 'Rounded square', family: 'Geometric', pin: [-53, 57] },
-  { id: 'squircle', name: 'Squircle', family: 'Geometric', pin: [-49, 57] },
-  { id: 'triangle', name: 'Soft triangle', family: 'Geometric', pin: [-43, 65] },
-  { id: 'blob', name: 'Blob', family: 'Playful', pin: [-43, 56] },
-  { id: 'cloud', name: 'Cloud', family: 'Playful', pin: [-65, -30] },
-  { id: 'flower', name: 'Flower', family: 'Playful', pin: [-38, 54] },
-  { id: 'star', name: 'Soft star', family: 'Playful', pin: [-40, 56] },
+  { id: 'hexagon', name: 'Hexagon', family: 'Geometric', pin: [-43, 56], price: 0 },
+  { id: 'circle', name: 'Circle', family: 'Geometric', pin: [-43, 56], price: 0 },
+  { id: 'square', name: 'Rounded square', family: 'Geometric', pin: [-53, 57], price: 0 },
+  { id: 'squircle', name: 'Squircle', family: 'Geometric', pin: [-49, 57], price: 75 },
+  { id: 'triangle', name: 'Soft triangle', family: 'Geometric', pin: [-43, 65], price: 75 },
+  { id: 'blob', name: 'Blob', family: 'Playful', pin: [-43, 56], price: 75 },
+  { id: 'cloud', name: 'Cloud', family: 'Playful', pin: [-65, -30], price: 100 },
+  { id: 'flower', name: 'Flower', family: 'Playful', pin: [-38, 54], price: 100 },
+  { id: 'star', name: 'Soft star', family: 'Playful', pin: [-40, 56], price: 100 },
 ] as const
 export const accessorySlots = [
   { id: 'glasses', name: 'Glasses' }, { id: 'face', name: 'Face details' }, { id: 'pin', name: 'Body pins' },
 ] as const
 export type AccessorySlot = typeof accessorySlots[number]['id']
 export const accessories = [
-  { id: 'round', name: 'Round specs', slot: 'glasses' },
-  { id: 'square-specs', name: 'Square specs', slot: 'glasses' },
-  { id: 'monocle', name: 'Monocle', slot: 'glasses' },
-  { id: 'blush', name: 'Rosy cheeks', slot: 'face' },
-  { id: 'freckles', name: 'Freckles', slot: 'face' },
-  { id: 'moustache', name: 'Tiny moustache', slot: 'face' },
-  { id: 'star-pin', name: 'Star pin', slot: 'pin' },
-  { id: 'heart-pin', name: 'Heart pin', slot: 'pin' },
-  { id: 'flower-pin', name: 'Flower pin', slot: 'pin' },
-] as const satisfies readonly { id: string; name: string; slot: AccessorySlot }[]
+  { id: 'round', name: 'Round specs', slot: 'glasses', price: 75 },
+  { id: 'square-specs', name: 'Square specs', slot: 'glasses', price: 75 },
+  { id: 'monocle', name: 'Monocle', slot: 'glasses', price: 150 },
+  { id: 'blush', name: 'Rosy cheeks', slot: 'face', price: 25 },
+  { id: 'freckles', name: 'Freckles', slot: 'face', price: 25 },
+  { id: 'moustache', name: 'Tiny moustache', slot: 'face', price: 75 },
+  { id: 'star-pin', name: 'Star pin', slot: 'pin', price: 250 },
+  { id: 'heart-pin', name: 'Heart pin', slot: 'pin', price: 250 },
+  { id: 'flower-pin', name: 'Flower pin', slot: 'pin', price: 250 },
+] as const satisfies readonly { id: string; name: string; slot: AccessorySlot; price: number }[]
 export type AccessoryId = typeof accessories[number]['id']
 export type CharacterAppearance = {
   name: string

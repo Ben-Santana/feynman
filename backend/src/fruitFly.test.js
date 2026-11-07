@@ -1,3 +1,4 @@
+import { activateAccount } from '../../frontend/src/accounts.ts';
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { FRUIT_FLY_MODEL, fruitFlyBuzz, fruitFlyResponse, spaceTapStreak } from '../../frontend/src/fruitFly.ts';
@@ -45,12 +46,18 @@ test('selection persists, bypasses AI locally, and never leaks the joke model in
   globalThis.localStorage = { getItem: key => values.get(key), setItem: (key, value) => values.set(key, value) };
   globalThis.window = { dispatchEvent: () => {} };
   t.after(() => { globalThis.localStorage = originalStorage; globalThis.window = originalWindow; });
+  activateAccount({ id: 'local', hosted: false });
+  t.after(() => activateAccount(null));
   saveAIPreferences({ provider: 'chatgpt', accountId: '', model: FRUIT_FLY_MODEL });
   assert.equal(aiPreferences().model, FRUIT_FLY_MODEL);
   assert.match(localAIResponse('/api/chat', {}).message, buzz);
   assert.ok(localAIResponse('/api/rubric', { concepts: [{ name: 'Energy', target: 'remember' }] }).concepts.length);
   assert.equal(aiHeaders()['X-Feynman-Model'], undefined);
   assert.equal(localAIResponse('/api/developer/prompts'), undefined);
+  activateAccount({ id: 'local', hosted: true });
+  assert.equal(localAIResponse('/api/chat', {}), undefined);
+  assert.deepEqual(aiHeaders(), {});
+  activateAccount({ id: 'local', hosted: false });
   saveAIPreferences({ provider: 'chatgpt', accountId: '', model: 'real-model' });
   assert.equal(localAIResponse('/api/chat', {}), undefined);
   assert.equal(aiHeaders()['X-Feynman-Model'], 'real-model');

@@ -1,5 +1,6 @@
 import { createHash } from 'node:crypto';
 import { checklistItems } from '../../frontend/src/rubricChecklist.js';
+import { rubricAttempts } from '../../frontend/src/rubricFallback.js';
 
 export const scoringPolicyVersion = 'rubric-points-v1';
 export const levels = ['remember', 'understand', 'apply', 'analyze'];
@@ -28,6 +29,47 @@ export function scoreJudgment(judgment, skipped = false) {
   return { credit: null, status: 'not_assessed' };
 }
 
+// A learner can't see the rubric, so leaving something out is never a mistake,
+// however the evaluator labelled that turn's result. Only a stated error or a
+// cited contradiction counts. This reads the stored judgment rather than the
+// event's status so chats recorded before this rule are scored the same way.
+// A skip hides the judgment's status from the event, so check those events too.
+export const statedMistake = (goal, judgment) => ['needs_work', 'skipped'].includes(goal.status) && (judgment?.status === 'flawed' || judgment?.contradictions?.length > 0);
+
+// The student-facing score looks at how an item was reached across the whole
+// session. Half credit means the student said something wrong and later fixed
+// it. Follow-up questions, reply counts and an earlier skip never reduce a
+// finished item.
+export function itemScore(status, history = []) {
+  if (status === 'skipped') return { score: 0, outcome: 'skipped' };
+  if (status !== 'demonstrated') return { score: null, outcome: 'unfinished' };
+  if (history.some(g => g.mistake)) return { score: 0.5, outcome: 'corrected' };
+  return { score: 1, outcome: 'correct' };
+}
+
+// What the report shows when a student hovers an item's score. A goal is
+// re-judged on later turns, so "got it" is the first success after the last
+// setback, not the latest event.
+export function goalProof(status, history = [], legacyEvidence = []) {
+  const lastSetback = history.findLastIndex(g => g.status === 'needs_work' || g.status === 'skipped');
+  const earned = status === 'demonstrated' ? history.slice(lastSetback + 1).find(g => g.status === 'demonstrated') : null;
+  const mistake = history.findLast(g => g.mistake);
+  // A saved reply holds the whole answer; a citation is only an excerpt of it.
+  const attempts = new Map();
+  for (const g of history) {
+    for (const e of g.evidence || []) if (!attempts.has(e.messageIndex)) attempts.set(e.messageIndex, e.quote);
+    if (g.reply) attempts.set(g.reply.messageIndex, g.reply.quote);
+  }
+  return {
+    gotAt: earned?.at || null, gotOnReply: earned?.replies || 0,
+    reason: earned?.reason || '', quote: (earned?.evidence || legacyEvidence).at(-1)?.quote || '',
+    replies: Math.max(0, ...history.map(g => g.replies || 0)),
+    mistake: mistake ? { reason: mistake.reason, quote: mistake.evidence?.at(-1)?.quote || '' } : null,
+    returnedAfterSkip: status === 'demonstrated' && history.some(g => g.status === 'skipped'),
+    attempts: history.length ? [...new Set([...attempts].sort(([a], [b]) => a - b).map(([, quote]) => quote))] : legacyEvidence.map(e => e.quote),
+  };
+}
+
 export function assessmentPayload(input, assessment, metadata) {
   const conceptId = input.assignmentConceptId || input.conceptId;
   const judgments = assessment.refined?.judgments || [];
@@ -48,6 +90,9 @@ export function assessmentPayload(input, assessment, metadata) {
       const assistanceUnknown = observations.some(o => o.assistance === 'unknown');
       return {
         id: criterionId(conceptId, input.level, index), credit, status,
+        replies: rubricAttempts(input.messages, criterion.aspect),
+        // Unclear answers get no citation, so keep the reply itself for the report.
+        ...(answer?.content?.trim() && rubricAttempts(input.messages.slice(-2), criterion.aspect) ? { reply: { messageIndex: input.messages.length - 1, quote: answer.content.trim().slice(0, 500) } } : {}),
         reason: criterion.skipped ? 'You skipped this goal.' : j?.blockers?.includes('invalid_evidence') ? 'The assessment could not verify the cited evidence. Try a new answer.' : j?.partialCredit?.awarded && credit === 0.5 ? j.partialCredit.reason : j?.reason || 'There is not enough verified evidence to assess this goal.',
         evidence: observations.map(o => ({ messageId: o.messageId, messageIndex: o.messageIndex, quote: o.quote })),
         opportunity: j?.opportunity || 'unknown', substantive,
@@ -57,8 +102,18 @@ export function assessmentPayload(input, assessment, metadata) {
         assisted, assistanceUnknown, independentCheck: j?.independentCheck || 'not_required', transferCheck: j?.transferCheck || 'not_required',
         assistanceCount: new Set([...observations.flatMap(o => o.assistanceMessageIndices || []), ...input.messages.flatMap((m, index) => m.assistance && m.rubricFocus === criterion.aspect ? [index] : [])]).size,
       };
-    }),
+    }).concat((assessment.skipRecovery || []).map(({ id, credit, status, mistake, reason, evidence }) => ({ id, credit, status, mistake, reason, evidence, replies: 0, opportunity: 'fair', substantive: false, firstEligible: false, assisted: false, assistanceUnknown: false, independentCheck: 'not_required', transferCheck: 'not_required', assistanceCount: 0 }))),
   };
+}
+
+// Items skipped at earlier levels of this concept that are still open. The
+// current level's evaluation already covers its own skips.
+export function openSkippedGoals(context, conceptId, level) {
+  return assignedGoals(context.configuration).filter(goal => {
+    if (goal.conceptId !== conceptId || levels.indexOf(goal.level) >= levels.indexOf(level)) return false;
+    const history = context.events.flatMap(event => event.payload.goals.filter(g => g.id === goal.id));
+    return history.findLast(g => g.status !== 'not_assessed')?.status === 'skipped';
+  });
 }
 
 function score(goals, field) {
@@ -67,9 +122,16 @@ function score(goals, field) {
   return { percent: scored.length ? Math.round(points / scored.length * 1000) / 10 : null, points, scored: scored.length, assigned: goals.length, coverage: goals.length ? Math.round(scored.length / goals.length * 1000) / 10 : 0 };
 }
 
+// Unfinished items earn nothing but stay in the total, so finishing early
+// cannot raise a score.
+function pointsSummary(goals) {
+  const earned = goals.reduce((sum, g) => sum + (g.score ?? 0), 0);
+  return { earned, possible: goals.length, percent: goals.length ? Math.round(earned / goals.length * 1000) / 10 : null, unfinished: goals.filter(g => g.score === null).length };
+}
+
 export function buildTopicReport(context, sessionId, finishMode) {
   const goals = assignedGoals(context.configuration).map(goal => {
-    const history = context.events.flatMap(event => event.payload.goals.filter(g => g.id === goal.id).map(g => ({ ...g, eventId: event.id, sequence: event.sequence, at: event.created_at, versions: event.payload.versions })));
+    const history = context.events.flatMap(event => event.payload.goals.flatMap((g, index) => g.id !== goal.id ? [] : [{ ...g, mistake: g.mistake ?? statedMistake(g, event.payload.assessment?.refined?.judgments?.find(j => j.criterionId === `criterion_${index + 1}`)), eventId: event.id, sequence: event.sequence, at: event.created_at, versions: event.payload.versions }]));
     const legacyConcept = context.legacyDocument?.concepts?.find(c => c.id === goal.conceptId);
     const legacy = Boolean(legacyConcept?.messages?.some(m => m.role === 'user'));
     const first = history.find(g => g.firstEligible);
@@ -82,11 +144,13 @@ export function buildTopicReport(context, sessionId, finishMode) {
       const criterion = legacyConcept.assessments?.[goal.level]?.criteria?.find(c => c.aspect === goal.text);
       if (criterion) legacyEvidence = { status: criterion.skipped ? 'skipped' : criterion.status === 'supported' && criterion.evidence?.length ? 'demonstrated' : criterion.status === 'flawed' ? 'needs_work' : 'not_assessed', evidence: criterion.evidence || [], reason: 'Saved legacy evidence; no research score is available.' };
     }
-    return { ...goal, status: latest?.status || legacyEvidence?.status || 'not_assessed',
+    const status = latest?.status || legacyEvidence?.status || 'not_assessed';
+    return { ...goal, status, ...itemScore(status, history),
       firstCredit, finalCredit: latest?.credit ?? null,
       firstLimitation: legacy ? 'legacy' : first?.assisted ? 'assistance_before_first_attempt' : first?.assistanceUnknown ? 'unknown_assistance_provenance' : first && first.credit === null ? 'unscorable_first_attempt' : !first ? 'no_fair_attempt' : null,
       reason: latest?.reason || legacyEvidence?.reason || 'This goal has not received a scorable assessment.',
       evidence: latest?.evidence || legacyEvidence?.evidence || [],
+      proof: goalProof(status, history, legacyEvidence?.evidence),
       firstEventId: first?.eventId || null, finalEventId: latest?.eventId || null,
       firstAt: first?.at || null, finalAt: latest?.at || null, attempts: history.filter(g => g.firstEligible).length,
       assisted: latest?.assisted || false, assistanceUnknown: latest?.assistanceUnknown || false, assistanceCount: Math.max(0, ...history.map(g => g.assistanceCount || 0)),
@@ -113,6 +177,7 @@ export function buildTopicReport(context, sessionId, finishMode) {
     assistanceCount: new Set(context.events.flatMap(e => e.payload.assistanceIds || [])).size,
     watermark: Math.max(0, ...context.events.map(e => Number(e.sequence))),
     demonstrated: goals.filter(g => g.status === 'demonstrated').length, assigned: goals.length,
+    score: pointsSummary(goals), concepts: context.configuration.concepts.map(concept => ({ id: concept.id, name: concept.name, ...pointsSummary(goals.filter(g => g.conceptId === concept.id)) })),
     first, final, fullyCovered: first.scored === goals.length && final.scored === goals.length && goals.length > 0,
     goals, priorities, levelChecks };
 }

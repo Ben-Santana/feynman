@@ -1,15 +1,26 @@
-import { useCallback, useId, useLayoutEffect, useRef, useState } from 'react'
+import { useCallback, useId, useLayoutEffect, useRef, useState, type ReactNode } from 'react'
 import type { MathfieldElement } from 'mathlive'
 import { draftEquationLine, equationDraftIssue, messageLimit, replaceDraft, splitComposerDraft } from '../mathDraft'
 import { draftDomText, draftSelection, equationRange, focusDraft } from './mathComposerDom'
 import EquationTools from './EquationEditor'
 import { createEquationField } from './inlineEquation'
+import { ComposerMenu } from './ComposerMenu'
 import './ChatComposer.css'
 import { TooltipButton } from './TooltipButton'
 
-export function ChatComposer({ value, onChange, onSend, busy, className }: {
-  value: string; onChange: (value: string) => void; onSend: () => void; busy: boolean; className: string
+function EquationIcon({ size }: { size: number }) {
+  return <svg viewBox="0 0 28 28" width={size} height={size} fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+    <path d="M4 24c4 0 5-3 6-8l2-9c1-4 4-4 6-2M7 11h9" />
+    <path d="M17 13c3 0 3 8 7 8m0-8c-3 0-4 8-8 8" />
+  </svg>
+}
+
+export function ChatComposer({ value: draft, onChange, onSend, busy, className, sendLabel = 'Send', menuActions }: {
+  value: string; onChange: (value: string) => void; onSend: () => void; busy: boolean; className: string; sendLabel?: string
+  menuActions?: (close: () => void) => ReactNode
 }) {
+  // Hide the submitted draft while waiting; the caller keeps it for retries.
+  const value = busy ? '' : draft
   const [activeField, setActiveField] = useState<MathfieldElement | null>(null)
   const [toolbarField, setToolbarField] = useState<MathfieldElement | null>(null)
   const [error, setError] = useState('')
@@ -23,7 +34,7 @@ export function ChatComposer({ value, onChange, onSend, busy, className }: {
   useLayoutEffect(() => { callbacks.current = { onChange, busy } }, [onChange, busy])
   const issue = equationDraftIssue(value)
   const warning = attemptedSend ? issue || (value.length > messageLimit ? 'Your message is too long. Shorten it before sending.' : '') || error : ''
-  const showSend = busy || Boolean(value.trim())
+  const showSend = Boolean(value.trim())
   const showToolbar = Boolean(activeField) && !busy && !warning
   useLayoutEffect(() => { setAttemptedSend(false) }, [value])
 
@@ -42,7 +53,7 @@ export function ChatComposer({ value, onChange, onSend, busy, className }: {
   }, [])
   const commitInput = useCallback(() => {
     const host = editor.current
-    if (!host || composing.current) return
+    if (!host || composing.current || callbacks.current.busy) return
     const next = draftDomText(host)
     if (!next) host.replaceChildren()
     callbacks.current.onChange(next)
@@ -142,6 +153,10 @@ export function ChatComposer({ value, onChange, onSend, busy, className }: {
     } catch (reason) { pendingEquation.current = null; setError((reason as Error).message) }
   }
   return <form className={`${className} math-composer`} onSubmit={event => { event.preventDefault(); attemptSend() }}>
+    <ComposerMenu onOpen={rememberCursor}>{close => <>
+      <button type="button" disabled={busy} onClick={() => { close(); addEquation() }}><EquationIcon size={20} />Add equation</button>
+      {menuActions?.(close)}
+    </>}</ComposerMenu>
     <div className="math-composer-body">
       {warning && <p id={warningId} className="equation-hint" role="alert">{warning}</p>}
       {toolbarField && <div className="equation-tools-slot" data-visible={showToolbar} inert={!showToolbar} aria-hidden={!showToolbar}><EquationTools field={toolbarField} /></div>}
@@ -179,13 +194,13 @@ export function ChatComposer({ value, onChange, onSend, busy, className }: {
         }} />
     </div>
     <TooltipButton type="button" className="insert-equation" disabled={busy} aria-label="Add equation" tooltip="Add equation" onMouseDown={event => { rememberCursor(); event.preventDefault() }} onClick={addEquation}>
-      <svg viewBox="0 0 28 28" width="26" height="26" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-        <path d="M4 24c4 0 5-3 6-8l2-9c1-4 4-4 6-2M7 11h9" />
-        <path d="M17 13c3 0 3 8 7 8m0-8c-3 0-4 8-8 8" />
-      </svg>
+      <EquationIcon size={26} />
     </TooltipButton>
-    <div className="composer-send-slot" data-visible={showSend} data-busy={busy} inert={!showSend} aria-hidden={!showSend}>
-      <button type="submit" className="send-button" disabled={busy}>{busy ? 'Thinking' : 'Send'}</button>
+    <div className="composer-send-slot" data-visible={showSend} inert={!showSend} aria-hidden={!showSend}>
+      <button type="submit" className="send-button" disabled={!showSend} aria-label={sendLabel}>
+        <span className="send-label">{sendLabel}</span>
+        <svg className="send-icon" viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" strokeWidth="2.6" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d={sendLabel === 'Save' ? 'M5 13l4 4L19 7' : 'M12 19V5M6 11l6-6 6 6'} /></svg>
+      </button>
     </div>
   </form>
 }

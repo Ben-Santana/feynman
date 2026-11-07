@@ -1,3 +1,4 @@
+import { activateAccount } from '../../frontend/src/accounts.ts';
 import { testAccountService, testAuthorization } from './accessTestHelper.js';
 import test from 'node:test';
 import assert from 'node:assert/strict';
@@ -16,7 +17,7 @@ class TestProvider extends LanguageModelProvider {
   async listModels() { return [{ slug: 'test-default', name: 'Test default' }, { slug: 'test-selected', name: 'Test selected' }]; }
   async generateStructured(request) { return this.generate(request); }
 }
-const output = { name: 'respond_to_student', description: 'Return result.', schema: { type: 'object', properties: { message: { type: 'string' } }, required: ['message'], additionalProperties: false } };
+const output = { name: 'reply_to_teacher', description: 'Return result.', schema: { type: 'object', properties: { message: { type: 'string' } }, required: ['message'], additionalProperties: false } };
 const messages = [{ role: 'user', content: [{ type: 'text', text: 'Study this' }, { type: 'image', mimeType: 'image/png', data: 'aGVsbG8=' }, { type: 'document', mimeType: 'application/pdf', data: 'cGRm' }] }];
 const chatgpt = { accounts: () => [], close() {}, hasPendingRegistration: () => false };
 
@@ -74,7 +75,7 @@ test('common timeouts preserve long-request budgets and caller cancellation', as
   const budgets = [];
   t.mock.method(AbortSignal, 'timeout', ms => { budgets.push(ms); return AbortSignal.abort(new DOMException('private detail', 'TimeoutError')); });
   const provider = new TestProvider({ generate: async () => { assert.fail('An aborted request must never call the provider'); } });
-  for (const name of ['respond_to_student', 'extract_concepts', 'suggest_concepts', 'generate_rubric']) {
+  for (const name of ['reply_to_teacher', 'extract_concepts', 'suggest_concepts', 'generate_rubric']) {
     await assert.rejects(createProviderQuery(provider)('', [], { ...output, name }), error => error.status === 504 && !error.message.includes('private detail'));
   }
   assert.deepEqual(budgets, [60_000, 180_000, 180_000, 180_000]);
@@ -118,7 +119,7 @@ test('a third registered API supports discovery, health, models, rubric, and cha
   assert.equal(rubric.status, 200); assert.deepEqual(rubric.data.items, ['Explains conservation of energy.']);
   const chat = await invoke(server, { method: 'POST', url: '/api/chat', body: { topic: 'Energy', level: 'apply', learningType: 'theoretical', aspects: ['Explains conservation of energy.'], messages: [] } });
   assert.equal(chat.status, 200); assert.equal(chat.data.message, 'How would you explain this scenario?');
-  assert.deepEqual(requests.map(request => request.response.name), ['generate_rubric', 'respond_to_student']);
+  assert.deepEqual(requests.map(request => request.response.name), ['generate_rubric', 'reply_to_teacher']);
   assert.equal((await invoke(server, { provider: '' })).data.provider, 'anthropic');
   assert.equal((await invoke(server, { provider: 'removed-api' })).status, 400);
   assert.equal(requests.length, 2);
@@ -141,7 +142,9 @@ test('browser preferences preserve existing and third-party provider IDs and nev
     if (originalStorage) Object.defineProperty(globalThis, 'localStorage', originalStorage); else delete globalThis.localStorage;
     if (originalWindow) Object.defineProperty(globalThis, 'window', originalWindow); else delete globalThis.window;
   });
-  assert.equal(aiPreferences().provider, 'chatgpt');
+  activateAccount({ id: 'local', hosted: false });
+  t.after(() => activateAccount(null));
+  assert.equal(aiPreferences().provider, 'anthropic');
   for (const provider of ['chatgpt', 'anthropic', 'test-api', 'removed-api']) {
     const prefs = { provider, accountId: 'saved-account', model: 'saved-model' };
     saveAIPreferences(prefs); assert.deepEqual(aiPreferences(), prefs);
@@ -252,7 +255,7 @@ test('conversation tracing includes actual calls and preserves failed calls only
   assert.equal(call.role, 'learner');
   assert.ok(call.request.instructions.includes('Energy'));
   assert.ok(call.request.messages.length);
-  assert.equal(call.request.response.name, 'respond_to_student');
+  assert.equal(call.request.response.name, 'reply_to_teacher');
   assert.deepEqual(call.response, { message: 'Explain your prediction?', expression: 'confused' });
   assert.ok(call.durationMs >= 0);
   fail = true;

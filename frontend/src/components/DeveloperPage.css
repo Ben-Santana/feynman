@@ -87,7 +87,7 @@
 .developer-conversation-heading { display: flex; gap: 16px; justify-content: space-between; align-items: center; padding: 20px 24px; border-bottom: 1px solid var(--border); }
 .developer-conversation-heading h2 { font-size: 1.125rem; font-weight: 500; overflow-wrap: anywhere; }
 .developer-conversation-heading p { margin-top: 5px; font-size: 0.75rem; color: var(--muted-foreground); }
-.developer-chat-log { height: 370px; overflow: auto; overscroll-behavior: contain; padding: 24px; scrollbar-width: thin; }
+.developer-chat-log { height: 370px; overflow-x: hidden; overflow-y: auto; overscroll-behavior: contain; padding: 24px; scrollbar-width: thin; }
 .developer-chat-log .chat-message.user { background: var(--surface); }
 .developer-chat-log .chat-message-copy > span { font-size: 0.625rem; }
 .developer-chat-log .chat-message-text { font-size: 0.875rem; }

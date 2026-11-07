@@ -18,14 +18,13 @@
 .course-join-dialog .course-code-inputs input:focus { outline: 2px solid var(--primary); outline-offset: 2px; }
 .course-card-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(100%, 260px), 1fr)); gap: 20px; }
 .course-card-wrap { position: relative; min-width: 0; }
-.courses-page button.course-card { display: flex; flex-direction: column; width: 100%; height: 100%; min-width: 0; padding: 0; overflow: hidden; text-align: left; border-radius: 12px; background: var(--background); transition: box-shadow .15s, border-color .15s; }
-.course-card:hover { border-color: var(--primary); box-shadow: 0 4px 20px #00000008; }
+.courses-page button.course-card { display: flex; flex-direction: column; width: 100%; height: 100%; min-width: 0; padding: 0; overflow: hidden; text-align: left; border-radius: 12px; background: var(--background); box-shadow: 0 2px 8px #00000008; transition: box-shadow .15s, border-color .15s; }
+.courses-page button.course-card:hover { border-color: var(--primary); box-shadow: 0 4px 20px #00000008; }
 .course-card-body { display: grid; gap: 8px; width: 100%; padding: 22px; padding-right: 48px; }
 .course-card strong { font-size: 1.0625rem; font-weight: 500; overflow-wrap: anywhere; }
 .course-card-body > span { color: var(--muted-foreground); font-size: 0.75rem; }
-.courses-page .course-menu-trigger { position: absolute; top: 10px; right: 10px; display: grid; place-items: center; width: 30px; height: 30px; padding: 5px; border-color: color-mix(in srgb, var(--foreground) 8%, transparent); background: color-mix(in srgb, var(--background) 90%, transparent); backdrop-filter: blur(8px); }
-.course-menu-trigger svg { width: 18px; height: 18px; }
-.courses-page .course-menu-trigger:hover, .courses-page .course-menu-trigger[aria-expanded="true"] { background: var(--surface); }
+.courses-page .course-menu-trigger { position: absolute; top: 10px; right: 10px; display: grid; place-items: center; width: 30px; height: 30px; padding: 5px; border: 0; background: transparent; color: #fff; }
+.course-menu-trigger svg { width: 18px; height: 18px; filter: drop-shadow(0 1px 1px #000); }
 .course-card-pinned { position: absolute; top: 13px; left: 13px; display: grid; place-items: center; width: 24px; height: 24px; border-radius: 6px; background: var(--background); color: var(--primary); }
 .course-card-pinned svg { width: 15px; height: 15px; }
 .course-card-wrap:has(.course-card > .course-card-body:first-child) :is(.course-menu-trigger, .course-card-pinned) { top: 16px; }
@@ -39,6 +38,17 @@
 .course-card-menu button.course-menu-delete:is(:hover, :focus-visible) { background: var(--red-soft); }
 .course-card-menu svg { flex: none; width: 16px; height: 16px; }
 .course-list { display: grid; gap: 12px; }
+.course-list-divider { width: 100%; height: 1px; margin: 8px 0; border: 0; background: var(--dashboard-line); }
+.course-scores { display: grid; grid-template-columns: minmax(0, 1fr); gap: 32px; }
+.course-scores h3 { margin-bottom: 12px; }
+.course-score-table-wrap { overflow-x: auto; border: 1px solid var(--dashboard-line); border-radius: 10px; }
+.course-score-table { width: 100%; min-width: 560px; border-collapse: collapse; font-size: 0.8125rem; }
+.course-score-table :is(th, td) { padding: 12px 16px; border-bottom: 1px solid var(--dashboard-line); text-align: right; font-weight: 400; white-space: nowrap; }
+.course-score-table tbody tr:last-child :is(th, td) { border-bottom: 0; }
+.course-score-table thead th { color: var(--muted-foreground); font-size: 0.75rem; }
+.course-score-table :is(thead th, tbody th):first-child { width: 100%; text-align: left; white-space: normal; }
+.courses-page .course-score-table button { padding: 0; border: 0; background: transparent; font-weight: 500; text-align: left; overflow-wrap: anywhere; }
+.courses-page .course-score-table button:hover { color: var(--primary-hover); }
 .course-breadcrumb { display: flex; align-items: center; justify-content: space-between; gap: 16px; margin-bottom: 24px; }
 .courses-page .course-breadcrumb button.course-leave-button { color: var(--red); }
 .courses-page .course-breadcrumb button { display: inline-flex; align-items: center; gap: 5px; padding: 0; border: 0; background: transparent; color: var(--muted-foreground); font-size: 0.8125rem; }
@@ -185,7 +195,6 @@
 .course-rubric-levels li { margin-top: 8px; overflow-wrap: anywhere; }
 @media (max-width: 700px) {
   .courses-page { padding: 28px 20px; }
-  .courses-page .dashboard-session-heading { align-items: flex-start; flex-direction: column; }
   .course-title-row { margin-top: 22px; gap: 12px; }
   .course-title-row h1 { font-size: 1.875rem; }
   .course-title-button svg { opacity: .6; width: 15px; height: 15px; margin-left: 8px; }
@@ -210,15 +219,13 @@
 @media (prefers-reduced-motion: reduce) { .course-enrollment-toggle, .course-enrollment-labels { transition: none !important; } }
 
 .course-library-toolbar { margin-bottom: 28px; }
-.course-library-filters { display: grid; grid-template-columns: minmax(160px, 1fr) minmax(180px, 260px); gap: 16px; }
-.course-library-filters label, .course-subject-label { font-size: .75rem; color: var(--muted-foreground); }
+.course-subject-label { font-size: .75rem; color: var(--muted-foreground); }
 .courses-page .course-star-button { display: inline-flex; align-items: center; justify-content: center; gap: 6px; min-height: 34px; padding: 6px 10px; color: var(--muted-foreground); font-size: .75rem; }
 .course-star-button svg { flex: none; width: 17px; height: 17px; }
 .course-card-wrap > .course-star-button { position: absolute; right: 14px; bottom: 16px; }
 .course-card-wrap:has(> .course-star-button) .course-card-body { padding-right: 78px; }
 .course-sharing-dialog > form > p { color: var(--muted-foreground); font-size: .8125rem; line-height: 1.6; }
 .course-sharing-dialog .course-edit-footer { flex-wrap: wrap; }
-@media (max-width: 600px) { .course-library-filters { grid-template-columns: minmax(0, 1fr); } }
 
 .course-header-community { display: flex; align-items: center; gap: 12px; margin-left: auto; min-width: 0; }
 .course-header-community > span { overflow-wrap: anywhere; }

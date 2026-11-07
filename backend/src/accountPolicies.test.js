@@ -472,4 +472,98 @@ test('account migration enforces database and storage permissions in PostgreSQL'
     assert.deepEqual((await db.query('select role from public.user_roles')).rows, [{ role: 'student' }]);
     assert.deepEqual((await db.query('select approved, consent_required from public.profiles')).rows, [{ approved: true, consent_required: true }]);
   });
+  await t.test('legacy email students and first-time WPI instructor applications', async () => {
+    const applicant = 'abcdefab-1234-4234-8234-123456789005';
+    const learner = 'abcdefab-1234-4234-8234-123456789006';
+    const outside = 'abcdefab-1234-4234-8234-123456789007';
+    await db.exec('reset role');
+    for (const migration of ['202611050003_approve_linked_wpi_accounts', '202611050006_account_role_choice', '202611050007_instructor_inbox']) {
+      await db.exec(await readFile(new URL(`../../supabase/migrations/${migration}.sql`, import.meta.url), 'utf8'));
+    }
+    await as(openAccount, 'authenticated', 'password');
+    assert.equal((await db.query('select public.account_signed_in() as allowed')).rows[0].allowed, true);
+    assert.deepEqual((await db.query('select role from public.user_roles')).rows, [{ role: 'student' }]);
+    await assert.rejects(db.query('select public.choose_wpi_account_role(true)'), error => error.code === '42501');
+
+    await db.exec('reset role');
+    await db.query("update public.account_auth_settings set mode = 'email'");
+    await signup(outside, 'outside@example.net', undefined);
+    await db.query("update public.account_auth_settings set mode = 'both'");
+    await signup(applicant, 'applicant@wpi.edu', undefined, true, 'azure');
+    await signup(learner, 'learner@wpi.edu', undefined, true, 'azure');
+    await db.query("insert into auth.identities values ($1, 'azure'), ($2, 'azure'), ($3, 'email')", [applicant, learner, outside]);
+    await as(outside, 'authenticated', 'password');
+    assert.deepEqual((await db.query('select role from public.user_roles')).rows, [{ role: 'instructor' }]);
+
+    async function inbox(target = null) {
+      const { rows } = await db.query('select public.admin_instructor_inbox($1, 1, $2) as result', [student, target]);
+      return rows[0].result;
+    }
+
+    await assert.rejects(inbox(), error => error.code === '42501');
+    await as('', 'service_role');
+    await assert.rejects(db.query('select public.admin_instructor_inbox($1, 1)', [instructor]), error => error.code === '42501');
+    const before = await inbox();
+    assert.ok(before.users.some(user => user.id === outside));
+    assert.ok(!before.users.some(user => user.id === applicant || user.id === learner));
+
+    async function profile() {
+      return (await db.query('select approved, wpi_role_choice_pending from public.profiles')).rows[0];
+    }
+    await as(applicant);
+    assert.deepEqual(await profile(), { approved: true, wpi_role_choice_pending: true });
+    await db.query('select public.choose_wpi_account_role(true)');
+    await db.query('select public.choose_wpi_account_role(false)');
+    assert.deepEqual(await profile(), { approved: false, wpi_role_choice_pending: false });
+    assert.deepEqual((await db.query('select role from public.user_roles')).rows, [{ role: 'instructor' }]);
+
+    await db.exec('reset role');
+    await db.query("delete from auth.identities where user_id = $1", [applicant]);
+    await db.query("insert into auth.identities values ($1, 'azure')", [applicant]);
+    await as(applicant);
+    assert.deepEqual(await profile(), { approved: false, wpi_role_choice_pending: false });
+    await as('', 'service_role');
+    const pending = await inbox();
+    assert.equal(pending.total, before.total + 1);
+    assert.equal(pending.users.filter(user => user.id === applicant).length, 1);
+    assert.deepEqual((await inbox(applicant)).users.map(user => [user.id, user.approved]), [[applicant, false]]);
+    await db.query('select public.admin_approve_account($1, $2)', [student, applicant]);
+    assert.equal((await inbox()).total, before.total);
+    assert.equal((await inbox(applicant)).users[0].approved, true);
+    await as(applicant);
+    assert.deepEqual(await profile(), { approved: true, wpi_role_choice_pending: false });
+
+    await as(learner);
+    await db.query('select public.choose_wpi_account_role(false)');
+    await db.query('select public.choose_wpi_account_role(true)');
+    assert.deepEqual(await profile(), { approved: true, wpi_role_choice_pending: false });
+    assert.deepEqual((await db.query('select role from public.user_roles')).rows, [{ role: 'student' }]);
+    await as('', 'service_role');
+    assert.equal((await inbox()).total, before.total);
+  });
+  await t.test('students retain access while admins review their professor applications', async () => {
+    await db.exec('reset role');
+    await db.exec(await readFile(new URL('../../supabase/migrations/202611050008_student_instructor_applications.sql', import.meta.url), 'utf8'));
+    await as(openAccount, 'authenticated', 'password');
+    await db.query('select public.apply_as_instructor()');
+    await db.query('select public.apply_as_instructor()');
+    assert.deepEqual((await db.query('select approved, instructor_application_pending from public.profiles')).rows,
+      [{ approved: true, instructor_application_pending: true }]);
+    assert.deepEqual((await db.query('select role from public.user_roles')).rows, [{ role: 'student' }]);
+    assert.equal((await db.query('select public.account_allowed() as allowed')).rows[0].allowed, true);
+    await assert.rejects(db.query('select public.admin_approve_account($1, $2)', [openAccount, openAccount]), error => error.code === '42501');
+
+    await as('', 'service_role');
+    async function inbox() {
+      return (await db.query('select public.admin_instructor_inbox($1, 1) as result', [student])).rows[0].result.users;
+    }
+    assert.equal((await inbox()).filter(user => user.id === openAccount).length, 1);
+    const approval = await db.query('select public.admin_approve_account($1, $2) as result', [student, openAccount]);
+    assert.deepEqual(approval.rows[0].result, { id: openAccount, approved: true, instructor_application_pending: false, role: 'instructor' });
+    assert.equal((await inbox()).some(user => user.id === openAccount), false);
+
+    await as(openAccount, 'authenticated', 'password');
+    await assert.rejects(db.query('select public.apply_as_instructor()'), error => error.code === '42501');
+  });
+
 });

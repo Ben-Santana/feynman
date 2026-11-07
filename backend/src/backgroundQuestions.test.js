@@ -49,7 +49,7 @@ test('ordinary chat probes, returns, and completes only after original-task evid
   const final = { ...input, messages: [...next.messages, { role: 'assistant', content: returned.message, background: returned.background }, { role: 'user', content: 'Constant velocity means zero acceleration, so the upward drag balances gravity and the net force is zero.' }] };
   const done = await chat(final, async (_, messages, tool) => { calls.push(tool.name); return evaluation(messages, { supported: true }); });
   assert.equal(done.assessment.complete, true);
-  assert.deepEqual(calls, ['evaluate_refined', 'respond_to_student', 'evaluate_refined', 'respond_to_student', 'evaluate_refined']);
+  assert.deepEqual(calls, ['evaluate_refined', 'reply_to_teacher', 'evaluate_refined', 'reply_to_teacher', 'evaluate_refined']);
 });
 
 test('two probes force a return or exit and prevent repeated detours for the same task', () => {
@@ -77,7 +77,7 @@ test('invalid third-probe generation retries the response without repeating eval
     return { message: responses++ ? 'Would you like to revisit constant speed or request help?' : 'What is the relationship between acceleration and net force?', expression: 'attentive', strategyChoice: choice(input, responses === 1 ? 'probe' : 'exit') };
   });
   assert.equal(result.background.phase, 'exit');
-  assert.deepEqual(names, ['evaluate_refined', 'respond_to_student', 'respond_to_student']);
+  assert.deepEqual(names, ['evaluate_refined', 'reply_to_teacher', 'reply_to_teacher']);
 });
 
 test('a volunteered solution while answering a probe can complete without a redundant return', async () => {

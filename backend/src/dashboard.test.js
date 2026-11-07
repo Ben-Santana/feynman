@@ -14,10 +14,10 @@ const session = (id, { started = true, passed = 1, day = 15, moduleId, courseId 
 });
 const empty = { courses: [], modules: [], enrollments: [] };
 
-test('incomplete sessions exclude completed work and sort by latest activity without mutating inputs', () => {
+test('in-progress sessions exclude completed work and setup tasks and sort by latest activity without mutating inputs', () => {
   const sessions = [session('older'), session('complete', { passed: 3, day: 18 }), session('draft', { started: false, day: 17 }), session('newer', { day: 16 })];
   const result = dashboardData(student, sessions, empty);
-  assert.deepEqual(result.incomplete.map(record => record.id), ['draft', 'newer', 'older']);
+  assert.deepEqual(result.inProgress.map(record => record.id), ['newer', 'older']);
   assert.deepEqual(result.todos.map(todo => todo.session.id), ['draft']);
   assert.deepEqual(sessions.map(record => record.id), ['older', 'complete', 'draft', 'newer']);
 });
@@ -56,5 +56,5 @@ test('session progress counts target levels, caps over-completed concepts, and h
   assert.equal(sessionProgress(record), 50);
   assert.equal(sessionProgress({ ...record, started: false }), 0);
   assert.equal(sessionProgress({ ...record, concepts: [] }), 0);
-  assert.deepEqual(dashboardData(student, [], empty), { incomplete: [], todos: [], recentClasses: [] });
+  assert.deepEqual(dashboardData(student, [], empty), { inProgress: [], todos: [], recentClasses: [] });
 });

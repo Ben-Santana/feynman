@@ -4,7 +4,7 @@ export type UserRole = 'student' | 'instructor' | 'admin'
 export type AccountSignInMethod = 'email' | 'wpi'
 export type AccountAuthMode = AccountSignInMethod | 'both'
 export type AccountProfile = { id: string; email: string; display_name: string; created_at: string; updated_at: string; last_login_at: string | null }
-export type Account = AccountProfile & { role: UserRole; approved: boolean; consent_required?: boolean }
+export type Account = AccountProfile & { role: UserRole; approved: boolean; wpi_role_choice_pending?: boolean; instructor_application_pending?: boolean; consent_required?: boolean; hosted?: boolean }
 let client: SupabaseClient | undefined
 let active: Account | null = null
 let lifecycle = new AbortController()

@@ -3,19 +3,12 @@ import { accountSignal, type Account } from '../accounts'
 import { canTeachCourses } from '../coursePermissions'
 import type { CharacterAppearance } from '../characterAppearance'
 import { loadDashboardCourses, type ModuleSession } from '../courseStore'
-import { dashboardData, sessionProgress, type DashboardCourses } from '../dashboardData'
+import { activityDate, dashboardData, sessionProgress, type DashboardCourses } from '../dashboardData'
+import { useFittedCount } from '../useFittedCount'
 import { DashboardHeader } from './DashboardHeader'
 import { CourseCover } from './CourseCover'
 
 const emptyCourses: DashboardCourses = { courses: [], enrollments: [], modules: [] }
-const dateFormat = new Intl.DateTimeFormat(undefined, { month: 'short', day: 'numeric' })
-function activityDate(timestamp: number) {
-  const date = new Date(timestamp)
-  const today = new Date()
-  if (date.toDateString() === today.toDateString()) return 'Today'
-  today.setDate(today.getDate() - 1)
-  return date.toDateString() === today.toDateString() ? 'Yesterday' : dateFormat.format(date)
-}
 function Arrow() {
   return <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="M4 10h12m-5-5 5 5-5 5" /></svg>
 }
@@ -38,42 +31,49 @@ export function DashboardPage({ account, appearance, sessions, onOpenSession, on
       .finally(() => { if (!disposed && !signal.aborted) setLoading(false) })
     return () => { disposed = true; window.removeEventListener('focus', refresh) }
   }, [account.id, account.role, version])
-  const { incomplete, todos, recentClasses } = dashboardData(account, sessions, courses)
+  const { inProgress, todos, recentClasses } = dashboardData(account, sessions, courses)
   const instructor = canTeachCourses(account.role)
+  const visibleTodos = todos.slice(0, 5)
+  const visibleSessions = inProgress.slice(0, 4)
+  const visibleClasses = recentClasses.slice(0, 4)
+  const [suggestedLimit, suggestedList] = useFittedCount<HTMLUListElement>(visibleTodos.length + visibleSessions.length)
+  const [classLimit, classList] = useFittedCount<HTMLUListElement>(visibleClasses.length)
+  const suggestedTotal = todos.length + inProgress.length
+  const shownTodos = visibleTodos.slice(0, suggestedLimit)
+  const shownSessions = visibleSessions.slice(0, suggestedLimit - shownTodos.length)
 
   return <section className="dashboard-home" aria-label="Dashboard">
-    <DashboardHeader appearance={appearance} onCustomizeAvatar={onCustomizeAvatar} onCreateSession={onCreateSession} />
+    <DashboardHeader appearance={appearance} onCustomizeAvatar={onCustomizeAvatar} onCreateSession={onCreateSession} onCreateCourse={instructor ? () => onNavigate('/courses/new') : undefined} />
     <div className="dashboard-body">
     {error && <p className="chat-error" role="alert">{error}</p>}
     {courseError && <div className="dashboard-load-error" role="alert"><p>{courseError}</p><button type="button" className="dashboard-text-link" onClick={() => setVersion(value => value + 1)}>Retry</button></div>}
     <div className="dashboard-overview">
       <div className="dashboard-primary-column">
-        <section className="dashboard-section" aria-labelledby="dashboard-todos-title" aria-busy={loading}>
-          <div className="dashboard-section-heading"><h2 id="dashboard-todos-title">To do <span className="dashboard-count">{todos.length}</span></h2></div>
-          {todos.length > 0 ? <ul className="dashboard-todo-list">{todos.slice(0, 5).map(todo => <li key={todo.id}>
-            <button type="button" className="dashboard-todo-row" onClick={() => todo.session ? onOpenSession(todo.session) : onNavigate(todo.path)}>
-              <span className="dashboard-todo-mark" aria-hidden="true" />
-              <span className="dashboard-row-copy"><strong>{todo.title}</strong><span>{todo.context}</span></span>
-              <span className="dashboard-row-action">{todo.action}<Arrow /></span>
-            </button>
-          </li>)}</ul> : <p className="dashboard-empty" role="status">{loading ? 'Loading class tasks…' : courseError ? 'Class tasks are unavailable.' : 'No tasks to do.'}</p>}
-          {todos.length > 5 && <p className="dashboard-list-note">Showing the 5 latest tasks. <button type="button" className="dashboard-text-link" onClick={() => onNavigate('/sessions')}>Sessions</button> · <button type="button" className="dashboard-text-link" onClick={() => onNavigate('/courses')}>Courses</button></p>}
-        </section>
-        <section className="dashboard-section" aria-labelledby="dashboard-continue-title">
-          <div className="dashboard-section-heading"><h2 id="dashboard-continue-title">Incomplete sessions <span className="dashboard-count">{incomplete.length}</span></h2><button type="button" className="dashboard-text-link" onClick={() => onNavigate('/sessions')}>View all<Arrow /></button></div>
-          {incomplete.length > 0 ? <ul className="dashboard-continue-list">{incomplete.slice(0, 4).map(session => {
-            const progress = sessionProgress(session)
-            return <li key={session.id}><button type="button" className="dashboard-continue-row" onClick={() => onOpenSession(session)}>
-              <span className="dashboard-row-copy"><strong>{session.title || 'Untitled session'}</strong><span>{session.assignment?.courseName || 'Custom session'}<span className="dashboard-meta-dot" aria-hidden="true">·</span><time dateTime={new Date(session.updatedAt).toISOString()}>{activityDate(session.updatedAt)}</time></span></span>
-              <span className="dashboard-session-progress">{session.started ? <><span>{progress}%</span><span className="dashboard-progress-track" role="progressbar" aria-label={`${session.title || 'Untitled session'} progress`} aria-valuemin={0} aria-valuemax={100} aria-valuenow={progress}><span style={{ width: `${progress}%` }} /></span></> : <span className="dashboard-draft-label">In setup</span>}</span>
-              <Arrow />
-            </button></li>
-          })}</ul> : <div className="dashboard-empty"><p>No incomplete sessions.</p><button type="button" className="dashboard-text-link" onClick={onCreateSession}>Start a session<Arrow /></button></div>}
+        <section className="dashboard-section" aria-labelledby="dashboard-suggested-title" aria-busy={loading}>
+          <div className="dashboard-section-heading"><h2 id="dashboard-suggested-title">Suggested <span className="dashboard-count">{suggestedTotal}</span></h2><button type="button" className="dashboard-text-link" onClick={() => onNavigate('/sessions')}>View all<Arrow /></button></div>
+          {suggestedTotal > 0 ? <ul ref={suggestedList} className="dashboard-suggested-list">
+            {shownTodos.map(todo => <li key={todo.id}>
+              <button type="button" className="dashboard-todo-row" onClick={() => todo.session ? onOpenSession(todo.session) : onNavigate(todo.path)}>
+                <span className="dashboard-todo-mark" aria-hidden="true" />
+                <span className="dashboard-row-copy"><strong>{todo.title}</strong><span>{todo.context}</span></span>
+                <span className="dashboard-row-action">{todo.action}<Arrow /></span>
+              </button>
+            </li>)}
+            {shownSessions.map(session => {
+              const progress = sessionProgress(session)
+              return <li key={session.id}><button type="button" className="dashboard-continue-row" onClick={() => onOpenSession(session)}>
+                <span className="dashboard-todo-mark is-empty" aria-hidden="true" />
+                <span className="dashboard-row-copy"><strong>{session.title || 'Untitled session'}</strong><span>{session.assignment?.courseName || 'Custom session'}<span className="dashboard-meta-dot" aria-hidden="true">·</span><time dateTime={new Date(session.updatedAt).toISOString()}>{activityDate(session.updatedAt)}</time></span></span>
+                <span className="dashboard-session-progress"><span>{progress}%</span><span className="dashboard-progress-track" role="progressbar" aria-label={`${session.title || 'Untitled session'} progress`} aria-valuemin={0} aria-valuemax={100} aria-valuenow={progress}><span style={{ width: `${progress}%` }} /></span></span>
+                <Arrow />
+              </button></li>
+            })}
+          </ul> : <div className="dashboard-empty" role="status"><p>{loading ? 'Loading suggestions…' : courseError ? 'Suggestions are unavailable.' : 'No suggestions.'}</p>{!loading && !courseError && <button type="button" className="dashboard-text-link" onClick={onCreateSession}>Start a session<Arrow /></button>}</div>}
         </section>
       </div>
       <section className="dashboard-section dashboard-classes" aria-labelledby="dashboard-classes-title" aria-busy={loading}>
-        <div className="dashboard-section-heading"><h2 id="dashboard-classes-title">Recent classes</h2><button type="button" className="dashboard-text-link" onClick={() => onNavigate('/courses')}>View all<Arrow /></button></div>
-        {recentClasses.length > 0 ? <ul className="dashboard-class-list">{recentClasses.slice(0, 4).map(({ course, enrollment, lastActivity }) => <li key={course.id}>
+        <div className="dashboard-section-heading"><h2 id="dashboard-classes-title">Recent courses</h2><button type="button" className="dashboard-text-link" onClick={() => onNavigate('/courses')}>View all<Arrow /></button></div>
+        {recentClasses.length > 0 ? <ul ref={classList} className="dashboard-class-list">{visibleClasses.slice(0, classLimit).map(({ course, enrollment, lastActivity }) => <li key={course.id}>
           <button type="button" className="dashboard-class-card" onClick={() => onNavigate(`/courses/${course.id}`)}>
             {course.banner?.type !== 'none' && <CourseCover banner={course.banner} imageUrl={course.bannerUrl} className="dashboard-class-cover" />}
             <span className="dashboard-class-card-body">

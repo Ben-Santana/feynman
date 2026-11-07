@@ -1,7 +1,10 @@
-import { useRef, useState } from 'react'
+import { useEffect, useRef, useState, type ReactNode } from 'react'
 import { accessories, accessorySlots, characterColors, characterShapes, defaultAppearance, equipAccessory, normalizeCharacterName, type AccessorySlot, type CharacterAppearance } from '../characterAppearance'
+import { purchaseCosmetic, refreshWallet, useWallet } from '../points'
 import { Bloub, type EmotionId } from './Bloub'
+import { PointsBalance } from './PointsBalance'
 import { TooltipButton } from './TooltipButton'
+import { useHold } from './useHold'
 import './CharacterStudio.css'
 
 type StudioTab = 'accessories' | 'color' | 'shape'
@@ -23,6 +26,35 @@ function MoodEyes({ mood }: { mood: EmotionId }) {
   </svg>
 }
 
+const BOUGHT_MS = 1000
+
+function ShopCard({ className, shop, selected, onEquip, onBuy, children }: {
+  className: string; shop: { locked: boolean; disabled: boolean; price: number; label: string; title?: string }
+  selected: boolean; onEquip: () => void; onBuy: () => Promise<boolean>; children: ReactNode
+}) {
+  const [phase, setPhase] = useState<'idle' | 'buying' | 'bought'>('idle')
+  const timer = useRef(0)
+  useEffect(() => () => clearTimeout(timer.current), [])
+  const buyable = shop.locked && !shop.disabled && phase === 'idle'
+  async function buy() {
+    if (phase !== 'idle') return
+    setPhase('buying')
+    if (!await onBuy()) return setPhase('idle')
+    setPhase('bought')
+    timer.current = window.setTimeout(() => setPhase('idle'), BOUGHT_MS)
+  }
+  const hold = useHold<HTMLButtonElement>({ disabled: !buyable, onConfirm: () => void buy() })
+  return <button ref={hold.ref} type="button" className={`${className} ${selected ? 'is-selected' : ''} ${buyable ? 'is-buyable' : ''} ${phase === 'idle' ? '' : `is-${phase}`}`} aria-label={shop.label} title={shop.title} disabled={shop.disabled} aria-pressed={selected} {...(shop.locked ? hold.handlers : { onClick: () => { if (phase === 'idle') onEquip() } })}>
+    {shop.locked && <Price price={shop.price} />}
+    {children}
+    <span className="studio-buy-fill" aria-hidden="true">{phase === 'bought' && <svg viewBox="0 0 24 24"><path d="M5 12.5 9.5 17 19 7.5" pathLength="1" /></svg>}</span>
+  </button>
+}
+
+function Price({ price }: { price: number }) {
+  return <span className="studio-price"><span className="points-dot" aria-hidden="true" />{price}</span>
+}
+
 export function CharacterStudio({ appearance: draft, onChange, saveStatus, saveError, onDone }: {
   appearance: CharacterAppearance; onChange: (appearance: CharacterAppearance) => void
   saveStatus: 'saved' | 'saving' | 'error'; saveError: string; onDone: () => void
@@ -32,13 +64,42 @@ export function CharacterStudio({ appearance: draft, onChange, saveStatus, saveE
   const [expression, setExpression] = useState<EmotionId>('attentive')
   const [nameInput, setNameInput] = useState(() => normalizeCharacterName(draft.name))
   const nameBeforeEdit = useRef(draft.name)
+  const { wallet, error: walletError } = useWallet()
+  const [purchaseError, setPurchaseError] = useState('')
+  useEffect(() => { void refreshWallet() }, [])
+  const owned = (id: string, price: number) => price === 0 || Boolean(wallet?.owned.includes(id))
+  const affordable = (price: number) => wallet !== null && (wallet.points === null || wallet.points >= price)
+  const shopItem = (id: string, item: { name: string; price: number }) => {
+    const locked = !owned(id, item.price)
+    return {
+      locked,
+      disabled: locked && !affordable(item.price),
+      price: item.price,
+      label: locked ? `${item.name}, ${item.price} points` : item.name,
+      title: !locked ? undefined : affordable(item.price) ? 'Hold to buy' : wallet ? `${item.price - (wallet.points ?? 0)} more points needed` : undefined,
+    }
+  }
+  // Items are bought before they are equipped; the database rejects unowned looks.
+  async function buy(id: string, equip: () => void) {
+    setPurchaseError('')
+    try {
+      await purchaseCosmetic(id)
+      equip()
+      return true
+    } catch (reason) {
+      setPurchaseError((reason as Error).message)
+      return false
+    }
+  }
   function finishName() {
     setNameInput(normalizeCharacterName(nameInput))
   }
   function chooseAccessory(id: Parameters<typeof equipAccessory>[2]) {
     onChange(equipAccessory(draft, slot, id))
   }
+  const errorMessage = saveError || purchaseError || walletError
   return <section className="character-studio">
+    {wallet && <PointsBalance className="studio-points" wallet={wallet} />}
     <div className="studio-body">
       <div className="studio-layout">
         <aside className="studio-preview" aria-label="Character preview">
@@ -62,18 +123,18 @@ export function CharacterStudio({ appearance: draft, onChange, saveStatus, saveE
             {categories.map(category => <button key={category.id} type="button" title={category.name} aria-label={category.name} aria-pressed={tab === category.id} onClick={() => setTab(category.id)}><CategoryIcon category={category.id} /></button>)}
           </div>
           <div className="studio-options" key={tab}>
-            {tab === 'color' && <div className="studio-color-grid" role="group" aria-label="Body color">{characterColors.map(item => <button className={`studio-color-card ${draft.color === item.id ? 'is-selected' : ''}`} type="button" key={item.id} aria-label={item.name} aria-pressed={draft.color === item.id} onClick={() => onChange({ ...draft, color: item.id })}><span className="studio-item-art" aria-hidden="true"><Bloub mode="studio" static appearance={{ ...draft, color: item.id }} showControls={false} expression="attentive" /></span></button>)}</div>}
-            {tab === 'shape' && <div className="studio-item-grid" role="group" aria-label="Body shape">{characterShapes.map(item => <button className={`studio-item-card ${draft.shape === item.id ? 'is-selected' : ''}`} key={item.id} type="button" aria-label={item.name} aria-pressed={draft.shape === item.id} onClick={() => onChange({ ...draft, shape: item.id })}><span className="studio-item-art" aria-hidden="true"><Bloub mode="studio" static appearance={{ ...draft, shape: item.id }} showControls={false} expression="attentive" /></span></button>)}</div>}
+            {tab === 'color' && <div className="studio-color-grid" role="group" aria-label="Body color">{characterColors.map(item => { const id = `color:${item.id}`, equip = () => onChange({ ...draft, color: item.id }); return <ShopCard className="studio-color-card" key={item.id} shop={shopItem(id, item)} selected={draft.color === item.id} onEquip={equip} onBuy={() => buy(id, equip)}><span className="studio-item-art" aria-hidden="true"><Bloub mode="studio" static appearance={{ ...draft, color: item.id }} showControls={false} expression="attentive" /></span></ShopCard> })}</div>}
+            {tab === 'shape' && <div className="studio-item-grid" role="group" aria-label="Body shape">{characterShapes.map(item => { const id = `shape:${item.id}`, equip = () => onChange({ ...draft, shape: item.id }); return <ShopCard className="studio-item-card" key={item.id} shop={shopItem(id, item)} selected={draft.shape === item.id} onEquip={equip} onBuy={() => buy(id, equip)}><span className="studio-item-art" aria-hidden="true"><Bloub mode="studio" static appearance={{ ...draft, shape: item.id }} showControls={false} expression="attentive" /></span></ShopCard> })}</div>}
             {tab === 'accessories' && <>
               <div className="studio-slot-tabs" role="group" aria-label="Accessory type">{accessorySlots.map(item => <button type="button" key={item.id} aria-pressed={slot === item.id} onClick={() => setSlot(item.id)}>{item.name}{draft.accessories[item.id] && <span className="studio-slot-dot" aria-label="Equipped" />}</button>)}</div>
               <div className="studio-item-grid studio-accessory-grid" role="group" aria-label={accessorySlots.find(item => item.id === slot)!.name} key={slot}>
                 <button type="button" className={`studio-item-card ${!draft.accessories[slot] ? 'is-selected' : ''}`} aria-pressed={!draft.accessories[slot]} onClick={() => chooseAccessory(null)}><span className="studio-item-art" aria-hidden="true"><Bloub mode="studio" static previewSlot={slot} appearance={equipAccessory(draft, slot, null)} expression="attentive" showControls={false} /></span><span>None</span></button>
-                {accessories.filter(item => item.slot === slot).map(item => <button type="button" key={item.id} className={`studio-item-card ${draft.accessories[slot] === item.id ? 'is-selected' : ''}`} aria-pressed={draft.accessories[slot] === item.id} onClick={() => chooseAccessory(item.id)}><span className="studio-item-art" aria-hidden="true"><Bloub mode="studio" static previewSlot={slot} appearance={equipAccessory(draft, slot, item.id)} expression="attentive" showControls={false} /></span><span>{item.name}</span></button>)}
+                {accessories.filter(item => item.slot === slot).map(item => { const id = `accessory:${item.id}`, equip = () => chooseAccessory(item.id); return <ShopCard className="studio-item-card" key={item.id} shop={shopItem(id, item)} selected={draft.accessories[slot] === item.id} onEquip={equip} onBuy={() => buy(id, equip)}><span className="studio-item-art" aria-hidden="true"><Bloub mode="studio" static previewSlot={slot} appearance={equipAccessory(draft, slot, item.id)} expression="attentive" showControls={false} /></span><span>{item.name}</span></ShopCard> })}
               </div>
             </>}
           </div>
           <div className="studio-actions">
-            {saveError && <p role="alert" className="studio-error">{saveError}</p>}
+            {errorMessage && <p role="alert" className="studio-error">{errorMessage}</p>}
             <div className="studio-action-row"><button className="studio-reset" type="button" aria-label="Reset look" title="Reset look" onClick={() => { onChange(defaultAppearance); setNameInput(defaultAppearance.name) }}><svg viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round"><path d="M3 10a9 9 0 1 1 2.6 8.4M3 4v6h6" /></svg></button><div><span className="studio-save-status" role="status">{saveStatus === 'saving' ? 'Saving…' : saveStatus === 'error' ? 'Not saved' : 'All changes saved'}</span>{saveStatus === 'error' && <button type="button" className="studio-retry" onClick={() => onChange(draft)}>Retry</button>}<button type="button" className="studio-done" onClick={onDone}>Done</button></div></div>
           </div>
         </div>

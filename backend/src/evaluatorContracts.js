@@ -3,7 +3,7 @@ import { InvalidOutputError } from './structuredOutput.js';
 import { validate } from './chat.js';
 import { checklistItems } from '../../frontend/src/rubricChecklist.js';
 
-export const evaluatorVersion = 'refined-evaluator-v4-lean';
+export const evaluatorVersion = 'refined-evaluator-v5-lean';
 export const contractVersion = 1;
 export const evidenceStatuses = ['missing', 'unclear', 'flawed', 'supported'];
 export const resultKinds = ['correct', 'incorrect', 'undetermined', 'not_applicable'];

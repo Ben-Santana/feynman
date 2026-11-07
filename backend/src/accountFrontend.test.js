@@ -55,8 +55,8 @@ test('profile saves only the trimmed name on the signed-in profile and returns t
 test('account lifecycle aborts requests on logout and account switching, without aborting same-user role refreshes', t => {
   t.after(() => activateAccount(null));
   activateAccount({ id: 'first', role: 'instructor' }); const first = accountSignal();
-  activateAccount({ id: 'first', role: 'admin' }); assert.equal(first.aborted, false);
-  activateAccount({ id: 'second', role: 'instructor' }); assert.equal(first.aborted, true);
+  activateAccount({ id: 'first', role: 'admin', hosted: false }); assert.equal(first.aborted, false);
+  activateAccount({ id: 'second', role: 'instructor', hosted: false }); assert.equal(first.aborted, true);
   const second = accountSignal(); activateAccount(null); assert.equal(second.aborted, true);
 });
 test('AI preferences start fresh and do not leak provider connections between accounts', t => {
@@ -65,10 +65,10 @@ test('AI preferences start fresh and do not leak provider connections between ac
   globalThis.window = { dispatchEvent() {} };
   t.after(() => { activateAccount(null); globalThis.localStorage = originalStorage; globalThis.window = originalWindow; });
   values.set('feynman-ai-preferences', JSON.stringify({ provider: 'chatgpt', accountId: 'anonymous-account' }));
-  activateAccount({ id: 'first', role: 'admin' }); assert.equal(aiPreferences().provider, 'anthropic'); assert.equal(aiPreferences().accountId, '');
+  activateAccount({ id: 'first', role: 'admin', hosted: false }); assert.equal(aiPreferences().provider, 'anthropic'); assert.equal(aiPreferences().accountId, '');
   saveAIPreferences({ provider: 'chatgpt', accountId: 'first-connection', model: 'model' });
-  activateAccount({ id: 'second', role: 'instructor' }); assert.equal(aiPreferences().accountId, '');
-  activateAccount({ id: 'first', role: 'admin' }); assert.equal(aiPreferences().accountId, 'first-connection');
+  activateAccount({ id: 'second', role: 'instructor', hosted: false }); assert.equal(aiPreferences().accountId, '');
+  activateAccount({ id: 'first', role: 'admin', hosted: false }); assert.equal(aiPreferences().accountId, 'first-connection');
 });
 test('cloud appearance restores across devices, preserves failed drafts, and isolates account recovery', async t => {
   const original = globalThis.localStorage, values = new Map(), rows = new Map();

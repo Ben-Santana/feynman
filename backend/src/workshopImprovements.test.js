@@ -15,11 +15,11 @@ test('production follow-up needs only evaluator and reply, targeting one misconc
   const result = await chat(input(), async (system, messages, tool) => {
     calls.push(tool.name);
     if (tool.name === 'evaluate_refined') return assessment(messages);
-    assert.match(system, /ONE small diagnostic question/);
+    assert.match(system, /ONE small question/);
     assert.match(system, /Do not request a full solution, multiple metrics/);
     return { strategyChoice: { strategyId: 'none', rationale: 'No suitable operation for this fixture.', targetQuote: '', rubricItem: '' }, message: 'What happens to a bacterium that cannot resist the treatment?', expression: 'confused' };
   });
-  assert.deepEqual(calls, ['evaluate_refined', 'respond_to_student']);
+  assert.deepEqual(calls, ['evaluate_refined', 'reply_to_teacher']);
   assert.equal(result.assessment.complete, false);
 });
 
@@ -82,7 +82,7 @@ test('weak quantitative analysis stays open until explicit finish', async () => 
   const open = await chat(body, query);
   assert.equal(open.finalSummary, undefined);
   assert.equal(open.assessment.complete, false);
-  assert.deepEqual(names, ['evaluate_refined', 'respond_to_student']);
+  assert.deepEqual(names, ['evaluate_refined', 'reply_to_teacher']);
   body.messages[3].finishAssessment = true;
   const finished = await chat(body, query);
   assert.ok(finished.finalSummary);
@@ -112,7 +112,7 @@ test('prerequisite help is labeled assistance and readiness generates a fresh ch
   assert.equal(help.assistance, true); assert.equal(help.assessment, null);
   body.messages.push({ role: 'assistant', content: help.message, assistance: true }, { role: 'user', content: 'Ready.' });
   const check = await chat(body, async (system, _, tool) => {
-    assert.equal(tool.name, 'respond_to_student'); assert.match(system, /DIFFERENT self-contained situation/);
+    assert.equal(tool.name, 'reply_to_teacher'); assert.match(system, /DIFFERENT self-contained situation/);
     return { strategyChoice: { strategyId: 'none', rationale: 'No suitable operation for this fixture.', targetQuote: '', rubricItem: '' }, message: 'A beetle population contains inherited color variants; what would you predict if predators favor one color?', expression: 'attentive' };
   });
   assert.equal(check.independentCheck, true); assert.equal(check.assessment, null);
@@ -133,13 +133,8 @@ test('help retries an embedded practice question instead of showing two competin
 });
 
 for (const learningType of ['theoretical', 'quantitative', 'experimental', 'design']) {
-  for (const level of ['apply', 'analyze']) test(`${learningType} ${level}: original solution cannot bypass independent transfer, changed-condition reasoning can complete`, async () => {
+  for (const level of ['apply', 'analyze'].filter(level => learningType !== 'quantitative' || level !== 'analyze')) test(`${learningType} ${level}: original solution cannot bypass independent transfer, changed-condition reasoning can complete`, async () => {
     const body = { ...input(), learningType, level };
-    if (learningType === 'quantitative' && level === 'analyze') body.messages = [
-      { role: 'assistant', content: 'Check these papers.', paper: { id: 'p', markdown: 'Tentative solution.' } },
-      { role: 'user', content: 'Fail.', review: { paperId: 'p', grade: 'fail', selectedSteps: [1], explanation: '' } },
-      { role: 'assistant', content: 'Why?' }, { role: 'user', content: 'Explanation of the original problem.' },
-    ];
     let transferred = false;
     const query = async (system, messages, tool) => {
       if (tool.name === 'evaluate_refined') {
@@ -172,3 +167,31 @@ for (const learningType of ['theoretical', 'quantitative', 'experimental', 'desi
     assert.equal((await chat(body, query)).assessment.complete, true);
   });
 }
+
+test('quantitative analyze: a correct paper explanation finishes, an incorrect one gets a follow-up first', async () => {
+  const body = { ...input(), learningType: 'quantitative', level: 'analyze', messages: [
+    { role: 'assistant', content: 'Check these papers.', paper: { id: 'p', markdown: 'Tentative solution.' } },
+    { role: 'user', content: 'Fail.', review: { paperId: 'p', grade: 'fail', selectedSteps: [1], explanation: '' } },
+    { role: 'assistant', content: 'Why?' }, { role: 'user', content: 'Step 1 is wrong because the sign is fine.' },
+  ] };
+  let status = 'flawed';
+  const query = async (system, messages, tool) => {
+    if (tool.name === 'evaluate_refined') {
+      assert.equal(JSON.parse(messages[0].content[0].text).definitions.at(-1).requiresTransfer, false);
+      const value = assessment(messages, status);
+      for (const j of value.judgments) { j.result = status === 'supported' ? 'correct' : 'incorrect'; j.reasoning = status === 'supported' ? 'valid' : 'flawed'; }
+      return value;
+    }
+    if (tool.name === 'summarize_learning') return { summary: 'The learner explained the paper error.' };
+    assert.doesNotMatch(system, /ONE materially changed condition/);
+    return { message: 'What does step 1 do to the sign of the result?', expression: 'confused' };
+  };
+  const followUp = await chat(body, query);
+  assert.equal(followUp.finalSummary, undefined);
+  assert.match(followUp.message, /step 1/);
+  body.messages.push({ role: 'assistant', content: followUp.message }, { role: 'user', content: 'Step 1 flips the sign, so the result should be negative.' });
+  status = 'supported';
+  const finished = await chat(body, query);
+  assert.equal(finished.assessment.complete, true);
+  assert.equal(finished.finalSummary, 'The learner explained the paper error.');
+});

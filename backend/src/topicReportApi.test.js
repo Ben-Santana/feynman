@@ -64,7 +64,7 @@ test('resuming practice targets the selected rubric goal without evaluating prev
   const { chat, validate } = await import('./chat.js');
   const request = { ...input, messages: [], practiceGoal: 'Name its unit.', priorMessages: input.messages };
   const result = await chat(request, async (system, _messages, tool) => {
-    assert.equal(tool.name, 'respond_to_student');
+    assert.equal(tool.name, 'reply_to_teacher');
     assert.match(system, /learner selected this rubric goal for practice/);
     return { message: 'Which unit would you use to measure stored energy?', expression: 'attentive' };
   });

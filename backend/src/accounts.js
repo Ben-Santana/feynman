@@ -29,8 +29,27 @@ export function createAccountService(env = process.env, clientFactory = createCl
     if (!env.SUPABASE_SECRET_KEY) throw new AccountError('Account administration is not configured.', 503);
     return clientFactory(url, env.SUPABASE_SECRET_KEY, options);
   }
+  async function instructorApplications(account, params, targetId = null) {
+    if (account.role !== 'admin') throw new AccountError('Admin access required.', 403);
+    const page = targetId === null ? Number(params.get('page') || 1) : 1;
+    if (!Number.isSafeInteger(page) || page < 1 || page > 100000) throw new AccountError('Enter a valid page.', 400);
+    if (targetId !== null && !/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(targetId)) throw new AccountError('Choose a valid account.', 400);
+    const { data, error } = await adminClient().rpc('admin_instructor_inbox', { actor_id: account.id, page_number: page, target_id: targetId });
+    if (error) throw new AccountError(error.code === '42501' ? 'Admin access required.' : 'Could not load instructor applications.', error.code === '42501' ? 403 : 503);
+    return data;
+  }
   return {
     topicReports: createTopicReportService(adminClient),
+    async getClaudeModel() {
+      const { data, error } = await adminClient().from('ai_model_settings').select('model').eq('singleton', true).maybeSingle();
+      if (error) throw new AccountError('Could not load the Claude model setting.', 503);
+      return data?.model || '';
+    },
+    async setClaudeModel(account, model) {
+      if (account.role !== 'admin') throw new AccountError('Admin access required.', 403);
+      const { error } = await adminClient().from('ai_model_settings').upsert({ singleton: true, model });
+      if (error) throw new AccountError('Could not save the Claude model setting.', 503);
+    },
     async recordUsage(record) {
       const { error } = await adminClient().from('ai_usage_events').insert(record);
       if (error) throw new AccountError('Could not record AI usage.', 503);
@@ -108,6 +127,8 @@ export function createAccountService(env = process.env, clientFactory = createCl
       return { ...input, topic: data.concept.name, learningType: data.learningType, criterion: data.concept.rubric[input.level], aspects: checklistItems(data.concept.rubric[input.level]) };
     },
     async listUsers(account, params) {
+      const targetId = params.get('account');
+      if (targetId !== null) return instructorApplications(account, params, targetId);
       if (account.role !== 'admin') throw new AccountError('Admin access required.', 403);
       const page = Number(params.get('page') || 1);
       const search = (params.get('search') || '').trim();
@@ -116,14 +137,39 @@ export function createAccountService(env = process.env, clientFactory = createCl
       if (error) throw new AccountError(error.code === '42501' ? 'Admin access required.' : 'Could not load accounts.', error.code === '42501' ? 403 : 503);
       return data;
     },
+    async inbox(account, params) {
+      if (account.role === 'instructor') return { messages: [], total: 0, page: 1, pageSize: 25 };
+      if (account.role !== 'admin') throw new AccountError('Instructor access required.', 403);
+      const { users, ...pagination } = await instructorApplications(account, params);
+      const messages = users.map(user => ({
+        id: `instructor-application:${user.id}`,
+        title: 'Instructor application',
+        description: user.display_name ? `${user.display_name} · ${user.email}` : user.email,
+        action: { label: 'Review application', href: `/admin?account=${encodeURIComponent(user.id)}` },
+      }));
+      return { messages, ...pagination };
+    },
     async listCourses(account, params) {
       if (account.role !== 'admin') throw new AccountError('Admin access required.', 403);
       const page = Number(params.get('page') || 1);
       const search = (params.get('search') || '').trim();
-      if (!Number.isSafeInteger(page) || page < 1 || page > 100000 || search.length > 200) throw new AccountError('Enter a valid page and search.', 400);
-      const { data, error } = await adminClient().rpc('admin_list_courses', { actor_id: account.id, page_number: page, search_text: search });
+      const subjects = params.getAll('subject');
+      if (!Number.isSafeInteger(page) || page < 1 || page > 100000 || search.length > 200 ||
+          subjects.length > 20 || subjects.some(subject => !subject || subject.length > 100)) {
+        throw new AccountError('Enter a valid page and search.', 400);
+      }
+      const client = adminClient();
+      const args = { actor_id: account.id, page_number: page, search_text: search };
+      if (subjects.length) args.subject_filters = subjects;
+      const { data, error } = await client.rpc('admin_list_courses', args);
       if (error) throw adminCourseError(error);
-      return data;
+      const paths = [...new Set(data.courses.filter(course => course.banner?.type === 'image').map(course => course.banner.path))];
+      if (!paths.length) return data;
+      const { data: signed } = await client.storage.from('course-banners').createSignedUrls(paths, 3600);
+      const urls = new Map(signed?.map(entry => [entry.path, entry.signedUrl]));
+      return { ...data, courses: data.courses.map(course => course.banner?.type === 'image'
+        ? { ...course, bannerUrl: urls.get(course.banner.path) ?? null }
+        : course) };
     },
     async viewCourse(account, id) {
       if (account.role !== 'admin') throw new AccountError('Admin access required.', 403);
@@ -140,6 +186,39 @@ export function createAccountService(env = process.env, clientFactory = createCl
         const status = error.code === 'P0002' ? 404 : error.code === '42501' ? 403 : 503;
         throw new AccountError(status === 404 ? 'Account not found.' : status === 403 ? 'Admin access required.' : 'Could not approve the account.', status);
       }
+      return data;
+    },
+    async grantPoints(account, id, points) {
+      if (account.role !== 'admin') throw new AccountError('Admin access required.', 403);
+      if (!/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(id)) throw new AccountError('Choose a valid account.', 400);
+      if (!Number.isInteger(points) || points < 1 || points > 1000000) throw new AccountError('Enter a whole number from 1 to 1,000,000.', 400);
+      const { data, error } = await adminClient().rpc('admin_grant_points', { actor_id: account.id, target_id: id, amount: points });
+      if (error) {
+        const status = error.code === 'P0002' ? 404 : error.code === '42501' ? 403 : 503;
+        throw new AccountError(status === 404 ? 'Account not found.' : status === 403 ? 'Admin access required.' : 'Could not give points.', status);
+      }
+      return data;
+    },
+    async deleteAccount(account, id) {
+      if (account.role !== 'admin') throw new AccountError('Admin access required.', 403);
+      if (!/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(id)) throw new AccountError('Choose a valid account.', 400);
+      const failure = error => {
+        const known = { P0002: ['Account not found.', 404], 42501: ['Admin access required.', 403], FA001: ['You cannot delete your own account.', 409], FA002: ['This account owns courses, so it cannot be deleted.', 409] }[error.code];
+        return new AccountError(...(known || ['Could not delete the account.', 503]));
+      };
+      const client = adminClient();
+      const args = { actor_id: account.id, target_id: id };
+      const { data: files, error: filesError } = await client.rpc('admin_account_deletion_files', args);
+      if (filesError) throw failure(filesError);
+      for (const bucket of new Set(files.map(file => file.bucket))) {
+        const paths = files.filter(file => file.bucket === bucket).map(file => file.path);
+        for (let start = 0; start < paths.length; start += 500) {
+          const { error } = await client.storage.from(bucket).remove(paths.slice(start, start + 500));
+          if (error) throw new AccountError('Could not delete the account\'s files. Try again.', 503);
+        }
+      }
+      const { data, error } = await client.rpc('admin_delete_account', args);
+      if (error) throw failure(error);
       return data;
     },
     async changeRole(account, id, role) {

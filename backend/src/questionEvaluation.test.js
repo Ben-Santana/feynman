@@ -2,7 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { Readable } from 'node:stream';
 import { comparisonCases } from './questionStrategies.js';
-import { blindQuestionPair, validateQuestionReview, reviewQuestionPair } from './questionEvaluation.js';
+import { blindQuestionPair, validateQuestionReview, reviewQuestionPair, reviewedQuestions, recoveredReview } from './questionEvaluation.js';
 import { createApiServer } from './server.js';
 import { testAuthorization, testAccountService } from './accessTestHelper.js';
 
@@ -10,7 +10,7 @@ const fixture = comparisonCases.find(item => item.expectedStrategyId === 'necess
 const baseline = 'What does being even establish in your statement about multiples of six?';
 const enhanced = 'How does your implication connect being even to being divisible by six?';
 const rating = { score: 2, reason: 'Specific, grounded, and asks about the existing relationship.' };
-const makeReview = () => ({ questions: ['A', 'B'].map(label => ({ label, ...Object.fromEntries(['clarity', 'levelFit', 'diagnosticValue', 'grounding', 'nonLeading'].map(key => [key, { ...rating }])), strengths: ['Names the unresolved implication.'], concerns: [] })), preference: 'tie', reason: 'Both address the same inference.' });
+const makeReview = () => ({ questions: ['A', 'B'].map(label => ({ label, ...Object.fromEntries(['clarity', 'levelFit', 'diagnosticValue', 'grounding', 'nonLeading', 'studentVoice'].map(key => [key, { ...rating }])), strengths: ['Names the unresolved implication.'], concerns: [] })), preference: 'tie', reason: 'Both address the same inference.' });
 
 test('blind question context hides branch identity, strategy labels, and review expectations', () => {
   const { mapping, context } = blindQuestionPair(fixture, baseline, enhanced);
@@ -29,6 +29,23 @@ test('review validation rejects invented critique quotations and out-of-range ra
   assert.throws(() => validateQuestionReview(invalidScore, context.questions), /quality ratings/);
   const duplicate = makeReview(); duplicate.questions[1].label = 'A';
   assert.throws(() => validateQuestionReview(duplicate, context.questions), /Invalid paired/);
+});
+
+test('review questions returned as a string are recovered', () => {
+  const questions = [{ label: 'A', note: 'a ] inside "quotes"' }, { label: 'B' }];
+  assert.deepEqual(reviewedQuestions(questions), questions);
+  assert.deepEqual(reviewedQuestions(JSON.stringify(questions)), questions);
+  assert.deepEqual(reviewedQuestions(`${JSON.stringify(questions)}\n</parameter>`), questions);
+  assert.equal(reviewedQuestions('not json'), 'not json');
+  assert.equal(reviewedQuestions('[broken'), '[broken');
+});
+
+test('review fields packed into the questions string are recovered', () => {
+  const questions = [{ label: 'A' }, { label: 'B' }];
+  const packed = `${JSON.stringify(questions)},\n"preference": "tie",\n"reason": "Both are equal."\n`;
+  assert.deepEqual(recoveredReview({ questions: packed }), { questions, preference: 'tie', reason: 'Both are equal.' });
+  assert.deepEqual(recoveredReview({ questions: `${JSON.stringify(questions)}\n</parameter>`, preference: 'A' }), { questions, preference: 'A' });
+  assert.deepEqual(recoveredReview({ questions, preference: 'B' }), { questions, preference: 'B' });
 });
 
 test('a blind model review is mapped back to the branches and keeps its limitations', async () => {

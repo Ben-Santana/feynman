@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from 'react'
 import { accountSignal, type Account } from '../accounts'
 import { canTeachCourses } from '../coursePermissions'
 import { createCourse, type EnrollmentMode } from '../courseStore'
+import { COMMUNITY_LIBRARY_ENABLED } from '../features'
 import { CourseSubjectTags } from './CourseSubjectTags'
 import { BackButton } from './BackButton'
 import { SetupTitleForm } from './SetupTitleForm'
@@ -46,12 +47,12 @@ export function CourseCreatePage({ account, onNavigate }: { account: Account; on
     {!canTeachCourses(account.role) ? <section className="courses-page"><h1>Create course</h1><p>Instructor access required.</p></section> : <section className="chat-section chat-section-setup course-create-section" aria-label="Course setup">
       <div className="chat-panel">
         <SetupTitleForm heading="Create course" headingLevel={1} inputId="course-name" inputLabel="Course name" value={name} onChange={value => { setName(value); setInvalidName(false); setError('') }} onSubmit={() => void submit()} actionLabel={saving ? 'Creating…' : 'Create course →'} placeholder="e.g. Physics 101" disabled={saving} invalid={invalidName} error={error}>
-          <fieldset className="course-create-enrollment" disabled={saving}>
+          {COMMUNITY_LIBRARY_ENABLED && <fieldset className="course-create-enrollment" disabled={saving}>
             <legend>Community sharing</legend>
             <label className="course-create-option"><input type="checkbox" checked={shared} onChange={event => setShared(event.target.checked)} /><span><strong>Make course public</strong><small>Anyone in the community can take published topics without enrolling. Their progress stays private.</small></span></label>
 
-          </fieldset>
-          {shared && <CourseSubjectTags value={subjects} onChange={value => { setSubjects(value); setError('') }} disabled={saving} />}
+          </fieldset>}
+          {COMMUNITY_LIBRARY_ENABLED && shared && <CourseSubjectTags value={subjects} onChange={value => { setSubjects(value); setError('') }} disabled={saving} />}
           <fieldset className="course-create-enrollment" disabled={saving}>
             <legend>Enrollment</legend>
             <label className="course-create-option"><input type="radio" name="course-enrollment" value="open" checked={mode === 'open'} onChange={() => setMode('open')} /><span><strong>Open</strong><small>Students join immediately.</small></span></label>

@@ -7,6 +7,15 @@ export type DashboardModule = Pick<CourseModule, 'id' | 'course_id' | 'title' | 
 export type DashboardCourses = { courses: Course[]; enrollments: Enrollment[]; modules: DashboardModule[] }
 export type DashboardTodo = { id: string; title: string; context: string; action: string; updatedAt: number } & ({ session: ModuleSession; path?: never } | { path: string; session?: never })
 
+const activityDateFormat = new Intl.DateTimeFormat(undefined, { month: 'short', day: 'numeric' })
+export function activityDate(timestamp: number) {
+  const date = new Date(timestamp)
+  const today = new Date()
+  if (date.toDateString() === today.toDateString()) return 'Today'
+  today.setDate(today.getDate() - 1)
+  return date.toDateString() === today.toDateString() ? 'Yesterday' : activityDateFormat.format(date)
+}
+
 export function sessionProgress(session: ModuleSession) {
   const total = session.concepts.reduce((sum, concept) => sum + targetCount(concept.target), 0)
   const passed = session.concepts.reduce((sum, concept) => sum + Math.min(concept.passed, targetCount(concept.target)), 0)
@@ -37,5 +46,5 @@ export function dashboardData(account: Account, sessions: ModuleSession[], data:
     lastActivity: Math.max(Date.parse(course.created_at), ...sessions.filter(session => session.assignment?.courseId === course.id).map(session => session.updatedAt), ...data.modules.filter(module => module.course_id === course.id).map(module => Date.parse(module.published_at || module.created_at))),
     enrollment: data.enrollments.find(enrollment => enrollment.course_id === course.id)?.status,
   })).sort((a, b) => b.lastActivity - a.lastActivity)
-  return { incomplete, todos: todos.sort((a, b) => b.updatedAt - a.updatedAt), recentClasses }
+  return { inProgress: incomplete.filter(session => session.started), todos: todos.sort((a, b) => b.updatedAt - a.updatedAt), recentClasses }
 }

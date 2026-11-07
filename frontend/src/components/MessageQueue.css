@@ -1,0 +1,41 @@
+.message-queue { flex: none; margin: 0 24px 12px; border: 1px solid var(--border); border-radius: 14px; background: var(--muted); overflow: hidden; animation: queue-reveal 200ms cubic-bezier(.22, 1, .36, 1) both; }
+.queue-header { display: flex; align-items: center; gap: 8px; min-height: 32px; padding: 6px 12px 2px; color: var(--muted-foreground); font-size: 0.75rem; }
+.queue-status { color: var(--primary); }
+.queue-resume { margin-left: auto; padding: 2px 10px; border: 1px solid var(--border); border-radius: 8px; background: var(--surface); color: var(--foreground); font: inherit; transition: background-color 150ms ease; }
+.queue-resume:hover { background: var(--surface-hover); }
+.queue-list { position: relative; display: flex; flex-direction: column; gap: 2px; max-height: 172px; margin: 0; padding: 2px 4px 4px; overflow-y: auto; overscroll-behavior: contain; list-style: none; }
+.queue-list[data-editing="true"] { max-height: none; overflow: visible; }
+.queue-list[data-dragging="true"] { user-select: none; -webkit-user-select: none; }
+.queue-list[data-dragging="true"] .queue-row:not([data-active="true"]) { transition: transform 160ms cubic-bezier(.22, 1, .36, 1); }
+.queue-row { position: relative; display: flex; flex: none; align-items: center; gap: 6px; min-height: 36px; padding: 2px 4px 2px 8px; border-radius: 10px; font-size: 0.875rem; transition: background-color 120ms ease; }
+.queue-row[data-draggable="true"] { cursor: grab; }
+.queue-row:hover { background: var(--surface); }
+.queue-row[data-active="true"] { z-index: 1; background: var(--background); box-shadow: 0 4px 14px rgb(0 0 0 / .14); cursor: grabbing; }
+.queue-grip { display: grid; flex: none; place-items: center; width: 16px; height: 28px; padding: 0; border: 0; border-radius: 5px; background: transparent; color: var(--muted-foreground); opacity: 0; touch-action: none; transition: opacity 120ms ease; }
+.chat-panel .queue-grip { cursor: inherit; }
+.queue-text { flex: 1; min-width: 0; height: 24px; overflow: hidden; line-height: 24px; -webkit-mask-image: linear-gradient(to right, #000 calc(100% - 24px), transparent); mask-image: linear-gradient(to right, #000 calc(100% - 24px), transparent); }
+.queue-text .chat-plain-text { white-space: nowrap !important; overflow-wrap: normal !important; }
+.queue-text .chat-plain-text > .chat-equation { display: inline; padding: 0; overflow: visible; font-size: .9em; }
+.queue-actions { display: flex; flex: none; gap: 2px; opacity: 0; transition: opacity 120ms ease; }
+.queue-row:is(:hover, :focus-within) :is(.queue-actions, .queue-grip) { opacity: 1; }
+.queue-list[data-dragging="true"] :is(.queue-actions, .queue-grip) { opacity: 0; }
+.queue-list[data-editing="true"] .queue-grip { visibility: hidden; }
+.queue-list[data-dragging="true"] .queue-row[data-active="true"] .queue-grip { opacity: 1; }
+.queue-action { display: grid; place-items: center; width: 28px; height: 28px; padding: 0; border: 0; border-radius: 8px; background: transparent; color: var(--muted-foreground); transition: background-color 120ms ease, color 120ms ease; }
+.queue-action:hover:not(:disabled) { background: var(--surface-hover); color: var(--foreground); }
+.queue-editor { display: flex; flex: 1; align-items: flex-start; gap: 8px; min-width: 0; padding: 4px 0; }
+.queue-editor .chat-composer.queue-edit-composer { flex: 1; min-width: 0; padding: 0; border: 0; display: flex; --composer-input-height: 36px; --composer-send-gap: 8px; }
+.queue-edit-composer .mixed-draft { padding: 5px 10px; background: var(--background); }
+.queue-edit-composer .composer-send-slot { --send-width: 64px; }
+.queue-edit-composer .insert-equation svg { width: 22px; height: 22px; }
+.queue-cancel { flex: none; height: 36px; padding: 0 10px; border: 0; border-radius: 10px; background: transparent; color: var(--muted-foreground); font: inherit; transition: background-color 120ms ease; }
+.queue-cancel:hover { background: var(--surface-hover); }
+.message-queue :is(button):focus-visible { outline: 2px solid var(--primary); outline-offset: 1px; }
+@keyframes queue-reveal { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: translateY(0); } }
+@media (hover: none) { .queue-actions, .queue-grip { opacity: 1; } }
+@media (max-width: 700px) {
+  .chat-section-started .message-queue { margin: 0 0 8px; }
+  .queue-list { max-height: 128px; }
+  .queue-editor { flex-wrap: wrap; }
+}
+@media (prefers-reduced-motion: reduce) { .message-queue { animation: none; } .queue-list[data-dragging="true"] .queue-row:not([data-active="true"]) { transition: none; } }

@@ -22,7 +22,7 @@ export async function compareQuestions(caseId, query, prompts = loadPrompts(), {
   };
   let generation;
   const baseline = await chat(input, async (instructions, messages, response, options) => {
-    if (response.name === 'respond_to_student') generation = { instructions, messages, response };
+    if (response.name === 'reply_to_teacher') generation = { instructions, messages, response };
     return traced(response.name === 'evaluate_learning' ? 'shared rubric evaluator' : 'default learner')(instructions, messages, response, options);
   }, prompts, { evaluator: 'legacy', learner: 'default' });
   if (!generation) return { case: selected, corpusVersion, promptVersion: prompts.version, comparisonMode, intendedStrategyId, baseline, enhanced: null, calls, notice: 'The shared evaluator completed this case, so no next question was generated.' };

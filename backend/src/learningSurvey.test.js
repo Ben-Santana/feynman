@@ -30,6 +30,7 @@ async function fixture(t) {
   for (const [id, role] of [[student, 'student'], [admin, 'instructor'], [outsider, 'student']]) {
     await db.query(`insert into auth.users values ($1,$2,now(),'{"provider":"email"}',$3,now())`, [id, `${id}@example.com`, JSON.stringify({ role })]);
     await db.query(`insert into auth.identities values ($1,'email')`, [id]);
+    await db.query('update public.user_roles set role=$2 where user_id=$1', [id, role]);
     await db.query(`insert into public.signed_consents values ($1,'informed-consent-v1',$2,'Participant',$3,now(),'Consent',$4,$2)`, [id, 'a'.repeat(64), `${id}@example.com`, 'b'.repeat(100)]);
     await db.query('update public.profiles set approved=true where id=$1', [id]);
   }

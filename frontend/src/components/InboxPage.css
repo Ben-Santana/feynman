@@ -1,0 +1,35 @@
+.admin-users.inbox-messages li { display: block; padding: 0; }
+.inbox-messages a {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  min-height: 64px;
+  padding: 14px 24px;
+  color: var(--foreground);
+  text-decoration: none;
+}
+.inbox-messages a:hover { background: var(--muted); }
+.inbox-messages a:focus-visible { outline: 2px solid var(--primary); outline-offset: -3px; }
+.inbox-message-copy { display: grid; gap: 4px; min-width: 0; overflow-wrap: anywhere; font-size: 0.875rem; }
+.inbox-message-copy > span, .inbox-message-action { font-size: 0.8125rem; color: var(--muted-foreground); }
+.inbox-message-action { flex: none; }
+.dashboard-inbox-count { margin-inline-start: auto; font-size: 0.75rem; font-variant-numeric: tabular-nums; }
+@media (max-width: 600px) {
+  .inbox-messages a { align-items: flex-start; flex-direction: column; gap: 8px; padding-inline: 16px; }
+}
+@media (max-width: 760px) {
+  .dashboard-nav-link:has(.dashboard-inbox-count) { position: relative; }
+  .dashboard-inbox-count {
+    position: absolute;
+    inset: 1px 0 auto auto;
+    padding-inline: 3px;
+    border-radius: 4px;
+    background: var(--background);
+    line-height: 1.2;
+  }
+}
+.inbox-page .admin-shell h1 { font-size: 1.75rem; }
+@media (max-width: 760px) {
+  .inbox-page .admin-shell h1 { font-size: 1.5rem; }
+}

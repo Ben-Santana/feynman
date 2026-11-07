@@ -111,7 +111,7 @@ for (const learningType of ['theoretical', 'experimental', 'design']) {
       let calls = 0;
       const result = await chat(input(learningType, level), async (system, _messages, responseTool) => {
         calls++;
-        assert.equal(responseTool.name, 'respond_to_student');
+        assert.equal(responseTool.name, 'reply_to_teacher');
         assert.equal(responseTool.schema.properties.paper, undefined);
         assert.ok(system.includes(learningTypes[learningType].scenarios[level]));
         assert.match(system, /one question at a time/);
@@ -152,16 +152,16 @@ for (const learningType of ['theoretical', 'experimental', 'design']) {
         if (responseTool.name === 'evaluate_learning') {
           assert.ok(system.includes(learningTypes[learningType].tasks.analyze));
           assert.match(system, /earlier-stage answers cannot satisfy/);
-          assert.doesNotMatch(system, /final, one-shot assessment/);
+          assert.doesNotMatch(system, /final paper-review assessment/);
           return verdict(messages, status);
         }
-        assert.equal(responseTool.name, 'respond_to_student');
+        assert.equal(responseTool.name, 'reply_to_teacher');
         assert.match(system, /Continue the existing scenario/);
         assert.match(system, /changed condition affects the outcome/);
         return followUp;
       });
       assert.equal(result.assessment.complete, status === 'supported');
-      assert.deepEqual(calls, status === 'supported' ? ['evaluate_learning', 'evaluate_learning'] : ['evaluate_learning', 'respond_to_student']);
+      assert.deepEqual(calls, status === 'supported' ? ['evaluate_learning', 'evaluate_learning'] : ['evaluate_learning', 'reply_to_teacher']);
       assert.equal(result.finalSummary, undefined);
       assert.equal(result.analysisGrade, undefined);
       assert.ok(!result.paper);

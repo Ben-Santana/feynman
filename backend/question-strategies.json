@@ -1,5 +1,5 @@
 {
-  "version": "question-strategies-6",
+  "version": "question-strategies-7",
   "strategies": [
     {
       "id": "controlled-comparison",
@@ -12,7 +12,7 @@
         "analyze"
       ],
       "objective": "Distinguish competing explanations by varying one relevant condition while holding others fixed.",
-      "useWhen": "The student attributes an outcome to a factor that can be isolated in a comparison.",
+      "useWhen": "The teacher attributes an outcome to a factor that can be isolated in a comparison.",
       "requirements": [
         "A meaningful single change",
         "Explicit conditions held fixed",
@@ -23,7 +23,7 @@
         "Several relevant conditions change together"
       ],
       "constructionRules": [
-        "Use a concrete situation in the student's topic.",
+        "Use a concrete situation in the teacher's topic.",
         "Name the changed condition and hold other relevant conditions fixed.",
         "Ask for one prediction or comparison, without announcing the correct outcome."
       ],
@@ -36,14 +36,14 @@
         {
           "level": "understand",
           "illustrativeOnly": true,
-          "context": "The student describes the same push applied over the same interval to two carts of different masses, attributing all differences in motion to push strength.",
+          "context": "The teacher describes the same push applied over the same interval to two carts of different masses, attributing all differences in motion to push strength.",
           "question": "What role does mass play in the comparison you described?",
           "diagnosticPurpose": "Interpret the already established controlled comparison without introducing a new prediction task."
         },
         {
           "level": "understand",
           "illustrativeOnly": true,
-          "context": "The student describes treated and untreated plant groups differing only in the treatment.",
+          "context": "The teacher describes treated and untreated plant groups differing only in the treatment.",
           "question": "In your comparison, what does keeping the other growing conditions the same let you find out?",
           "diagnosticPurpose": "Distinguish isolating a treatment effect from simply having two groups.",
           "prerequisites": "The entities, conditions, and representations in the context have already been discussed.",
@@ -62,7 +62,7 @@
         {
           "level": "apply",
           "illustrativeOnly": true,
-          "context": "A simulated comparison reports growth of 2 cm and 4 cm for matched plant groups given two fertilizer doses, with the same species, initial size, light, water, and time interval. The student knows how to compare the measured growth.",
+          "context": "A simulated comparison reports growth of 2 cm and 4 cm for matched plant groups given two fertilizer doses, with the same species, initial size, light, water, and time interval. The teacher knows how to compare the measured growth.",
           "question": "How would you use the growth measurements to describe the difference associated with fertilizer dose in this comparison?",
           "diagnosticPurpose": "Use a self-contained situation to elicit use of an appropriate principle or method. Match the active learning type: calculations only when required; a prediction alone does not establish correct reasoning."
         },
@@ -92,17 +92,17 @@
         "apply",
         "analyze"
       ],
-      "objective": "Test the scope of a student's rule using a meaningful limiting condition.",
+      "objective": "Test the scope of a teacher's rule using a meaningful limiting condition.",
       "useWhen": "A broad rule appears to conflate distinct quantities or fails at a limit such as zero, equilibrium, or disconnection.",
       "requirements": [
         "A physically or logically valid limiting condition",
-        "Student familiarity with the relevant quantities"
+        "Teacher familiarity with the relevant quantities"
       ],
       "avoidWhen": [
         "The limit is undefined or changes the problem into a different topic"
       ],
       "constructionRules": [
-        "Specify the limiting condition in the student's topic.",
+        "Specify the limiting condition in the teacher's topic.",
         "Ask about one quantity or relationship at that condition.",
         "Do not state the conclusion that the limit is meant to reveal."
       ],
@@ -115,7 +115,7 @@
         {
           "level": "understand",
           "illustrativeOnly": true,
-          "context": "A student says an object at an instant of rest must have no acceleration.",
+          "context": "A teacher says an object at an instant of rest must have no acceleration.",
           "question": "What does being momentarily at rest tell you about velocity, and how is that different from what acceleration describes?",
           "diagnosticPurpose": "Clarify the meanings of two quantities at a limiting condition without requiring a numerical solution."
         },
@@ -153,17 +153,17 @@
         "analyze"
       ],
       "objective": "Distinguish a continuing state from the condition that produced or maintained it.",
-      "useWhen": "The student assumes that a state vanishes, persists, or changes merely because an initiating or maintaining condition is removed.",
+      "useWhen": "The teacher assumes that a state vanishes, persists, or changes merely because an initiating or maintaining condition is removed.",
       "requirements": [
         "A well-defined removal",
         "Explicit remaining conditions and time frame"
       ],
       "avoidWhen": [
         "Removal changes unspecified constraints",
-        "The student lacks prerequisite knowledge to predict the resulting state"
+        "The teacher lacks prerequisite knowledge to predict the resulting state"
       ],
       "constructionRules": [
-        "Identify what is removed and what remains in the student's topic.",
+        "Identify what is removed and what remains in the teacher's topic.",
         "Ask about one resulting state or relationship.",
         "Avoid importing assumptions from an analogy in another domain."
       ],
@@ -176,14 +176,14 @@
         {
           "level": "understand",
           "illustrativeOnly": true,
-          "context": "A student says that motion always requires ongoing contact with the agent that started it.",
+          "context": "A teacher says that motion always requires ongoing contact with the agent that started it.",
           "question": "What role does contact play in your explanation: starting the motion or maintaining it afterward?",
-          "diagnosticPurpose": "Distinguish the initiating condition from the continuing state in the student's stated account."
+          "diagnosticPurpose": "Distinguish the initiating condition from the continuing state in the teacher's stated account."
         },
         {
           "level": "understand",
           "illustrativeOnly": true,
-          "context": "The student describes a regulatory response continuing after the initiating signal disappears.",
+          "context": "The teacher describes a regulatory response continuing after the initiating signal disappears.",
           "question": "In your account, what keeps the response going after that signal is gone?",
           "diagnosticPurpose": "Distinguish an initiating signal from a maintaining mechanism without assuming instantaneous cessation.",
           "prerequisites": "The entities, conditions, and representations in the context have already been discussed.",
@@ -202,14 +202,14 @@
         {
           "level": "apply",
           "illustrativeOnly": true,
-          "context": "A cart moves in a straight line at 4 meters per second on a level frictionless track when contact with the pushing hand ends; no other horizontal force acts. The student knows the relation between net force and change in velocity.",
+          "context": "A cart moves in a straight line at 4 meters per second on a level frictionless track when contact with the pushing hand ends; no other horizontal force acts. The teacher knows the relation between net force and change in velocity.",
           "question": "How would you use the remaining forces to predict the cart’s velocity two seconds after contact ends?",
           "diagnosticPurpose": "Use a self-contained situation to elicit use of an appropriate principle or method. Match the active learning type: calculations only when required; a prediction alone does not establish correct reasoning."
         },
         {
           "level": "analyze",
           "illustrativeOnly": true,
-          "context": "A student explanation says the response must end immediately after the initiating signal ends despite a continuing feedback path.",
+          "context": "A teacher explanation says the response must end immediately after the initiating signal ends despite a continuing feedback path.",
           "question": "Which continuing influence does that explanation leave out?",
           "diagnosticPurpose": "Probe one relationship, assumption, interaction, or error using evidence in the active task. Preserve the learning-type task, including worked-solution review only where required; do not demand a new design or unsupported evaluation."
         }
@@ -233,7 +233,7 @@
         "analyze"
       ],
       "objective": "Distinguish the value of a quantity from its rate of change or a related effect.",
-      "useWhen": "The student's statement treats a nonzero value as proof of change, or zero change as absence of the quantity.",
+      "useWhen": "The teacher's statement treats a nonzero value as proof of change, or zero change as absence of the quantity.",
       "requirements": [
         "Two clearly named quantities or relationships",
         "A valid situation in which their values or changes can be distinguished"
@@ -248,7 +248,7 @@
         "Do not supply the equation or conclusion being assessed."
       ],
       "interpretationRules": [
-        "Identify which quantity the student is referring to rather than inferring understanding from a keyword.",
+        "Identify which quantity the teacher is referring to rather than inferring understanding from a keyword.",
         "Use different response patterns for distinct explanations; mark vague answers unresolved.",
         "Treat a correct result with unsupported reasoning, an ambiguous answer, or a reading difficulty as unresolved evidence rather than a confirmed misconception or mastery."
       ],
@@ -256,14 +256,14 @@
         {
           "level": "understand",
           "illustrativeOnly": true,
-          "context": "A student describes a quickly moving object as necessarily having a large acceleration.",
+          "context": "A teacher describes a quickly moving object as necessarily having a large acceleration.",
           "question": "What does acceleration describe that speed by itself does not?",
           "diagnosticPurpose": "Probe the meaning of a quantity versus its rate of change without calculations."
         },
         {
           "level": "understand",
           "illustrativeOnly": true,
-          "context": "The student says the concentrations stop changing at equilibrium, so the reactions have stopped.",
+          "context": "The teacher says the concentrations stop changing at equilibrium, so the reactions have stopped.",
           "question": "What does an unchanging concentration tell you about the reactions taking place in your explanation?",
           "diagnosticPurpose": "Separate net concentration change from ongoing opposing processes.",
           "prerequisites": "The entities, conditions, and representations in the context have already been discussed.",
@@ -312,8 +312,8 @@
         "apply",
         "analyze"
       ],
-      "objective": "Probe whether the student can connect two statements whose relationship is unresolved.",
-      "useWhen": "The student has made two specific claims that appear inconsistent or lack a connecting relationship.",
+      "objective": "Probe whether the teacher can connect two statements whose relationship is unresolved.",
+      "useWhen": "The teacher has made two specific claims that appear inconsistent or lack a connecting relationship.",
       "requirements": [
         "Both claims supported by the transcript",
         "An explicit relationship to investigate"
@@ -323,27 +323,27 @@
         "The apparent conflict disappears when context is clarified"
       ],
       "constructionRules": [
-        "Ground the probe in the student's actual statements.",
+        "Ground the probe in the teacher's actual statements.",
         "Instantiate their relationship in a small concrete setting when possible.",
         "Ask about the particular quantity or connection, not whether they can explain their reasoning generally."
       ],
       "interpretationRules": [
         "Allow context-dependent claims to be consistent.",
-        "Identify whether the student revises a claim or supplies a valid relationship; do not require a predetermined phrasing.",
+        "Identify whether the teacher revises a claim or supplies a valid relationship; do not require a predetermined phrasing.",
         "Treat a correct result with unsupported reasoning, an ambiguous answer, or a reading difficulty as unresolved evidence rather than a confirmed misconception or mastery."
       ],
       "examples": [
         {
           "level": "understand",
           "illustrativeOnly": true,
-          "context": "A student says speed remains constant but also that kinetic energy increases, with no change in mass.",
+          "context": "A teacher says speed remains constant but also that kinetic energy increases, with no change in mass.",
           "question": "You described an increase in kinetic energy while mass and speed stay unchanged. What does kinetic energy depend on in that explanation?",
-          "diagnosticPurpose": "Ask about the specific relationship connecting the student's claims rather than requesting a generic explanation."
+          "diagnosticPurpose": "Ask about the specific relationship connecting the teacher's claims rather than requesting a generic explanation."
         },
         {
           "level": "understand",
           "illustrativeOnly": true,
-          "context": "The student says plants build matter from carbon dioxide but also says sunlight becomes that matter.",
+          "context": "The teacher says plants build matter from carbon dioxide but also says sunlight becomes that matter.",
           "question": "How does the role you gave sunlight fit with your statement that the plant gets its building material from carbon dioxide?",
           "diagnosticPurpose": "Probe the relationship between two actual claims about matter and energy.",
           "prerequisites": "The entities, conditions, and representations in the context have already been discussed.",
@@ -362,14 +362,14 @@
         {
           "level": "apply",
           "illustrativeOnly": true,
-          "context": "The student claims mass doubles while speed stays fixed and that kinetic energy stays unchanged. The kinetic-energy method is familiar.",
+          "context": "The teacher claims mass doubles while speed stays fixed and that kinetic energy stays unchanged. The kinetic-energy method is familiar.",
           "question": "How would you use the kinetic-energy relationship to check those claims?",
           "diagnosticPurpose": "Use a self-contained situation to elicit use of an appropriate principle or method. Match the active learning type: calculations only when required; a prediction alone does not establish correct reasoning."
         },
         {
           "level": "analyze",
           "illustrativeOnly": true,
-          "context": "The student claims an isolated sample keeps the same mass and also loses matter, with the same system boundary and interval.",
+          "context": "The teacher claims an isolated sample keeps the same mass and also loses matter, with the same system boundary and interval.",
           "question": "How do those two claims fit with the system boundary you specified?",
           "diagnosticPurpose": "Probe one relationship, assumption, interaction, or error using evidence in the active task. Preserve the learning-type task, including worked-solution review only where required; do not demand a new design or unsupported evaluation."
         }
@@ -380,7 +380,7 @@
         "apply": "Use a self-contained situation to elicit use of an appropriate principle or method. Match the active learning type: calculations only when required; a prediction alone does not establish correct reasoning.",
         "analyze": "Probe one relationship, assumption, interaction, or error using evidence in the active task. Preserve the learning-type task, including worked-solution review only where required; do not demand a new design or unsupported evaluation."
       },
-      "distinctFrom": "Require two actual student statements with an unresolved relationship. Answer-reason-consistency needs only an answer whose supporting link is missing."
+      "distinctFrom": "Require two actual teacher statements with an unresolved relationship. Answer-reason-consistency needs only an answer whose supporting link is missing."
     },
     {
       "id": "representation-change",
@@ -396,7 +396,7 @@
       "useWhen": "A verbal claim can be probed through a small table, graph, diagram description, or concrete observation.",
       "requirements": [
         "Representations describe the same situation",
-        "Student knows how to read the proposed representation"
+        "Teacher knows how to read the proposed representation"
       ],
       "avoidWhen": [
         "Representation literacy would confound the target concept",
@@ -416,14 +416,14 @@
         {
           "level": "understand",
           "illustrativeOnly": true,
-          "context": "A student has explained that a flat graph means nothing exists; the graph already discussed represents temperature versus time.",
+          "context": "A teacher has explained that a flat graph means nothing exists; the graph already discussed represents temperature versus time.",
           "question": "What does the flat line tell you about the temperature itself, compared with how the temperature changes over time?",
           "diagnosticPurpose": "Distinguish the represented quantity from its change, with the axes already understood."
         },
         {
           "level": "understand",
           "illustrativeOnly": true,
-          "context": "The student has described the same labeled branching relationships in two tree drawings with branches rotated around a node.",
+          "context": "The teacher has described the same labeled branching relationships in two tree drawings with branches rotated around a node.",
           "question": "Which branching relationship in these two drawings supports your description of which organisms are most closely related?",
           "diagnosticPurpose": "Separate branching relationships from page position in equivalent representations.",
           "prerequisites": "The entities, conditions, and representations in the context have already been discussed.",
@@ -449,7 +449,7 @@
         {
           "level": "analyze",
           "illustrativeOnly": true,
-          "context": "Two labeled evolutionary trees show the same branching order with a node rotated; the student knows how to read nodes.",
+          "context": "Two labeled evolutionary trees show the same branching order with a node rotated; the teacher knows how to read nodes.",
           "question": "Which branching relationships support or challenge the claim that these trees show different ancestry?",
           "diagnosticPurpose": "Probe one relationship, assumption, interaction, or error using evidence in the active task. Preserve the learning-type task, including worked-solution review only where required; do not demand a new design or unsupported evaluation."
         }
@@ -472,9 +472,9 @@
         "understand"
       ],
       "objective": "Distinguish imprecise wording from a substantive conceptual claim.",
-      "useWhen": "A particular word or short phrase in the student's answer has several plausible meanings.",
+      "useWhen": "A particular word or short phrase in the teacher's answer has several plausible meanings.",
       "requirements": [
-        "An exact student phrase",
+        "An exact teacher phrase",
         "A concrete ambiguity that prevents assessment"
       ],
       "avoidWhen": [
@@ -493,14 +493,14 @@
         {
           "level": "understand",
           "illustrativeOnly": true,
-          "context": "A student uses momentum and force interchangeably in an explanation of motion.",
+          "context": "A teacher uses momentum and force interchangeably in an explanation of motion.",
           "question": "When you call momentum a stored force, what does the word force refer to in your explanation?",
-          "diagnosticPurpose": "Clarify a particular student phrase without supplying a definition or asking for all their reasoning."
+          "diagnosticPurpose": "Clarify a particular teacher phrase without supplying a definition or asking for all their reasoning."
         },
         {
           "level": "understand",
           "illustrativeOnly": true,
-          "context": "The student calls a study random without saying whether participants were sampled randomly or assigned randomly.",
+          "context": "The teacher calls a study random without saying whether participants were sampled randomly or assigned randomly.",
           "question": "When you say random in this study, which part of choosing or grouping the participants do you mean?",
           "diagnosticPurpose": "Distinguish ambiguous terminology from an established misconception about design.",
           "prerequisites": "The entities, conditions, and representations in the context have already been discussed.",
@@ -519,14 +519,14 @@
         {
           "level": "remember",
           "illustrativeOnly": true,
-          "context": "The student has named random sampling and random assignment.",
+          "context": "The teacher has named random sampling and random assignment.",
           "question": "What term did you use for assigning participants to groups by chance?",
           "diagnosticPurpose": "Use this structure only to select a relevant term, quantity, component, rule, or stated condition for recall. Ask identification or recall only; do not require justification, prediction, comparison of mechanisms, or reconciliation. A correct recall answer does not establish the strategy objective at higher levels."
         }
       ],
       "exampleUse": "Use examples to understand the questioning structure. They are authored illustrations, not validated inventory items or mandatory templates. Never copy their topic, assumptions, or answer interpretation into an unrelated question.",
       "levelGuidance": {
-        "remember": "Ask the student to identify the term, entity, or quantity meant by their exact phrase. Do not require causal explanation or conceptual diagnosis.",
+        "remember": "Ask the teacher to identify the term, entity, or quantity meant by their exact phrase. Do not require causal explanation or conceptual diagnosis.",
         "understand": "Clarify the meaning of an exact ambiguous phrase in the existing account. A definition alone does not satisfy Apply or Analyze tasks."
       },
       "distinctFrom": "Resolve an exact ambiguous phrase. Recall-specific-element elicits a missing fact; classify-by-features examines a categorization rule."
@@ -550,7 +550,7 @@
       ],
       "constructionRules": [
         "Ask for one missing name, fact, definition, or stated rule.",
-        "Use the student topic without supplying the answer or asking why it is true."
+        "Use the teacher topic without supplying the answer or asking why it is true."
       ],
       "interpretationRules": [
         "Accurate recall supports only the named fact, not conceptual understanding or transfer.",
@@ -567,7 +567,7 @@
         {
           "level": "remember",
           "illustrativeOnly": true,
-          "context": "The student has named a cell nucleus but has not named the molecule carrying hereditary information.",
+          "context": "The teacher has named a cell nucleus but has not named the molecule carrying hereditary information.",
           "question": "What molecule carries the hereditary information you mentioned?",
           "diagnosticPurpose": "Elicit a missing fact without requiring an account of information flow."
         }
@@ -585,9 +585,9 @@
         "analyze"
       ],
       "objective": "Distinguish an answer supported by a relevant principle from guessing, rote wording, or an incompatible reason.",
-      "useWhen": "The student has supplied a concrete answer but its specific supporting relationship is absent or questionable.",
+      "useWhen": "The teacher has supplied a concrete answer but its specific supporting relationship is absent or questionable.",
       "requirements": [
-        "An actual student answer",
+        "An actual teacher answer",
         "One identifiable explanatory link to probe"
       ],
       "avoidWhen": [
@@ -605,12 +605,12 @@
         "Lack of a reason is insufficient evidence, not proof of guessing.",
         "Treat response patterns as tentative evidence; ambiguous, unsupported, or prerequisite-confounded answers remain unresolved."
       ],
-      "distinctFrom": "Reconcile-claims requires two student claims; this needs only an answer with an unestablished warrant.",
+      "distinctFrom": "Reconcile-claims requires two teacher claims; this needs only an answer with an unestablished warrant.",
       "generationFields": [
         "setting"
       ],
       "levelGuidance": {
-        "understand": "Ask about the specific relationship in the existing student explanation. No new exercise, invented numerical givens, or procedural execution.",
+        "understand": "Ask about the specific relationship in the existing teacher explanation. No new exercise, invented numerical givens, or procedural execution.",
         "apply": "Require use of the concept or method in the supplied situation; preserve the active learning type and include necessary conditions. Do not settle for a recalled definition.",
         "analyze": "Require reasoning about the targeted assumption, relationship, inference, or error in the active task; preserve the learning-type task and ask about one diagnostic point."
       },
@@ -618,14 +618,14 @@
         {
           "level": "understand",
           "illustrativeOnly": true,
-          "context": "The student says both resistors have the same voltage because they connect across the same two nodes, but has not explained the node relationship.",
+          "context": "The teacher says both resistors have the same voltage because they connect across the same two nodes, but has not explained the node relationship.",
           "question": "How does connecting across the same two nodes support your statement about their voltages?",
           "diagnosticPurpose": "Probe the particular answer–reason link within an existing explanation."
         },
         {
           "level": "apply",
           "illustrativeOnly": true,
-          "context": "A student calculates a mean of 8 for readings 6, 8, and 10 and says they divided the total by the largest reading.",
+          "context": "A teacher calculates a mean of 8 for readings 6, 8, and 10 and says they divided the total by the largest reading.",
           "question": "How did the operation you used lead to 8 for these readings?",
           "diagnosticPurpose": "Elicit the actual procedure behind an answer without approving an incompatible reason."
         },
@@ -650,7 +650,7 @@
         "analyze"
       ],
       "objective": "Locate the specific causal link connecting a process, intermediate state, and outcome.",
-      "useWhen": "The student names a process or outcome but skips or misstates how one step produces the next.",
+      "useWhen": "The teacher names a process or outcome but skips or misstates how one step produces the next.",
       "requirements": [
         "A named process and adjacent causal steps",
         "Prerequisites for those steps are established"
@@ -674,7 +674,7 @@
         "setting"
       ],
       "levelGuidance": {
-        "understand": "Ask about the specific relationship in the existing student explanation. No new exercise, invented numerical givens, or procedural execution.",
+        "understand": "Ask about the specific relationship in the existing teacher explanation. No new exercise, invented numerical givens, or procedural execution.",
         "apply": "Require use of the concept or method in the supplied situation; preserve the active learning type and include necessary conditions. Do not settle for a recalled definition.",
         "analyze": "Require reasoning about the targeted assumption, relationship, inference, or error in the active task; preserve the learning-type task and ask about one diagnostic point."
       },
@@ -682,7 +682,7 @@
         {
           "level": "understand",
           "illustrativeOnly": true,
-          "context": "The student says a change in a gene alters a protein and then a trait, without connecting the protein to the trait.",
+          "context": "The teacher says a change in a gene alters a protein and then a trait, without connecting the protein to the trait.",
           "question": "What role does the protein play in the trait you described?",
           "diagnosticPurpose": "Probe one missing causal link in an existing gene-to-trait account."
         },
@@ -739,7 +739,7 @@
         "setting"
       ],
       "levelGuidance": {
-        "understand": "Ask about the specific relationship in the existing student explanation. No new exercise, invented numerical givens, or procedural execution.",
+        "understand": "Ask about the specific relationship in the existing teacher explanation. No new exercise, invented numerical givens, or procedural execution.",
         "apply": "Require use of the concept or method in the supplied situation; preserve the active learning type and include necessary conditions. Do not settle for a recalled definition.",
         "analyze": "Require reasoning about the targeted assumption, relationship, inference, or error in the active task; preserve the learning-type task and ask about one diagnostic point."
       },
@@ -747,14 +747,14 @@
         {
           "level": "understand",
           "illustrativeOnly": true,
-          "context": "The student says energy is used up by friction while describing the cart, track, and surrounding air together.",
+          "context": "The teacher says energy is used up by friction while describing the cart, track, and surrounding air together.",
           "question": "Where does the energy you called used up fit within that system?",
           "diagnosticPurpose": "Probe energy accounting in the existing system."
         },
         {
           "level": "apply",
           "illustrativeOnly": true,
-          "context": "During one interval a tank receives 5 liters, loses 2 liters, and has no other flows or leaks; the student knows volume balance for this liquid.",
+          "context": "During one interval a tank receives 5 liters, loses 2 liters, and has no other flows or leaks; the teacher knows volume balance for this liquid.",
           "question": "How would you use these flows to find the change in liquid stored in the tank?",
           "diagnosticPurpose": "Apply an explicit storage-and-transfer balance."
         },
@@ -779,7 +779,7 @@
         "analyze"
       ],
       "objective": "Distinguish conceptual membership from superficial resemblance or a familiar label.",
-      "useWhen": "The student categorizes an object, relationship, structure, or process using a potentially irrelevant feature.",
+      "useWhen": "The teacher categorizes an object, relationship, structure, or process using a potentially irrelevant feature.",
       "requirements": [
         "An established category and defining features",
         "A case whose relevant features are available"
@@ -803,7 +803,7 @@
         "setting"
       ],
       "levelGuidance": {
-        "understand": "Ask about the specific relationship in the existing student explanation. No new exercise, invented numerical givens, or procedural execution.",
+        "understand": "Ask about the specific relationship in the existing teacher explanation. No new exercise, invented numerical givens, or procedural execution.",
         "apply": "Require use of the concept or method in the supplied situation; preserve the active learning type and include necessary conditions. Do not settle for a recalled definition.",
         "analyze": "Require reasoning about the targeted assumption, relationship, inference, or error in the active task; preserve the learning-type task and ask about one diagnostic point."
       },
@@ -811,7 +811,7 @@
         {
           "level": "understand",
           "illustrativeOnly": true,
-          "context": "The student labels a data structure a stack because it is drawn vertically; its operations were discussed.",
+          "context": "The teacher labels a data structure a stack because it is drawn vertically; its operations were discussed.",
           "question": "What feature of the operations makes it a stack in your explanation?",
           "diagnosticPurpose": "Distinguish defining behavior from diagram orientation."
         },
@@ -843,7 +843,7 @@
         "analyze"
       ],
       "objective": "Probe the direction and completeness of a conditional claim.",
-      "useWhen": "The student treats one necessary condition as enough, reverses an implication, or treats an example as establishing a universal rule.",
+      "useWhen": "The teacher treats one necessary condition as enough, reverses an implication, or treats an example as establishing a universal rule.",
       "requirements": [
         "An explicit condition and claimed conclusion",
         "A definition or relationship whose logical direction can be assessed"
@@ -853,7 +853,7 @@
         "Required logical or subject prerequisites are absent"
       ],
       "constructionRules": [
-        "Identify the condition and what the student says it establishes.",
+        "Identify the condition and what the teacher says it establishes.",
         "Ask about the missing logical link without supplying a counterexample.",
         "Use a counterexample task only at Apply or Analyze and only with adequate prerequisites."
       ],
@@ -867,7 +867,7 @@
         "setting"
       ],
       "levelGuidance": {
-        "understand": "Ask about the specific relationship in the existing student explanation. No new exercise, invented numerical givens, or procedural execution.",
+        "understand": "Ask about the specific relationship in the existing teacher explanation. No new exercise, invented numerical givens, or procedural execution.",
         "apply": "Require use of the concept or method in the supplied situation; preserve the active learning type and include necessary conditions. Do not settle for a recalled definition.",
         "analyze": "Require reasoning about the targeted assumption, relationship, inference, or error in the active task; preserve the learning-type task and ask about one diagnostic point."
       },
@@ -875,14 +875,14 @@
         {
           "level": "understand",
           "illustrativeOnly": true,
-          "context": "The student concludes that zero input producing zero output establishes linearity.",
+          "context": "The teacher concludes that zero input producing zero output establishes linearity.",
           "question": "What does that check establish about the other conditions in your definition of linearity?",
           "diagnosticPurpose": "Probe claimed sufficiency of one condition within an existing definition."
         },
         {
           "level": "apply",
           "illustrativeOnly": true,
-          "context": "The system is y = x squared, and the student knows the scaling condition for linearity.",
+          "context": "The system is y = x squared, and the teacher knows the scaling condition for linearity.",
           "question": "How would you use the scaling condition to test whether this system is linear?",
           "diagnosticPurpose": "Apply a necessary test rather than treating one passing condition as sufficient."
         },
@@ -931,7 +931,7 @@
         "setting"
       ],
       "levelGuidance": {
-        "understand": "Ask about the specific relationship in the existing student explanation. No new exercise, invented numerical givens, or procedural execution.",
+        "understand": "Ask about the specific relationship in the existing teacher explanation. No new exercise, invented numerical givens, or procedural execution.",
         "apply": "Require use of the concept or method in the supplied situation; preserve the active learning type and include necessary conditions. Do not settle for a recalled definition.",
         "analyze": "Require reasoning about the targeted assumption, relationship, inference, or error in the active task; preserve the learning-type task and ask about one diagnostic point."
       },
@@ -939,7 +939,7 @@
         {
           "level": "understand",
           "illustrativeOnly": true,
-          "context": "The student says a beetle population became more resistant because each beetle changed its inherited traits when sprayed.",
+          "context": "The teacher says a beetle population became more resistant because each beetle changed its inherited traits when sprayed.",
           "question": "What changes in the population when you say it becomes more resistant?",
           "diagnosticPurpose": "Locate the claimed change at individual versus population level."
         },
@@ -971,7 +971,7 @@
         "analyze"
       ],
       "objective": "Probe which claim the available evidence warrants and which alternative remains unresolved.",
-      "useWhen": "The student treats an observation, association, or noisy result as proving a broader causal or population claim.",
+      "useWhen": "The teacher treats an observation, association, or noisy result as proving a broader causal or population claim.",
       "requirements": [
         "Specific observations or data",
         "A specific conclusion and relevant study conditions"
@@ -995,7 +995,7 @@
         "setting"
       ],
       "levelGuidance": {
-        "understand": "Ask about the specific relationship in the existing student explanation. No new exercise, invented numerical givens, or procedural execution.",
+        "understand": "Ask about the specific relationship in the existing teacher explanation. No new exercise, invented numerical givens, or procedural execution.",
         "apply": "Require use of the concept or method in the supplied situation; preserve the active learning type and include necessary conditions. Do not settle for a recalled definition.",
         "analyze": "Require reasoning about the targeted assumption, relationship, inference, or error in the active task; preserve the learning-type task and ask about one diagnostic point."
       },
@@ -1003,7 +1003,7 @@
         {
           "level": "understand",
           "illustrativeOnly": true,
-          "context": "The student says a correlation between sleep and grades proves that sleep caused the grade differences in the observational study they described.",
+          "context": "The teacher says a correlation between sleep and grades proves that sleep caused the grade differences in the observational study they described.",
           "question": "What in that study supports the causal role you assigned to sleep?",
           "diagnosticPurpose": "Probe the relationship between the existing observation and causal claim."
         },
@@ -1035,7 +1035,7 @@
         "analyze"
       ],
       "objective": "Separate possible outcomes, expected patterns, and variability under a specified probabilistic process.",
-      "useWhen": "The student treats an expected proportion as an exact outcome or interprets variation as proof that the process is not random.",
+      "useWhen": "The teacher treats an expected proportion as an exact outcome or interprets variation as proof that the process is not random.",
       "requirements": [
         "A defined random process and trial conditions",
         "Relevant independence or dependence assumptions"
@@ -1059,7 +1059,7 @@
         "setting"
       ],
       "levelGuidance": {
-        "understand": "Ask about the specific relationship in the existing student explanation. No new exercise, invented numerical givens, or procedural execution.",
+        "understand": "Ask about the specific relationship in the existing teacher explanation. No new exercise, invented numerical givens, or procedural execution.",
         "apply": "Require use of the concept or method in the supplied situation; preserve the active learning type and include necessary conditions. Do not settle for a recalled definition.",
         "analyze": "Require reasoning about the targeted assumption, relationship, inference, or error in the active task; preserve the learning-type task and ask about one diagnostic point."
       },
@@ -1067,21 +1067,21 @@
         {
           "level": "understand",
           "illustrativeOnly": true,
-          "context": "The student says a fair coin must produce exactly five heads in ten independent tosses.",
+          "context": "The teacher says a fair coin must produce exactly five heads in ten independent tosses.",
           "question": "What does fair mean for the exact number of heads in the ten tosses you described?",
           "diagnosticPurpose": "Probe expected proportion versus a guaranteed count."
         },
         {
           "level": "apply",
           "illustrativeOnly": true,
-          "context": "Two independent fair coin tosses are specified; the student knows how to combine independent probabilities.",
+          "context": "Two independent fair coin tosses are specified; the teacher knows how to combine independent probabilities.",
           "question": "How would you find the probability that both tosses are heads?",
           "diagnosticPurpose": "Apply the specified probability model."
         },
         {
           "level": "analyze",
           "illustrativeOnly": true,
-          "context": "A drift simulation uses repeated independent samples from the same population model, but runs yield different allele frequencies; the student calls this proof of hidden selection.",
+          "context": "A drift simulation uses repeated independent samples from the same population model, but runs yield different allele frequencies; the teacher calls this proof of hidden selection.",
           "question": "What about the variation between these runs supports that claim of selection?",
           "diagnosticPurpose": "Analyze whether variation alone distinguishes a random process from an alternative."
         }
@@ -1099,7 +1099,7 @@
         "analyze"
       ],
       "objective": "Probe why a method is useful under the actual problem conditions.",
-      "useWhen": "The student chooses a technique by keywords or formula familiarity without establishing the conditions needed for its intended use.",
+      "useWhen": "The teacher chooses a technique by keywords or formula familiarity without establishing the conditions needed for its intended use.",
       "requirements": [
         "A proposed or needed method",
         "Available conditions relevant to the method",
@@ -1124,7 +1124,7 @@
         "setting"
       ],
       "levelGuidance": {
-        "understand": "Ask about the specific relationship in the existing student explanation. No new exercise, invented numerical givens, or procedural execution.",
+        "understand": "Ask about the specific relationship in the existing teacher explanation. No new exercise, invented numerical givens, or procedural execution.",
         "apply": "Require use of the concept or method in the supplied situation; preserve the active learning type and include necessary conditions. Do not settle for a recalled definition.",
         "analyze": "Require reasoning about the targeted assumption, relationship, inference, or error in the active task; preserve the learning-type task and ask about one diagnostic point."
       },
@@ -1132,14 +1132,14 @@
         {
           "level": "understand",
           "illustrativeOnly": true,
-          "context": "The student says Gauss’s law applies only to spherical charge distributions.",
+          "context": "The teacher says Gauss’s law applies only to spherical charge distributions.",
           "question": "What role does symmetry play in how you use Gauss’s law in your explanation?",
           "diagnosticPurpose": "Distinguish validity of a law from usefulness for finding a field."
         },
         {
           "level": "apply",
           "illustrativeOnly": true,
-          "context": "A uniformly charged infinitely long cylinder has radius R and volume charge density rho; the student knows the relevant field methods.",
+          "context": "A uniformly charged infinitely long cylinder has radius R and volume charge density rho; the teacher knows the relevant field methods.",
           "question": "How would you use a method suited to this symmetry to find the field outside the cylinder?",
           "diagnosticPurpose": "Select and use a method under supplied conditions."
         },
@@ -1188,7 +1188,7 @@
         "setting"
       ],
       "levelGuidance": {
-        "understand": "Ask about the specific relationship in the existing student explanation. No new exercise, invented numerical givens, or procedural execution.",
+        "understand": "Ask about the specific relationship in the existing teacher explanation. No new exercise, invented numerical givens, or procedural execution.",
         "apply": "Require use of the concept or method in the supplied situation; preserve the active learning type and include necessary conditions. Do not settle for a recalled definition.",
         "analyze": "Require reasoning about the targeted assumption, relationship, inference, or error in the active task; preserve the learning-type task and ask about one diagnostic point."
       },
@@ -1196,7 +1196,7 @@
         {
           "level": "understand",
           "illustrativeOnly": true,
-          "context": "The student says a passenger sitting in a moving train is not moving, without naming an observer.",
+          "context": "The teacher says a passenger sitting in a moving train is not moving, without naming an observer.",
           "question": "Relative to what is the passenger not moving in your explanation?",
           "diagnosticPurpose": "Clarify the reference needed to interpret an existing motion claim."
         },
@@ -1246,7 +1246,7 @@
         "Ask one focused prerequisite question without supplying its principle, formula, answer, or connection to the harder task.",
         "Use background action probe initially, then return to connect the idea to the original task once established.",
         "Allow at most two prerequisite probes; then return or exit by reframing an accessible part of the original task.",
-        "Respect a student request to change direction. Do not label an emotion from an error or terse reply.",
+        "Respect a teacher request to change direction. Do not label an emotion from an error or terse reply.",
         "Preserve the original task level and rubric, and use separate probeLevel metadata for a temporary step down."
       ],
       "interpretationRules": [
@@ -1258,16 +1258,16 @@
         {
           "level": "understand",
           "illustrativeOnly": true,
-          "context": "A student explains a falling object at constant speed but says they cannot recall how net force and acceleration are related.",
+          "context": "A teacher explains a falling object at constant speed but says they cannot recall how net force and acceleration are related.",
           "question": "How is acceleration related to the net force on an object?",
-          "diagnosticPurpose": "Retrieve the prerequisite relationship, then ask the student to connect it to the original constant-speed explanation. This answer alone does not establish that explanation.",
+          "diagnosticPurpose": "Retrieve the prerequisite relationship, then ask the teacher to connect it to the original constant-speed explanation. This answer alone does not establish that explanation.",
           "probeLevel": "understand",
           "returnQuestion": "How does that relationship help explain the constant speed in the original situation?"
         },
         {
           "level": "apply",
           "illustrativeOnly": true,
-          "context": "A student is trying to use momentum conservation in a collision but explicitly cannot recall how mass and velocity relate to momentum.",
+          "context": "A teacher is trying to use momentum conservation in a collision but explicitly cannot recall how mass and velocity relate to momentum.",
           "question": "How is an object’s momentum related to its mass and velocity?",
           "diagnosticPurpose": "Ask for the missing prerequisite without solving the collision; then return to using it in the original momentum account.",
           "probeLevel": "understand",
@@ -1276,7 +1276,7 @@
         {
           "level": "analyze",
           "illustrativeOnly": true,
-          "context": "A student analyzing a simulated beetle population says they do not understand how survival is connected to which individuals leave offspring.",
+          "context": "A teacher analyzing a simulated beetle population says they do not understand how survival is connected to which individuals leave offspring.",
           "question": "How can surviving long enough to reproduce affect which individuals leave offspring?",
           "diagnosticPurpose": "Establish one prerequisite relationship before returning to analysis of the population data. Do not supply the explanation of the observed frequency shift.",
           "probeLevel": "understand",

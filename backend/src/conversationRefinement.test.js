@@ -27,7 +27,7 @@ test('ordinary chat chooses a catalog strategy and generates its question in the
     assert.match(instructions, /No separate planning call/);
     return { message: 'In your explanation, what keeps acting on the puck after contact ends?', expression: 'confused', strategyChoice: { strategyId: 'remove-condition', rationale: 'Examine the claimed remaining influence after contact ends.', targetQuote: request.messages[1].content, rubricItem: request.aspects[0] } };
   });
-  assert.deepEqual(calls, ['evaluate_refined', 'respond_to_student']);
+  assert.deepEqual(calls, ['evaluate_refined', 'reply_to_teacher']);
   assert.equal(result.learnerModel.strategyId, 'remove-condition');
   assert.equal(result.learnerModel.selectionMethod, 'inline_response');
   assert.equal(result.learnerModel.coverageGap, null);
@@ -44,7 +44,7 @@ test('inline strategy rejects fabricated grounding and retries the reply without
     assert.match(instructions, /Ground the strategy in an exact current learner quote/);
     return { message: 'What interaction acts on the puck after contact ends?', expression: 'attentive', strategyChoice: { strategyId: 'none', rationale: 'No safe catalog fit.', targetQuote: '', rubricItem: '' } };
   });
-  assert.deepEqual(calls, ['evaluate_refined', 'respond_to_student', 'respond_to_student']);
+  assert.deepEqual(calls, ['evaluate_refined', 'reply_to_teacher', 'reply_to_teacher']);
   assert.equal(result.learnerModel.strategyId, null);
   assert.equal(result.learnerModel.coverageGap.stage, 'inline_selection');
 });
@@ -70,15 +70,15 @@ test('explicit strategy learner applies the shared strategy pipeline to an incom
     calls.push(tool.name);
     if (tool.name === 'evaluate_refined') return evaluatorResponse(messages, { status: 'flawed' });
     if (tool.name === 'select_strategy') return plan(request);
-    assert.equal(tool.name, 'respond_to_student');
+    assert.equal(tool.name, 'reply_to_teacher');
     assert.match(instructions, /Apply the following diagnostic strategy/);
     return { strategyChoice: { strategyId: 'none', rationale: 'No suitable operation for this fixture.', targetQuote: '', rubricItem: '' }, message: 'After the hand loses contact with the puck, what could make its speed change on this frictionless surface?', expression: 'confused' };
   }, undefined, { learner: 'strategy' });
   assert.equal(result.assessment.complete, false);
   assert.equal(result.learnerModel.strategyId, 'remove-condition');
   assert.deepEqual(result.learnerModel.state.evidence, [{ messageIndex: 1, quote: request.messages[1].content }]);
-  assert.equal(calls.filter(c => c === 'respond_to_student').length, 1, 'Do not generate an unused baseline question');
-  assert.deepEqual(calls, ['evaluate_refined', 'select_strategy', 'respond_to_student']);
+  assert.equal(calls.filter(c => c === 'reply_to_teacher').length, 1, 'Do not generate an unused baseline question');
+  assert.deepEqual(calls, ['evaluate_refined', 'select_strategy', 'reply_to_teacher']);
   assert.deepEqual(result.learnerModel.state.understands, []);
   assert.ok(result.learnerModel.state.potentialMisconceptions[0].includes(request.aspects[0]));
 });
@@ -93,7 +93,7 @@ test('all rubric items remain mandatory and strategy abstention generates one or
       return value;
     }
     if (tool.name === 'select_strategy') return { strategyId: 'none', rationale: 'No suitable construction for this evidence.', plan: null };
-    assert.equal(tool.name, 'respond_to_student');
+    assert.equal(tool.name, 'reply_to_teacher');
     learnerCalls++;
     return { strategyChoice: { strategyId: 'none', rationale: 'No suitable operation for this fixture.', targetQuote: '', rubricItem: '' }, message: 'What does zero net force tell you about the puck’s motion?', expression: 'attentive' };
   }, undefined, { learner: 'strategy' });
@@ -134,7 +134,7 @@ test('ordinary chat API sends actual catalog rules and returns a grounded inline
   const server = createApiServer({ accountService: testAccountService(), chatgpt: null, env: { ANTHROPIC_API_KEY: 'test-only' }, query: async (instructions, messages, tool) => {
     names.push(tool.name);
     if (tool.name === 'evaluate_refined') return evaluatorResponse(messages, { status: 'flawed' });
-    assert.equal(tool.name, 'respond_to_student');
+    assert.equal(tool.name, 'reply_to_teacher');
     const records = JSON.parse(instructions.split('Reviewed strategies: ')[1].split('\n')[0]);
     assert.deepEqual(records.find(s => s.id === selected.id).constructionRules, selected.constructionRules);
     assert.deepEqual(records.map(s => s.id).sort(), strategies.filter(s => s.reviewStatus === 'design_reviewed' && s.levels.includes(request.level)).map(s => s.id).sort());
@@ -146,7 +146,7 @@ test('ordinary chat API sends actual catalog rules and returns a grounded inline
   Object.assign(req, { method: 'POST', url: '/api/chat', headers: { authorization: testAuthorization, host: 'localhost:3001', origin: 'http://localhost:5173', 'content-type': 'application/json' } });
   const result = await new Promise(resolve => server.emit('request', req, { setHeader() {}, writeHead(status) { this.status = status; }, end(body) { resolve({ status: this.status, data: JSON.parse(body) }); } }));
   assert.equal(result.status, 200, JSON.stringify(result.data));
-  assert.deepEqual(names, ['evaluate_refined', 'respond_to_student']);
+  assert.deepEqual(names, ['evaluate_refined', 'reply_to_teacher']);
   assert.equal(result.data.learnerModel.strategyId, selected.id);
   assert.equal(result.data.learnerModel.selectionMethod, 'inline_response');
   assert.equal(result.data.learnerModel.targetQuote, request.messages[1].content);

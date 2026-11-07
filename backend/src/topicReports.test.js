@@ -1,6 +1,8 @@
 import test from 'node:test';
+import { primaryInstructions } from './evaluatorPrimary.js';
+import { leanInstructions } from './refinedEvaluator.js';
 import assert from 'node:assert/strict';
-import { scoreJudgment, assessmentPayload, buildTopicReport, researchCsv, csv, eventKey } from './topicReports.js';
+import { goalProof, itemScore, scoreJudgment, statedMistake, openSkippedGoals, assessmentPayload, buildTopicReport, researchCsv, csv, eventKey } from './topicReports.js';
 import { createEvaluationContext, taskDefinition } from './evaluatorContracts.js';
 import { primaryAssessmentTool, normalizePrimaryAssessment } from './evaluatorPrimary.js';
 
@@ -106,4 +108,103 @@ test('overall independent and transfer checks remain visible without entering th
   assert.equal(report.final.percent, 100); assert.equal(report.final.scored, 2);
   assert.equal(report.levelChecks[0].supported, false); assert.equal(report.levelChecks[0].rubricDemonstrated, true);
   assert.equal(report.levelChecks[0].transferCheck, 'not_demonstrated');
+});
+
+test('item scores follow how each rubric item was reached', () => {
+  assert.deepEqual(itemScore('demonstrated', [{ status: 'partial', replies: 2 }, { status: 'demonstrated', replies: 3 }]), { score: 1, outcome: 'correct' }, 'follow-up questions still earn full credit');
+  assert.deepEqual(itemScore('demonstrated', [{ status: 'needs_work', mistake: true, replies: 1 }, { status: 'demonstrated', replies: 2 }]), { score: 0.5, outcome: 'corrected' });
+  assert.deepEqual(itemScore('demonstrated', [{ status: 'needs_work', mistake: false, replies: 1 }, { status: 'demonstrated', replies: 2 }]), { score: 1, outcome: 'correct' }, 'an incomplete answer is not a mistake');
+  assert.deepEqual(itemScore('demonstrated', [{ status: 'demonstrated', replies: 4 }]), { score: 1, outcome: 'correct' }, 'extra replies never reduce the score');
+  assert.deepEqual(itemScore('demonstrated', [{ status: 'skipped' }, { status: 'demonstrated', replies: 1 }]), { score: 1, outcome: 'correct' }, 'an earlier skip with no false statement earns full credit');
+  assert.deepEqual(itemScore('demonstrated', [{ status: 'needs_work', mistake: true }, { status: 'skipped' }, { status: 'demonstrated' }]), { score: 0.5, outcome: 'corrected' }, 'a false statement before the skip still costs half');
+  assert.deepEqual(itemScore('skipped', [{ status: 'needs_work' }, { status: 'skipped' }]), { score: 0, outcome: 'skipped' });
+  for (const status of ['needs_work', 'partial', 'not_assessed']) assert.deepEqual(itemScore(status), { score: null, outcome: 'unfinished' });
+  assert.deepEqual(itemScore('demonstrated'), { score: 1, outcome: 'correct' }, 'older events have no reply count');
+});
+
+test('reply counts are stored per item and concept and topic totals keep unfinished items', () => {
+  const longInput = { ...input, messages: [...Array(4).keys()].flatMap(i => [{ role: 'assistant', content: `Probe ${i}`, rubricFocus: input.aspects[0] }, { role: 'user', content: `Reply ${i}` }]) };
+  const observation = { messageIndex: 7, messageId: 'u', quote: 'Reply 3', assistance: 'none' };
+  const slow = { id: 'event-1', sequence: 1, created_at: '2026-11-03T12:01:00Z', payload: assessmentPayload(longInput, assessment([judgment({ observations: [observation] }), judgment({ criterionId: 'criterion_2', status: 'unclear', result: 'undetermined', observations: [] })]), { prompt: 'test', model: 'test' }) };
+  assert.equal(slow.payload.goals[0].replies, 4);
+  const report = buildTopicReport(context([slow]), 'session', 'early');
+  assert.equal(report.goals[0].score, 1); assert.equal(report.goals[1].score, null);
+  assert.deepEqual(report.score, { earned: 1, possible: 2, percent: 50, unfinished: 1 });
+  assert.deepEqual(report.concepts, [{ id: 'energy', name: 'Energy', earned: 1, possible: 2, percent: 50, unfinished: 1 }]);
+});
+
+test('only a stated error, not an omission, costs half credit on a finished item', () => {
+  assert.equal(statedMistake({ status: 'needs_work' }, { status: 'unclear', contradictions: [] }), false);
+  assert.equal(statedMistake({ status: 'needs_work' }, { status: 'flawed', contradictions: [] }), true);
+  assert.equal(statedMistake({ status: 'needs_work' }, { status: 'unclear', contradictions: [{ quote: 'x' }] }), true);
+  const finished = (patch, createdAt) => ({ ...event([judgment(patch), judgment({ criterionId: 'criterion_2' })]), created_at: createdAt });
+  const later = finished({}, '2026-11-03T12:05:00Z');
+  const omission = buildTopicReport(context([finished({ status: 'unclear', result: 'incorrect', reasoning: 'unclear' }, '2026-11-03T12:01:00Z'), later]), 'session', 'completed');
+  assert.deepEqual([omission.goals[0].score, omission.goals[0].outcome, omission.goals[0].proof.mistake], [1, 'correct', null]);
+  const error = buildTopicReport(context([finished({ status: 'flawed', result: 'incorrect' }, '2026-11-03T12:01:00Z'), later]), 'session', 'completed');
+  assert.deepEqual([error.goals[0].score, error.goals[0].outcome], [0.5, 'corrected']);
+});
+
+test('later teaching recovers a skipped earlier-level goal', () => {
+  const twoLevels = { ...config, concepts: [{ ...config.concepts[0], target: 'understand', rubric: { ...config.concepts[0].rubric, understand: '1. Explain energy transfer.' } }] };
+  const skip = event([judgment(), judgment({ criterionId: 'criterion_2' })]);
+  skip.payload.goals[1].status = 'skipped'; skip.payload.goals[1].credit = null;
+  const state = events => ({ ...context(events), configuration: twoLevels });
+  assert.deepEqual(openSkippedGoals(state([skip]), 'energy', 'understand').map(g => g.id), ['energy:remember:2']);
+  assert.deepEqual(openSkippedGoals(state([skip]), 'energy', 'remember'), [], 'the current level covers its own skips');
+  const later = (skipRecovery, sequence) => {
+    const request = { ...input, level: 'understand', aspects: ['Explain energy transfer.'] };
+    const base = assessment([judgment({ status: 'unclear', result: 'undetermined', observations: [] })]);
+    return { id: `event-${sequence}`, sequence, created_at: `2026-11-03T12:0${sequence}:00Z`, payload: assessmentPayload(request, { ...base, criteria: [{ aspect: request.aspects[0], status: 'needs_clarification', evidence: [] }], skipRecovery }, { prompt: 'test', model: 'test' }) };
+  };
+  const recovered = { id: 'energy:remember:2', level: 'remember', aspect: 'Name its unit.', credit: 1, status: 'demonstrated', mistake: false, reason: 'Named joules.', evidence: [{ messageIndex: 3, quote: 'joules' }] };
+  const falseClaim = { ...recovered, credit: null, status: 'skipped', mistake: true, reason: 'Called the unit watts.' };
+  const clean = buildTopicReport(state([skip, later([recovered], 2)]), 'session', 'completed').goals[1];
+  assert.deepEqual([clean.status, clean.score, clean.outcome], ['demonstrated', 1, 'correct']);
+  assert.deepEqual(openSkippedGoals(state([skip, later([recovered], 2)]), 'energy', 'understand'), []);
+  assert.equal(openSkippedGoals(state([skip, later([falseClaim], 2)]), 'energy', 'understand').length, 1, 'a false statement leaves the item recoverable');
+  const fixed = buildTopicReport(state([skip, later([falseClaim], 2), later([recovered], 3)]), 'session', 'completed').goals[1];
+  assert.deepEqual([fixed.status, fixed.score, fixed.outcome, fixed.proof.mistake.reason], ['demonstrated', 0.5, 'corrected', 'Called the unit watts.']);
+  assert.deepEqual([buildTopicReport(state([skip]), 'session', 'completed').goals[1].score], [0]);
+});
+
+test('evaluator prompts keep omissions out of the error category', () => {
+  for (const text of [primaryInstructions, leanInstructions]) assert.match(text, /Leaving out a required part is never an error/);
+});
+
+test('skipped items count as zero in the topic score', () => {
+  const skip = event([judgment(), judgment({ criterionId: 'criterion_2' })]);
+  skip.payload.goals[1].status = 'skipped'; skip.payload.goals[1].credit = null;
+  const report = buildTopicReport(context([skip]), 'session', 'completed');
+  assert.deepEqual(report.score, { earned: 1, possible: 2, percent: 50, unfinished: 0 });
+});
+
+test('proof shows when an item was earned, what went wrong, and every attempt at a skipped item', () => {
+  const reply = (content, index) => ({ evidence: [], reply: { messageIndex: index, quote: content } });
+  const cite = (quote, messageIndex) => [{ messageIndex, quote }];
+  const history = [
+    { status: 'needs_work', mistake: true, reason: 'Used the wrong unit.', replies: 1, at: 't1', evidence: cite('watts', 1), reply: { messageIndex: 1, quote: 'The unit is watts.' } },
+    { status: 'demonstrated', reason: 'Named joules.', replies: 2, at: 't2', evidence: cite('joules', 3) },
+    { status: 'demonstrated', reason: 'Still right.', replies: 3, at: 't3', evidence: cite('joules again', 5) },
+  ];
+  const proof = goalProof('demonstrated', history);
+  assert.deepEqual([proof.gotAt, proof.gotOnReply, proof.reason, proof.quote], ['t2', 2, 'Named joules.', 'joules'], 'later re-judging does not move when it was earned');
+  assert.deepEqual(proof.mistake, { reason: 'Used the wrong unit.', quote: 'watts' });
+  assert.deepEqual(proof.attempts, ['The unit is watts.', 'joules', 'joules again'], 'a full reply replaces its excerpt');
+
+  const skipped = goalProof('skipped', [{ status: 'not_assessed', replies: 1, ...reply('No idea', 1) }, { status: 'not_assessed', replies: 2, ...reply('Maybe heat?', 3) }, { status: 'skipped', replies: 2, evidence: [] }]);
+  assert.deepEqual([skipped.gotAt, skipped.replies, skipped.attempts], [null, 2, ['No idea', 'Maybe heat?']]);
+  assert.equal(goalProof('demonstrated', [{ status: 'skipped', evidence: [] }, { status: 'demonstrated', replies: 1, at: 't', evidence: [] }]).returnedAfterSkip, true);
+  assert.deepEqual(goalProof('not_assessed').attempts, []);
+});
+
+test('replies to the focused item are saved for proof, and research exports leave them out', () => {
+  const answered = { ...input, messages: [{ role: 'assistant', content: 'Define energy.', rubricFocus: input.aspects[0] }, { role: 'user', content: 'I think it is a force?' }] };
+  const unclear = judgment({ status: 'needs_clarification', result: 'undetermined', observations: [] });
+  const e = event([unclear, judgment({ criterionId: 'criterion_2', status: 'missing', result: 'undetermined', observations: [] })], 1, answered);
+  assert.deepEqual(e.payload.goals[0].reply, { messageIndex: 1, quote: 'I think it is a force?' });
+  assert.equal(e.payload.goals[1].reply, undefined, 'a reply only counts for the item it answered');
+  const report = buildTopicReport(context([e]), 'session', 'early');
+  assert.deepEqual(report.goals[0].proof.attempts, ['I think it is a force?']);
+  assert.ok(!researchCsv([{ report, id: 'snapshot', createdAt: 'now' }], 'criteria', { includeIncomplete: true }).includes('a force'));
 });

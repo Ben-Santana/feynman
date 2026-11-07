@@ -25,7 +25,7 @@ export function MathText({ children }: { children: string }) {
   return <Markdown {...mathProps} rehypePlugins={boldWordStarts ? [...mathProps.rehypePlugins, rehypeReadingEmphasis] : mathProps.rehypePlugins} components={{ img: () => null, a: ({ children }) => <span>{children}</span> }}>{spacedMath}</Markdown>
 }
 
-export function PaperReview({ paper, review, busy, error, onSubmit, characterName = 'Feynman' }: { characterName?: string; paper: Paper; review?: Review; busy: boolean; error?: string; onSubmit: (review: Review) => Promise<boolean> }) {
+export function PaperReview({ paper, review, busy, error, onSubmit, characterName = 'Feynman', autoOpen = false, onClose }: { characterName?: string; paper: Paper; review?: Review; busy: boolean; error?: string; onSubmit: (review: Review) => Promise<boolean>; autoOpen?: boolean; onClose?: () => void }) {
   const dialog = useRef<HTMLDialogElement>(null)
   const preview = useRef<HTMLSpanElement>(null)
   const stamp = useRef<HTMLSpanElement>(null)
@@ -62,6 +62,9 @@ export function PaperReview({ paper, review, busy, error, onSubmit, characterNam
       activeAnimations.forEach(animation => animation.cancel())
     }
   }, [])
+  useEffect(() => {
+    if (autoOpen) openPaper()
+  }, [autoOpen])
   function animate(element: HTMLElement | null, frames: Keyframe[], options: KeyframeAnimationOptions, hold = false) {
     if (!element) return Promise.resolve()
     const animation = element.animate(frames, options)
@@ -232,7 +235,7 @@ export function PaperReview({ paper, review, busy, error, onSubmit, characterNam
   }
   return <>
     <button type="button" className="paper-peek" onClick={openPaper} aria-label={review ? 'View graded papers' : 'Grade papers'} title={review ? 'View graded papers' : 'Grade papers'}><span ref={preview} className="paper-peek-sheet" aria-hidden="true"><span className="paper-peek-heading" /><span className="paper-peek-line" /><span className="paper-peek-line" /><span className="paper-peek-line short" /><span className="paper-peek-mark">{review ? '✓' : '?'}</span></span><span className="sr-only">{review ? 'View graded papers' : 'Grade papers'}</span></button>
-    <dialog className={`paper-dialog paper-stamp-dialog ${exercises.length > 1 ? 'paper-dialog-deck' : ''} ${sorting ? 'paper-is-stamping' : ''} ${turning ? 'paper-is-turning' : ''}`} ref={dialog} aria-label="Classroom papers" tabIndex={-1} onCancel={event => { if (sorting || turning) event.preventDefault() }} onKeyDown={event => {
+    <dialog className={`paper-dialog paper-stamp-dialog ${exercises.length > 1 ? 'paper-dialog-deck' : ''} ${sorting ? 'paper-is-stamping' : ''} ${turning ? 'paper-is-turning' : ''}`} ref={dialog} aria-label="Classroom papers" tabIndex={-1} onClose={onClose} onCancel={event => { if (sorting || turning) event.preventDefault() }} onKeyDown={event => {
       if (event.altKey || event.ctrlKey || event.metaKey || event.shiftKey || (event.target as HTMLElement).closest('input, textarea, select, [contenteditable="true"]')) return
       if (event.key === 'ArrowLeft' || event.key === 'ArrowRight') { event.preventDefault(); void browse(event.key === 'ArrowLeft' ? -1 : 1) }
     }}>

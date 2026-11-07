@@ -1,13 +1,14 @@
 import { validateCourseBannerFile, type CourseBanner } from './courseAppearance'
 import { accountSignal, requireAccount, supabase } from './accounts'
 import { canTeachCourses } from './coursePermissions'
+import { COMMUNITY_LIBRARY_ENABLED } from './features'
 import { decodeSession, encodeSession, flushSessionSaves, getSaveStatus, type CloudSession, type SavedSession } from './learningStore'
 import { sessionComplete, type Concept, type Level, type Session } from './learningFlow'
 import type { DashboardModule } from './dashboardData'
 import { normalizeAppearance, type CharacterAppearance } from './characterAppearance'
 
 export const COURSE_SUBJECTS = ['General STEM', 'Mathematics', 'Physics', 'Chemistry', 'Biology', 'Computer Science', 'Electrical Engineering', 'Mechanical Engineering', 'Civil Engineering', 'Chemical Engineering', 'Biomedical Engineering', 'Aerospace Engineering', 'Materials Science', 'Environmental Science', 'Earth Science', 'Astronomy', 'Statistics', 'Data Science', 'Robotics', 'Other'] as const
-export type CourseCollection = 'enrolled' | 'starred' | 'community'
+export type CourseCollection = 'enrolled' | 'community'
 
 export type EnrollmentMode = 'open' | 'approval'
 export type EnrollmentStatus = 'pending' | 'enrolled' | 'rejected'
@@ -15,8 +16,8 @@ export type Course = { id: string; instructor_id: string; name: string; code: st
 export const courseSubjects = (course: Course): string[] => course.subjects ?? [course.subject ?? 'General STEM']
 export type Enrollment = { course_id: string; student_id: string; status: EnrollmentStatus }
 export type CourseModule = { id: string; course_id: string; title: string; document: CloudSession['document']; revision: number; published_at: string | null; created_at: string }
-export type StudentProgress = { studentId: string; name: string; email: string; status: EnrollmentStatus; modules: { moduleId: string; started: boolean; concepts: { id: string; name: string; target: Level; passed: number }[] }[] }
-export type ModuleProgress = { moduleId: string; sessionId: string; complete: boolean }
+export type StudentProgress = { studentId: string; name: string; email: string; status: EnrollmentStatus; modules: { moduleId: string; started: boolean; score: number | null; concepts: { id: string; name: string; target: Level; passed: number; finalSummary: boolean }[] }[] }
+export type ModuleProgress = { moduleId: string; sessionId: string; complete: boolean; score: number | null }
 export type CoursePerson = { id: string; name: string; role: 'instructor' | 'student'; appearance: CharacterAppearance }
 export type ModuleSession = SavedSession<Concept, Session>
 
@@ -36,9 +37,9 @@ export async function loadCourses() {
     supabase().from('courses').select('*').order('created_at', { ascending: false }).abortSignal(signal),
     supabase().from('course_enrollments').select('*').eq('student_id', requireAccount().id).abortSignal(signal),
     supabase().from('course_pins').select('course_id').eq('user_id', requireAccount().id).abortSignal(signal),
-    rpc<Course[]>('community_courses', {}),
-    supabase().from('course_stars').select('course_id').eq('user_id', requireAccount().id).abortSignal(signal),
-    rpc<Record<string, number>>('course_star_counts', {}),
+    COMMUNITY_LIBRARY_ENABLED ? rpc<Course[]>('community_courses', {}) : [] as Course[],
+    COMMUNITY_LIBRARY_ENABLED ? supabase().from('course_stars').select('course_id').eq('user_id', requireAccount().id).abortSignal(signal) : { data: [] as { course_id: string }[], error: null },
+    COMMUNITY_LIBRARY_ENABLED ? rpc<Record<string, number>>('course_star_counts', {}) : {} as Record<string, number>,
   ])
   signal.throwIfAborted()
   if (courses.error || enrollments.error) throw new Error('Could not load courses. Apply the courses migration if this is a new setup, then retry.')
@@ -78,7 +79,7 @@ export async function loadCourse(id: string) {
   const account = requireAccount()
   const instructor = course.instructor_id === account.id && canTeachCourses(account.role)
   const enrollment = enrollments.find(value => value.course_id === id)
-  if (!instructor && enrollment?.status !== 'enrolled' && !course.is_public) return { course, enrollment, modules: [] as CourseModule[], progress: [] as StudentProgress[], ownProgress: [] as ModuleProgress[], people: [] as CoursePerson[] }
+  if (!instructor && enrollment?.status !== 'enrolled' && !(COMMUNITY_LIBRARY_ENABLED && course.is_public)) return { course, enrollment, modules: [] as CourseModule[], progress: [] as StudentProgress[], ownProgress: [] as ModuleProgress[], people: [] as CoursePerson[] }
   const [modules, progress, people] = await Promise.all([
     supabase().from('course_modules').select('*').eq('course_id', id).order('published_at').order('created_at').order('id').abortSignal(signal),
     instructor ? rpc<StudentProgress[]>('course_progress', { target_course: id }) : Promise.resolve([]),
@@ -93,11 +94,15 @@ export async function loadCourse(id: string) {
     if (links.error) throw new Error('Could not load assignment progress. Please retry.')
     const relevant = links.data.filter(link => modules.data.some(module => module.id === link.module_id))
     if (relevant.length) {
-      const saved = await supabase().from('learning_sessions').select('id,concepts:document->session->concepts').eq('owner_id', requireAccount().id).in('id', relevant.map(link => link.session_id)).abortSignal(signal)
+      const sessionIds = relevant.map(link => link.session_id)
+      const [saved, scores] = await Promise.all([
+        supabase().from('learning_sessions').select('id,concepts:document->session->concepts').eq('owner_id', requireAccount().id).in('id', sessionIds).abortSignal(signal),
+        rpc<{ sessionId: string; score: number | null }[]>('own_topic_scores', { target_sessions: sessionIds }),
+      ])
       if (saved.error) throw new Error('Could not load assignment progress. Please retry.')
       for (const link of relevant) {
         const concepts = saved.data.find(row => row.id === link.session_id)?.concepts
-        ownProgress.push({ moduleId: link.module_id, sessionId: link.session_id, complete: Array.isArray(concepts) && sessionComplete(concepts as Concept[]) })
+        ownProgress.push({ moduleId: link.module_id, sessionId: link.session_id, complete: Array.isArray(concepts) && sessionComplete(concepts as Concept[]), score: scores.find(value => value.sessionId === link.session_id)?.score ?? null })
       }
     }
   }

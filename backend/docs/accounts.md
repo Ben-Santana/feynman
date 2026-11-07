@@ -187,8 +187,15 @@ table alongside the name, account email/UUID, server UTC timestamp, agreement
 version, original SHA-256, signed-file SHA-256, and electronic-consent statement.
 The PDF and record are inserted atomically; clients cannot insert, update, delete,
 or read this table. The service role can select/insert only. One immutable record
-per account makes retries safe. Account deletion requires an explicit retention
-decision because the signature record intentionally restricts profile deletion.
+per account makes retries safe. Signed consents are retained after account
+deletion as standalone records with no link to a live account.
+
+Admins delete accounts from Manage accounts. `admin_delete_account` removes the
+login, profile, chats, survey, scores, reports, enrollments, points, purchases,
+customizations, usage events, and role history in one transaction, after the
+backend removes the account's attachments and banners from Storage. Admins cannot
+delete themselves, and accounts that own courses cannot be deleted, so enrolled
+students keep their work. Chats remain undeletable otherwise.
 
 Participants can download their copy after signing, while awaiting approval, or
 from Profile. Approved admins can download copies from Manage accounts. The
@@ -202,7 +209,7 @@ policy; this flow does not automatically re-consent existing participants.
 ## Admin courses
 
 With `202611050001_admin_course_ownership.sql` applied, approved admins can
-create and teach courses under **Workspace → Courses**. Course editing and
+create and teach courses under **Courses**. Course editing and
 enrollment management use the same ownership checks as for instructors.
 
 **Administration → All courses** at `/admin/all-courses` is the read-only

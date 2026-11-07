@@ -46,6 +46,12 @@ test('server persistence freezes configuration, deduplicates retries, preserves 
   const report = await f.service.report(f.account, f.session.id, { save: true, mode: 'completed' });
   const retry = await f.service.report(f.account, f.session.id, { save: true, mode: 'completed' });
   assert.equal(report.id, retry.id); assert.equal(report.report.first.percent, 100); assert.equal(report.report.final.percent, 100);
+  assert.deepEqual(report.report.score, { earned: 2, possible: 2, percent: 100, unfinished: 0 });
+  assert.equal(Number((await f.one('select public.completed_topic_score($1,$2) as score', [student, f.session.id])).score), 100);
+  await f.db.query(`update public.topic_report_snapshots set report = (report - 'score') || '{"final":{"percent":90}}'::jsonb where id=$1`, [report.id]);
+  assert.equal(Number((await f.one('select public.completed_topic_score($1,$2) as score', [student, f.session.id])).score), 90, 'older snapshots keep their final percentage');
+  assert.equal((await f.service.report(f.account, f.session.id, { save: true, mode: 'completed' })).report.score.percent, 100, 'an older snapshot at this watermark still shows the current score');
+  await f.db.query('update public.topic_report_snapshots set report = $2 where id=$1', [report.id, report.report]);
   const next = { ...f.input, messages: [...f.input.messages, { role: 'assistant', content: 'Try again with a new example.' }, { role: 'user', content: 'Energy is force.' }] };
   const changed = structuredClone(f.assessment); changed.complete = false; changed.refined.judgments[0].status = 'flawed'; changed.refined.judgments[0].result = 'incorrect'; changed.refined.judgments[0].observations[0].messageIndex = 3;
   await f.service.record(f.account, await f.service.prepare(f.account, next), changed, { prompt: 'v1' });
@@ -59,6 +65,26 @@ test('server persistence freezes configuration, deduplicates retries, preserves 
   assert.ok(exported.content.includes('"50"')); assert.ok(!exported.content.includes(student)); assert.ok(!exported.content.includes('Energy is force'));
   const roster = await f.service.export(admin, new URLSearchParams({ kind: 'roster', course: f.course.id }));
   assert.ok(roster.content.includes(`${student}@example.com`)); assert.ok(roster.content.includes(report.report.researchCode));
+});
+
+test('a completed topic awards 100 points once, even after a restart', async t => {
+  const f = await fixture(t);
+  const points = async () => { await f.as(student); const { wallet } = await f.one('select public.cosmetic_wallet() as wallet'); await f.db.exec('reset role'); return wallet.points; };
+  await f.service.record(f.account, await f.service.prepare(f.account, f.input), { ...f.assessment, complete: false }, { prompt: 'v1' });
+  await f.service.report(f.account, f.session.id, { save: true, mode: 'early' });
+  assert.equal(await points(), 0, 'an early finish earns nothing');
+
+  await f.service.record(f.account, await f.service.prepare(f.account, { ...f.input, messages: [...f.input.messages, { role: 'user', content: 'Energy is the capacity to do work.' }] }), f.assessment, { prompt: 'v1' });
+  await f.service.report(f.account, f.session.id, { save: true, mode: 'completed' });
+  await f.service.report(f.account, f.session.id, { save: true, mode: 'completed' });
+  assert.equal(await points(), 100);
+
+  await f.as(student);
+  const fresh = await f.one('select * from public.restart_course_module($1,$2)', [moduleId, f.session.id]);
+  await f.db.exec('reset role');
+  await f.service.record(f.account, await f.service.prepare(f.account, { ...f.input, assignmentSessionId: fresh.id }), f.assessment, { prompt: 'v1' });
+  await f.service.report(f.account, fresh.id, { save: true, mode: 'completed' });
+  assert.equal(await points(), 100, 'a restarted topic does not pay twice');
 });
 
 test('restarting an assigned module keeps its previous report and resumes a clean attempt', async t => {

@@ -2,15 +2,16 @@ import { checklistItems, checklistText } from './rubricChecklist.js'
 import type { EmotionId } from './components/Bloub'
 import type { Paper, Review } from './components/PaperReview'
 import type { LearningType } from './learningTypes.js'
+import { restoreQueue, type QueuedMessage } from './messageQueue.ts'
 
 export type Level = 'remember' | 'understand' | 'apply' | 'analyze'
 export type ConceptRubric = Record<Level, string>
 export type BackgroundQuestion = { topic: string; taskLevel: Level; phase: 'probe' | 'return' | 'exit'; originalMessageIndex: number; targetMessageIndex: number; targetQuote: string; rubricItem: string; prerequisite: string; probeLevel: 'remember' | 'understand' | 'apply'; returnTarget: string; probeCount: number }
 export type Message = { id?: string; role: 'assistant' | 'user'; content: string; paper?: Paper; review?: Review; boardImage?: string; passedLevel?: Level; rubricFocus?: string; skipRubricItem?: string; helpRequest?: boolean; assistance?: boolean; independentCheck?: boolean; finishAssessment?: boolean; background?: BackgroundQuestion }
 export type Judgment = { status: 'supported' | 'needs_clarification' | 'flawed' | 'missing'; result: 'correct' | 'incorrect' | 'undetermined' | 'not_applicable'; evidence: { messageIndex: number; quote: string }[] }
-export type Assessment = { complete: boolean; readyToAdvance?: boolean; reason: string; criteria: (Judgment & { aspect: string; skipped?: boolean })[]; task: Judgment; refined?: Record<string, unknown> }
+export type Assessment = { complete: boolean; readyToAdvance?: boolean; reason: string; criteria: (Judgment & { aspect: string; skipped?: boolean })[]; task: Judgment; refined?: Record<string, unknown>; skipRecovery?: { level: Level; aspect: string; status: string }[] }
 export type LearnerModel = { state: { understands: string[]; potentialMisconceptions: string[]; missingConcepts: string[]; uncertainty: string[]; diagnosticObjective: string; evidence: { messageIndex: number; quote: string }[] }; strategyId: string | null; questionPlan?: unknown; coverageGap?: unknown }
-export type Session = { messages: Message[]; draft: string; assessment: Assessment | null; expression?: EmotionId }
+export type Session = { messages: Message[]; draft: string; queue?: QueuedMessage[]; queuePaused?: boolean; sending?: string; assessment: Assessment | null; expression?: EmotionId }
 export type Concept = Session & { id: string; name: string; target: Level; rubric: ConceptRubric; assessmentRecords?: Partial<Record<Level, AssessmentRecord>>; assessments?: Partial<Record<Level, Assessment>>; learnerModel?: LearnerModel; passed: number; stageStart: number; finalSummary?: string; analysisGrade?: number }
 export type AssessmentRecord = { id: string; sequence: number; goals: { id: string; credit: number | null; status: string; reason: string }[] }
 export type ChatResult = { assessmentRecord?: AssessmentRecord; rubricFocus?: string; message: string; paper?: Paper; assessment: Assessment | null; expression: EmotionId; finalSummary?: string; analysisGrade?: number; learnerModel?: LearnerModel; assistance?: boolean; independentCheck?: boolean; evaluationReused?: boolean; background?: BackgroundQuestion }
@@ -27,11 +28,22 @@ export const stageTranscript = (concept: Concept, learnerMessage: Message) => [.
 
 export function restoreLearning(saved: { concepts: Concept[]; activeId: string | null; started?: boolean } | null): { concepts: Concept[]; activeId: string | null; started: boolean } | null {
   if (!Array.isArray(saved?.concepts) || !saved.concepts.length) return null
-  const concepts = saved.concepts.filter(concept => concept && typeof concept.id === 'string' && typeof concept.name === 'string' && levelIds.includes(concept.target)).map(concept => ({ ...concept, rubric: Object.fromEntries(levelIds.map(level => [level, typeof concept.rubric?.[level] === 'string' ? concept.rubric[level] : ''])) as ConceptRubric, passed: Math.max(0, Math.min(4, Number(concept.passed) || 0)), messages: Array.isArray(concept.messages) ? concept.messages : [], draft: concept.draft || '', stageStart: Number(concept.stageStart) || 0 }))
+  const concepts = saved.concepts.filter(concept => concept && typeof concept.id === 'string' && typeof concept.name === 'string' && levelIds.includes(concept.target)).map(concept => restoreQueue({ ...concept, rubric: Object.fromEntries(levelIds.map(level => [level, typeof concept.rubric?.[level] === 'string' ? concept.rubric[level] : ''])) as ConceptRubric, passed: Math.max(0, Math.min(4, Number(concept.passed) || 0)), messages: Array.isArray(concept.messages) ? concept.messages : [], draft: concept.draft || '', stageStart: Number(concept.stageStart) || 0 }))
   if (!concepts.length) return null
   const started = Boolean(saved.started ?? concepts.some(concept => concept.messages.length > 0 || concept.passed > 0))
   const ready = started ? concepts.map(concept => concept.messages.length ? concept : { ...concept, messages: [conceptOpening(concept.name)] }) : concepts
   return { concepts: ready, started, activeId: started ? ready.some(concept => concept.id === saved.activeId) ? saved.activeId : ready[0].id : null }
+}
+
+// Later teaching can check off an item skipped at an earlier level.
+function withRecoveredSkips(assessments: Concept['assessments'], result: ChatResult): Concept['assessments'] {
+  const next = { ...assessments }
+  for (const { level, aspect, status } of result.assessment?.skipRecovery ?? []) {
+    const saved = next[level]
+    if (status !== 'demonstrated' || !saved) continue
+    next[level] = { ...saved, criteria: saved.criteria.map(({ skipped, ...item }) => item.aspect === aspect ? { ...item, status: 'supported' as const } : { ...item, ...(skipped ? { skipped } : {}) }) }
+  }
+  return next
 }
 
 export function advanceConcept(concept: Concept, messages: Message[], result: ChatResult, nextOpening?: { message: string; paper?: Paper }): Concept {
@@ -44,7 +56,7 @@ export function advanceConcept(concept: Concept, messages: Message[], result: Ch
     ...concept, passed,
     stageStart: continuing ? messages.length : concept.stageStart,
     messages: showResponse ? [...messages, { role: 'assistant', content: response.message, ...('rubricFocus' in response && response.rubricFocus ? { rubricFocus: response.rubricFocus } : {}), ...('background' in response && response.background ? { background: response.background } : {}), ...('assistance' in response && response.assistance ? { assistance: true, id: crypto.randomUUID() } : {}), ...('independentCheck' in response && response.independentCheck ? { independentCheck: true } : {}), ...(passed > concept.passed ? { passedLevel: levelIds[concept.passed] } : {}), ...(response.paper ? { paper: response.paper } : {}) }] : messages,
-    draft: '', assessment: result.assessment, assessments: { ...concept.assessments, ...(result.assessment ? { [levelIds[concept.passed]]: result.assessment } : {}) }, expression: result.expression,
+    draft: '', assessment: result.assessment, assessments: withRecoveredSkips({ ...concept.assessments, ...(result.assessment ? { [levelIds[concept.passed]]: result.assessment } : {}) }, result), expression: result.expression,
     learnerModel: continuing ? undefined : result.learnerModel,
     ...(result.assessmentRecord ? { assessmentRecords: { ...concept.assessmentRecords, [levelIds[concept.passed]]: result.assessmentRecord } } : {}),
     ...(result.finalSummary ? { finalSummary: result.finalSummary, analysisGrade: result.analysisGrade } : {}),

@@ -81,7 +81,7 @@ export function PuzzleGenerator({ active = true }: { active?: boolean }) {
       <label htmlFor="puzzle-description">Puzzle description</label>
       <textarea id="puzzle-description" rows={5} maxLength={8000} value={description} onChange={event => setDescription(event.target.value)} placeholder="Describe the concept, scenario, what the student can move, and what they need to solve." disabled={busy} />
       <div className="puzzle-description-examples"><span>Examples:</span>{examples.map(item => <button key={item.label} type="button" disabled={busy} onClick={() => setDescription(item.description)}>{item.label}</button>)}</div>
-      <div className="puzzle-generator-actions"><button className="apply-check" type="submit" disabled={busy || !description.trim() || fruitFlySelected()}>{busy ? 'Generating puzzle…' : 'Generate puzzle'}</button>{busy && <button type="button" onClick={() => controller.current?.abort()}>Cancel</button>}<span>Uses the provider and model selected in AI settings.</span></div>
+      <div className="puzzle-generator-actions"><button className="apply-check" type="submit" disabled={busy || !description.trim() || fruitFlySelected()}>{busy ? 'Generating puzzle…' : 'Generate puzzle'}</button>{busy && <button type="button" onClick={() => controller.current?.abort()}>Cancel</button>}</div>
       <p className="puzzle-context-note">Includes your description, the generation prompt, and the three demo sources as reference context.</p>
       {busy && <p role="status">Building the scene and validating its input and solution. This can take a few minutes.</p>}
       {fruitFlySelected() && <p className="puzzle-generator-error">Choose ChatGPT or Anthropic in AI settings to generate puzzles.</p>}

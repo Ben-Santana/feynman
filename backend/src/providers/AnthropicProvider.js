@@ -57,7 +57,7 @@ export class AnthropicProvider extends LanguageModelProvider {
     if (!response.ok) {
       const error = await response.json().catch(() => null);
       if (response.status === 400 && /anthropic-workspace-id/i.test(error?.error?.message || '')) throw new AIError('This Claude key requires a workspace ID. Set ANTHROPIC_WORKSPACE_ID in backend/.env, or use a workspace-scoped API key, then restart the app.', 400);
-      throw new AIError(response.status === 401 ? 'Claude rejected the API key. Check backend/.env.' : response.status === 429 ? 'Claude is rate limited. Please retry shortly.' : `Claude request failed (${response.status}). Check your model in AI settings and workspace in backend/.env.`, [401, 403, 429].includes(response.status) ? response.status : 502);
+      throw new AIError(response.status === 401 ? 'Claude rejected the API key.' : response.status === 429 ? 'Claude is rate limited. Please retry shortly.' : `Claude request failed (${response.status}). Check the configured Claude model and workspace.`, [401, 403, 429].includes(response.status) ? response.status : 502);
     }
     const data = await response.json();
     await onUsage?.({ model: data.model || model, usage: data.usage });

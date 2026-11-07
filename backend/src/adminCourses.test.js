@@ -40,6 +40,29 @@ test('course administration validates inputs before using backend-only RPCs', as
   ]);
 });
 
+test('admin course cards filter by subject and sign uploaded covers', async () => {
+  const preset = { id, banner: { type: 'preset', preset: 'meadow' } };
+  const uploaded = { id: 'uploaded', banner: { type: 'image', path: 'uploaded/cover.webp' } };
+  const courses = [preset, uploaded];
+  const service = createAccountService({ SUPABASE_URL: 'https://example.supabase.co', SUPABASE_PUBLISHABLE_KEY: 'public', SUPABASE_SECRET_KEY: 'private' }, () => ({
+    async rpc(name, args) {
+      assert.equal(name, 'admin_list_courses');
+      assert.deepEqual(args.subject_filters, ['Physics', 'Biology']);
+      return { data: { courses, total: 2 } };
+    },
+    storage: { from(bucket) {
+      assert.equal(bucket, 'course-banners');
+      return { async createSignedUrls(paths, expiresIn) {
+        assert.deepEqual(paths, [uploaded.banner.path]);
+        assert.equal(expiresIn, 3600);
+        return { data: [{ path: uploaded.banner.path, signedUrl: 'https://example.supabase.co/signed-cover' }] };
+      } };
+    } },
+  }));
+  const result = await service.listCourses(admin, new URLSearchParams('subject=Physics&subject=Biology'));
+  assert.deepEqual(result.courses, [preset, { ...uploaded, bannerUrl: 'https://example.supabase.co/signed-cover' }]);
+});
+
 test('course administration reports missing records, permission changes, and missing migrations', async () => {
   for (const [code, status, message] of [['42501', 403, /Admin access/], ['P0002', 404, /not found/], ['PGRST202', 503, /migrations/], ['42P01', 503, /migrations/], ['unknown', 503, /Could not load/]]) {
     await assert.rejects(fixture({ code }).service.viewCourse(admin, id), error => error.status === status && message.test(error.message));

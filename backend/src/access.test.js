@@ -14,14 +14,14 @@ function invoke(server, { method = 'GET', url = '/api/account', body, authorizat
 }
 const wpi = { id: '11111111-1111-4111-8111-111111111111', email: 'Learner@wpi.edu', email_confirmed_at: '2026-10-12T00:00:00Z', app_metadata: { provider: 'azure' }, identities: [{ provider: 'azure' }] };
 const env = { SUPABASE_URL: 'https://example.supabase.co', SUPABASE_PUBLISHABLE_KEY: 'public-key', SUPABASE_SECRET_KEY: 'private-key' };
-function clients({ user = wpi, authError = null, role = 'student', roleError = null, rpcError = null, allowed = true, approved = true, eligibilityError = null } = {}) {
+function clients({ user = wpi, authError = null, role = 'student', roleError = null, rpcError = null, rpcData = null, allowed = true, approved = true, eligibilityError = null } = {}) {
   const calls = [];
   return { calls, factory(url, key, options) {
     calls.push({ url, key, options });
     return {
       auth: { async getUser(token) { calls.push({ token }); return { data: { user }, error: authError }; } },
       from(table) { return { select() { return this; }, eq() { return this; }, async single() { return table === 'profiles' ? { data: { id: user?.id, email: user?.email, display_name: 'Learner', approved }, error: null } : { data: { role }, error: roleError }; } }; },
-      async rpc(name, args) { calls.push({ name, args }); return name === 'account_signed_in' ? { data: allowed, error: eligibilityError } : { data: { users: [], role: args?.new_role }, error: rpcError }; },
+      async rpc(name, args) { calls.push({ name, args }); return name === 'account_signed_in' ? { data: allowed, error: eligibilityError } : { data: rpcData ?? { users: [], role: args?.new_role }, error: rpcError }; },
     };
   } };
 }
@@ -65,25 +65,52 @@ test('direct API requests require login and reject untrusted origins', async t =
   assert.equal((await invoke(server, { origin: 'https://evil.test' })).status, 403);
   assert.equal((await invoke(server, { url: '/api/access', method: 'POST', authorization: '', body: { code: '6767' } })).status, 401);
 });
-test('student and instructor cannot administer users, trace prompts, or use local ChatGPT', async t => {
+test('student and instructor cannot administer users or trace prompts, and can select ChatGPT locally', async t => {
   for (const role of ['student', 'instructor']) {
     const server = createApiServer({ accountService: testAccountService(role) }); t.after(() => server.close());
-    for (const url of ['/api/admin/users', '/api/developer/prompts', '/api/developer/rubric', '/api/ai/sign-in', '/api/ai/sign-out', '/api/ai/remove-account']) assert.equal((await invoke(server, { url })).status, 403);
+    for (const url of ['/api/admin/users', '/api/admin/ai-model', '/api/developer/prompts', '/api/developer/rubric']) assert.equal((await invoke(server, { url })).status, 403);
     assert.equal((await invoke(server, { url: '/api/chat', method: 'POST', headers: { 'x-feynman-trace': '1' } })).status, 403);
-    assert.equal((await invoke(server, { url: '/api/health', headers: { 'x-feynman-provider': 'chatgpt' } })).status, 403);
+    assert.equal((await invoke(server, { url: '/api/health', headers: { 'x-feynman-provider': 'chatgpt' } })).data.provider, 'chatgpt');
     const catalog = await invoke(server, { url: '/api/ai/providers' });
-    assert.equal(catalog.status, 200); assert.ok(catalog.data.providers.every(item => item.id !== 'chatgpt'));
-    const health = await invoke(server, { url: '/api/health' });
-    assert.deepEqual(health.data.accounts, []); assert.equal(health.data.pendingRegistration, false);
+    assert.equal(catalog.status, 200); assert.ok(catalog.data.providers.some(item => item.id === 'chatgpt'));
+    assert.equal((await invoke(server)).data.hosted, false);
+  }
+});
+test('shared inbox exposes actionable applications to admins and keeps them private', async t => {
+  const id = '22222222-2222-4222-8222-222222222222';
+  const applicant = { id, email: 'applicant@wpi.edu', display_name: 'Applicant', role: 'instructor', approved: false };
+  for (const [role, status] of [['admin', 200], ['instructor', 200], ['student', 403]]) {
+    const fixture = clients({ role, rpcData: { users: [applicant], total: 1, page: 1, pageSize: 25 } });
+    const server = createApiServer({ accountService: createAccountService(env, fixture.factory) });
+    t.after(() => server.close());
+    const result = await invoke(server, { url: '/api/inbox' });
+    assert.equal(result.status, status);
+    if (role !== 'admin') {
+      if (role === 'instructor') assert.deepEqual(result.data.messages, []);
+      assert.ok(!fixture.calls.some(call => call.name === 'admin_instructor_inbox'));
+      continue;
+    }
+    assert.equal(result.data.total, 1);
+    assert.equal(result.data.messages[0].action.href, `/admin?account=${id}`);
+    const review = await invoke(server, { url: `/api/admin/users?account=${id}` });
+    assert.equal(review.status, 200);
+    assert.deepEqual(review.data.users, [applicant]);
+    assert.equal(fixture.calls.at(-1).args.target_id, id);
   }
 });
 test('admin endpoints route validated role edits and pagination to the account service', async t => {
   const accountService = testAccountService();
   accountService.listUsers = async (_account, params) => ({ users: [], page: Number(params.get('page')) });
   accountService.changeRole = async (_account, id, role) => ({ id, role });
+  accountService.grantPoints = async (_account, id, points) => ({ id, points });
+  accountService.deleteAccount = async (_account, id) => ({ id });
   const server = createApiServer({ accountService }); t.after(() => server.close());
   assert.equal((await invoke(server, { url: '/api/admin/users?page=2&search=learner' })).data.page, 2);
   assert.equal((await invoke(server, { url: `/api/admin/users/${wpi.id}/role`, method: 'PATCH', body: { role: 'instructor' } })).data.role, 'instructor');
+  assert.equal((await invoke(server, { url: `/api/admin/users/${wpi.id}/points`, method: 'POST', body: { points: 40 } })).data.points, 40);
+  assert.equal((await invoke(server, { url: `/api/admin/users/${wpi.id}/points`, method: 'PATCH', body: { points: 40 } })).status, 404);
+  assert.equal((await invoke(server, { url: `/api/admin/users/${wpi.id}`, method: 'DELETE' })).data.id, wpi.id);
+  assert.equal((await invoke(server, { url: `/api/admin/users/${wpi.id}/role`, method: 'DELETE' })).status, 404);
 });
 test('admin RPCs use backend-only credentials and reject bad inputs and final-admin demotion', async () => {
   const fixture = clients(); const service = createAccountService(env, fixture.factory);
@@ -95,6 +122,8 @@ test('admin RPCs use backend-only credentials and reject bad inputs and final-ad
   await assert.rejects(service.changeRole(admin, wpi.id, 'superuser'), error => error.status === 400);
   await assert.rejects(service.changeRole({ ...admin, role: 'student' }, wpi.id, 'admin'), error => error.status === 403);
   await assert.rejects(service.listUsers(admin, new URLSearchParams('page=-1')), error => error.status === 400);
+  for (const points of [0, -5, 1.5, '10', 1000001]) await assert.rejects(service.grantPoints(admin, wpi.id, points), error => error.status === 400);
+  await assert.rejects(service.grantPoints({ ...admin, role: 'student' }, wpi.id, 10), error => error.status === 403);
   const finalAdmin = clients({ rpcError: { code: '23514' } });
   await assert.rejects(createAccountService(env, finalAdmin.factory).changeRole(admin, wpi.id, 'student'), error => error instanceof AccountError && error.status === 409);
 });

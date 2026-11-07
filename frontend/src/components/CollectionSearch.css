@@ -1,0 +1,53 @@
+.collection-search {
+  display: flex;
+  align-items: center;
+  width: min(100%, 38rem);
+  max-width: 100%;
+  border: 1px solid var(--dashboard-line, var(--border));
+  border-radius: 9px;
+  background: var(--background);
+}
+.collection-search:focus-within { border-color: var(--muted-foreground); }
+.collection-search-content { display: flex; align-items: center; flex: 1; min-width: 0; }
+.collection-search-terms { display: flex; flex: 1; align-items: center; flex-wrap: wrap; gap: 4px; min-width: 0; }
+.collection-search .collection-search-icon {
+  display: grid; place-items: center; align-self: flex-start; flex: none; width: 44px; height: 44px; padding: 0;
+  border: 0; border-radius: 8px; background: transparent; color: var(--foreground); cursor: pointer;
+}
+.collection-search button.collection-search-icon:hover { background: var(--surface); }
+.collection-search-icon svg { width: 20px; height: 20px; }
+.collection-search-terms input[type="search"] {
+  flex: 1 1 8rem; min-width: 0; min-height: 44px; width: auto; padding: 0 8px 0 2px;
+  border: 0; background: transparent; color: var(--foreground); font: inherit; outline: none;
+}
+.collection-search .collection-search-terms input[type="search"]:focus-visible { outline: none; }
+.collection-search-terms input::placeholder { color: var(--muted-foreground); }
+.collection-search-terms button.collection-search-tag {
+  display: inline-flex; align-items: center; gap: 4px; max-width: 100%; min-height: 32px;
+  margin-block: 3px; padding: 3px 8px; border: 0; border-radius: 6px;
+  background: var(--surface); color: var(--foreground); font: inherit; font-size: .8125rem;
+  overflow-wrap: anywhere; cursor: pointer; text-align: left;
+}
+.collection-search-tag svg { flex: none; width: 15px; height: 15px; }
+.collection-search-filters {
+  position: fixed; inset: var(--filter-top, auto) min(var(--filter-right, 8px), max(8px, calc(100vw - 16rem - 8px))) var(--filter-bottom, auto) auto;
+  width: min(16rem, calc(100vw - 16px)); max-height: var(--filter-height, 20rem); margin: 0;
+  padding: 10px; border: 1px solid var(--border); border-radius: 10px; overflow: auto;
+  background: var(--background); color: var(--foreground);
+}
+.collection-search-filters fieldset { display: grid; gap: 2px; min-width: 0; margin: 0; border: 0; padding: 0; }
+.collection-search-filters legend { padding: 4px 8px; font-size: .8125rem; font-weight: 600; }
+.collection-search-filters fieldset label {
+  display: flex; align-items: center; gap: 9px; min-height: 38px; padding: 4px 8px;
+  border-radius: 6px; font-size: .875rem; cursor: pointer;
+}
+.collection-search-filters label:hover { background: var(--surface); }
+.collection-search-filters label input[type="checkbox"] { width: 16px; min-height: 0; height: 16px; margin: 0; accent-color: var(--primary); }
+button.dashboard-new-session.collection-add { width: 44px; height: 44px; padding: 0; }
+.dashboard-new-session.collection-add svg { width: 20px; height: 20px; }
+
+.collection-toolbar { display: grid; grid-template-columns: minmax(0, 1fr) auto; align-items: start; gap: 12px; }
+.collection-toolbar > .collection-search { width: 100%; }
+button.dashboard-new-session.collection-add.collection-add-labeled { width: auto; padding-inline: 12px; }
+button.dashboard-new-session.collection-add:hover:not(:disabled) { background: var(--primary-hover); }
+.dashboard-session-actions { margin-bottom: 16px; }

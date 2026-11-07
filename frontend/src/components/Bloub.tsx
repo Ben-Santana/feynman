@@ -784,20 +784,14 @@ export function Bloub({ mode = 'default', animateEntrance = mode === 'default', 
           height="316"
         >
           <path ref={bodyMaskRef} d={restBody} fill="#fff" />
-          <g transform={`translate(${faceOffset.join(" ")})`}><path
-            ref={eye0Ref}
-            className="bloub-eye"
-            d={valuesToPath(restPose.eye0.values)}
-            fill="#000"
-            transform={matrixTransform(restPose.eye0.matrix)}
-          />
-          <path
-            ref={eye1Ref}
-            className="bloub-eye"
-            d={valuesToPath(restPose.eye1.values)}
-            fill="#000"
-            transform={matrixTransform(restPose.eye1.matrix)}
-          /></g>
+          <g transform={`translate(${faceOffset.join(" ")})`}>
+            <g className="bloub-eye">
+              <path ref={eye0Ref} d={valuesToPath(restPose.eye0.values)} fill="#000" transform={matrixTransform(restPose.eye0.matrix)} />
+            </g>
+            <g className="bloub-eye">
+              <path ref={eye1Ref} d={valuesToPath(restPose.eye1.values)} fill="#000" transform={matrixTransform(restPose.eye1.matrix)} />
+            </g>
+          </g>
         </mask>
       </defs>
       {isLoading && <ellipse ref={loadingShadowRef} className="bloub-loading-shadow" cx="0" cy="109" rx="34" ry="5" fill="var(--black)" opacity=".09" />}

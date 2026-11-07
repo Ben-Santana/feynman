@@ -14,6 +14,14 @@ export const promptCatalog = [
     "description": "Inserted into every generated classmate reply, scenario, and paper-generation call to control how the AI behaves as the learner’s student."
   },
   {
+    "id": "chat.studentVoice",
+    "group": "Chat",
+    "title": "Student voice",
+    "variables": [],
+    "subgroup": "Conversation setup",
+    "description": "Added to the end of every conversational classmate reply to set tone. Not used when generating classroom papers."
+  },
+  {
     "id": "chat.context",
     "group": "Chat",
     "title": "Shared chat context",
@@ -139,7 +147,7 @@ export const promptCatalog = [
     "title": "Discuss papers",
     "variables": [],
     "subgroup": "Paper review",
-    "description": "Inserted into classmate calls only when Quantitative Analyze already has papers but no submitted review. The normal UI waits for grading, then uses a fixed question and a report instead."
+    "description": "Inserted into classmate calls when Quantitative Analyze already has papers, including follow-up questions after an incorrect or incomplete explanation. The first question after grading is fixed."
   },
   {
     "id": "chat.reviewPass",

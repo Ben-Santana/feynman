@@ -39,7 +39,7 @@ test('after a skip, follow-up targets a remaining item and keeps the skipped mar
   const other = 'Electric field';
   const messages = [...history(), skip];
   const result = await chat({ level: 'remember', topic: 'Capacitors', aspects: [aspect, other], messages }, async (system, _messages, tool) => {
-    if (tool.name === 'respond_to_student') {
+    if (tool.name === 'reply_to_teacher') {
       assert.ok(system.includes('Do not ask about or require them again'));
       assert.ok(system.includes('unresolved requirement: "Electric field"'));
       return { message: 'Where is the field located?', expression: 'confused' };
@@ -84,7 +84,7 @@ test('a frustrated reply keeps the current unresolved item available to skip', a
   const other = 'Electric field';
   const messages = history(1).slice(0, -1); messages[1].content = 'This is frustrating.';
   const result = await chat({ level: 'remember', topic: 'Capacitors', aspects: [other, aspect], messages }, async (system, _messages, tool) => {
-    if (tool.name === 'respond_to_student') {
+    if (tool.name === 'reply_to_teacher') {
       assert.ok(system.includes('unresolved requirement: "Stored energy"'));
       return { message: 'Where is the energy stored?', expression: 'confused' };
     }
@@ -93,4 +93,41 @@ test('a frustrated reply keeps the current unresolved item available to skip', a
   }, undefined, { evaluator: 'legacy' });
   assert.equal(result.rubricFocus, aspect);
   assert.deepEqual([...skippedRubricItems([...messages, { role: 'assistant', content: result.message, rubricFocus: result.rubricFocus }, skip], [other, aspect])], [aspect]);
+});
+
+test('a skip lasts until later teaching demonstrates the item in the same level', async () => {
+  const other = 'Stored charge';
+  const messages = [...history(), skip, { role: 'assistant', content: 'What about charge?', rubricFocus: other }, { role: 'user', content: 'Energy is stored in the electric field.' }];
+  const evaluate = status => async (_system, _messages, tool) => {
+    if (tool.name !== 'evaluate_learning') return { message: 'What changes if the plates move apart?', expression: 'attentive' };
+    const evidence = status === 'supported' ? [{ messageIndex: messages.length - 1, quote: 'stored in the electric field' }] : [];
+    const judgment = { status: 'missing', result: 'undetermined', evidence: [] };
+    return { reason: 'Assessed.', criteria: [{ aspect, status, result: status === 'supported' ? 'correct' : 'undetermined', evidence }, { aspect: other, ...judgment }], task: judgment };
+  };
+  const recovered = await chat({ level: 'remember', topic: 'Capacitors', aspects: [aspect, other], messages }, evaluate('supported'), undefined, { evaluator: 'legacy' });
+  assert.equal(recovered.assessment.criteria[0].skipped, undefined);
+  assert.equal(recovered.assessment.criteria[0].status, 'supported');
+  const open = await chat({ level: 'remember', topic: 'Capacitors', aspects: [aspect, other], messages }, evaluate('missing'), undefined, { evaluator: 'legacy' });
+  assert.equal(open.assessment.criteria[0].skipped, true);
+});
+
+test('later levels check off earlier skips without blocking the turn', async () => {
+  const messages = [{ id: 'q1', role: 'assistant', content: 'Why does it charge?' }, { id: 'a1', role: 'user', content: 'Charge piles up and the energy is stored in the electric field.' }];
+  const missing = { status: 'missing', result: 'undetermined', evidence: [] };
+  const run = refinedQuery => async (system, sent, tool, options) => {
+    if (tool.name === 'evaluate_refined') return refinedQuery(system, sent, tool, options);
+    if (tool.name === 'evaluate_learning') return { reason: 'Assessed.', criteria: [{ aspect: 'Explain charging', ...missing }], task: missing };
+    return { message: 'What changes if the plates move apart?', expression: 'attentive' };
+  };
+  const judged = (criterionId, status, patch = {}) => ({ criterionId, status, result: status === 'supported' ? 'correct' : 'undetermined', reasoning: status === 'supported' ? 'valid' : 'unclear', opportunity: 'fair', reason: 'Named the stored energy.', abstentionReason: '', observations: status === 'supported' ? [{ evidenceId: 'e1', assistance: 'none', assistanceMessageIds: [] }] : [], contradictions: [], partialCredit: { awarded: false, reason: '' }, ...patch });
+  const request = { level: 'understand', topic: 'Capacitors', aspects: ['Explain charging'], messages };
+  const openSkips = [{ id: 'c:remember:1', level: 'remember', text: aspect }];
+  const result = await chat(request, run(async () => ({ reason: 'Assessed.', nextEvidenceObjective: '', evidence: [{ id: 'e1', messageId: 'a1', quote: 'the energy is stored in the electric field' }], judgments: [judged('criterion_1', 'supported'), judged('level_task', 'supported')] })), undefined, { evaluator: 'legacy', openSkips });
+  assert.deepEqual(result.assessment.skipRecovery.map(r => [r.id, r.status, r.credit, r.mistake]), [['c:remember:1', 'demonstrated', 1, false]]);
+  const concept = { passed: 1, target: 'analyze', messages: [], stageStart: 0, assessments: { remember: { complete: false, reason: '', task: missing, criteria: [{ aspect, ...missing, skipped: true }, { aspect: 'Other', ...missing, skipped: true }] } } };
+  const next = advanceConcept(concept, messages, result);
+  assert.deepEqual(next.assessments.remember.criteria.map(c => [c.status, c.skipped]), [['supported', undefined], ['missing', true]]);
+  const failed = await chat(request, run(async () => { throw new Error('Evaluator offline'); }), undefined, { evaluator: 'legacy', openSkips });
+  assert.deepEqual(failed.assessment.skipRecovery, []);
+  assert.equal(failed.message, 'What changes if the plates move apart?');
 });

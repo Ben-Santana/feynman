@@ -1,6 +1,4 @@
 .settings-page { width: min(100%, 1280px); margin: 0 auto; padding: 36px 48px 64px; }
-.settings-heading { margin-bottom: 32px; }
-.settings-heading h1 { margin: 0; font: 500 clamp(1.75rem, 3vw, 2.25rem)/1.2 var(--font-display); letter-spacing: -.025em; }
 .settings-layout { display: grid; grid-template-columns: 220px minmax(0, 1fr); gap: 40px; align-items: start; }
 .settings-sidebar { position: sticky; top: 32px; min-width: 0; }
 .settings-search { position: relative; margin-bottom: 20px; }
@@ -41,6 +39,6 @@
 .settings-empty button { padding: 8px 12px; border: 1px solid var(--border); border-radius: 8px; background: var(--background); color: var(--foreground); font: inherit; font-size: 0.75rem; cursor: pointer; }
 .settings-page :is(button, input):focus-visible { outline: 2px solid var(--primary); outline-offset: 3px; }
 @media (max-width: 1200px) { .settings-page { padding-inline: 32px; } .settings-layout { grid-template-columns: 190px minmax(0, 1fr); gap: 24px; } .settings-content { padding-left: 24px; } }
-@media (max-width: 760px) { .settings-page { padding: 28px 20px 40px; } .settings-heading { margin-bottom: 24px; } .settings-layout { grid-template-columns: minmax(0, 1fr); gap: 24px; } .settings-sidebar { position: static; } .settings-search { margin-bottom: 12px; } .settings-categories { display: flex; flex-wrap: wrap; } .settings-categories button { width: auto; flex: 1; white-space: nowrap; } .settings-categories small { margin-left: 4px; } .settings-content { padding-left: 0; border-left: 0; } .settings-content .profile-page-overview dl { grid-template-columns: minmax(0, 1fr); } .settings-search input { font-size: 1rem; } }
+@media (max-width: 760px) { .settings-page { padding: 28px 20px 40px; } .settings-layout { grid-template-columns: minmax(0, 1fr); gap: 24px; } .settings-sidebar { position: static; } .settings-search { margin-bottom: 12px; } .settings-categories { display: flex; flex-wrap: wrap; } .settings-categories button { width: auto; flex: 1; white-space: nowrap; } .settings-categories small { margin-left: 4px; } .settings-content { padding-left: 0; border-left: 0; } .settings-content .profile-page-overview dl { grid-template-columns: minmax(0, 1fr); } .settings-search input { font-size: 1rem; } }
 
 .settings-content .loading-screen { min-height: 320px; }

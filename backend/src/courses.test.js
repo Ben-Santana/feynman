@@ -34,6 +34,8 @@ export async function courseFixture(t, beforeMigration = async () => {}) {
   for (const [id, role] of [[student,'student'],[instructor,'instructor'],[other,'instructor'],[outsider,'student'],[pending,'student']]) {
     await db.query(`insert into auth.users values ($1,$2,now(),'{"provider":"email"}',$3,now())`, [id, `${id}@example.com`, JSON.stringify({ role })]);
     await db.query(`insert into auth.identities values ($1,'email')`,[id]);
+    // Password signups default to instructor, so seed each fixture role directly.
+    await db.query('update public.user_roles set role=$2 where user_id=$1',[id,role]);
     // Course tests exercise accounts that have completed the consent step.
     await db.query(`insert into public.signed_consents values ($1,'informed-consent-v1',$2,'Test Participant',$3,now(),'Test consent',$4,$2)`, [id, 'a'.repeat(64), `${id}@example.com`, 'b'.repeat(100)]);
     if (id !== pending) await db.query('update public.profiles set approved=true where id=$1',[id]);
@@ -57,6 +59,9 @@ test('course people shares teacher and enrolled identities with avatars only wit
   await as(student);
   await one('select public.join_course($1)', [course.code]);
   const avatar = { color: 'sky', shape: 'star', accessories: { glasses: 'round', face: null, pin: 'heart-pin' } };
+  await db.exec('reset role');
+  await db.query("insert into public.cosmetic_purchases(user_id,item_id,price) select $1,id,0 from public.cosmetic_items where id in ('color:sky','shape:star','accessory:round','accessory:heart-pin')", [student]);
+  await as(student);
   await db.query('insert into public.user_customizations(user_id,appearance) values($1,$2)', [student, { ...avatar, name: 'Private avatar name', dashboardBanner: { path: 'PRIVATE/banner' } }]);
   await as(outsider);
   await one('select public.join_course($1)', [course.code]);
@@ -290,6 +295,64 @@ test('course deletion requires its owning instructor and is blocked when chats e
   assert.equal((await one('select count(*)::int as count from public.learning_sessions where id=$1', [personalId])).count, 1);
 });
 
+test('course scores expose only finished topic percentages to the student and the course teacher', async t => {
+  const { db, as, one } = await courseFixture(t);
+  await as(instructor);
+  const course = await one("select * from public.create_course('Physics','open')");
+  await one('select public.save_course_module($1,$2,$3,$4,0)', [course.id, moduleId, 'Energy', doc()]);
+  await one('select public.publish_course_module($1,1)', [moduleId]);
+  await as(student);
+  await one('select public.join_course($1)', [course.code]);
+  const session = await one('select * from public.start_course_module($1)', [moduleId]);
+  const ownScores = async id => (await one('select public.own_topic_scores($1) as scores', [[session.id]])).scores.find(value => value.sessionId === id)?.score;
+  const teacherScore = async () => {
+    await as(instructor);
+    const { progress } = await one('select public.course_progress($1) as progress', [course.id]);
+    await as(student);
+    return progress[0].modules[0];
+  };
+  const snapshot = async (watermark, mode, percent) => {
+    await db.exec('reset role');
+    await db.query(`insert into public.topic_score_topics(student_id,session_id,configuration,session_created_at) values($1,$2,'{}',now()) on conflict do nothing`, [student, session.id]);
+    await db.query('insert into public.topic_report_snapshots(student_id,session_id,watermark,finish_mode,report) values($1,$2,$3,$4,$5)', [student, session.id, watermark, mode, { final: { percent }, goals: [{ reason: 'PRIVATE evidence' }] }]);
+    await as(student);
+  };
+
+  await as(student);
+  await snapshot(1, 'early', 40);
+  assert.equal(await ownScores(session.id), null);
+  assert.equal((await teacherScore()).score, null);
+
+  await snapshot(2, 'completed', 72.5);
+  await snapshot(3, 'completed', 87.5);
+  assert.equal(await ownScores(session.id), 87.5);
+  const record = await teacherScore();
+  assert.equal(record.score, 87.5);
+  assert.ok(!JSON.stringify(record).includes('PRIVATE'));
+
+  await as(outsider);
+  assert.equal(await ownScores(session.id), null);
+  await assert.rejects(one('select public.course_progress($1)', [course.id]), error => error.code === '42501');
+  await assert.rejects(one('select public.completed_topic_score($1,$2)', [student, session.id]), error => error.code === '42501');
+});
+
+test('course progress reports a saved final summary as a flag without its text', async t => {
+  const { as, one } = await courseFixture(t);
+  await as(instructor);
+  const course = await one("select * from public.create_course('Physics','open')");
+  await one('select public.save_course_module($1,$2,$3,$4,0)', [course.id, moduleId, 'Energy', doc()]);
+  await one('select public.publish_course_module($1,1)', [moduleId]);
+  await as(student);
+  await one('select public.join_course($1)', [course.code]);
+  const session = await one('select * from public.start_course_module($1)', [moduleId]);
+  session.document.session.concepts[0].finalSummary = 'PRIVATE summary';
+  await one('select * from public.save_learning_session($1,$2,$3,1)', [session.id, session.title, session.document]);
+  await as(instructor);
+  const { progress } = await one('select public.course_progress($1) as progress', [course.id]);
+  assert.equal(progress[0].modules[0].concepts[0].finalSummary, true);
+  assert.ok(!JSON.stringify(progress).includes('PRIVATE'));
+});
+
 test('courses enforce enrollment, publication, assignment configuration, and private progress in PostgreSQL', async t => {
   const { db, as, one } = await courseFixture(t);
   await as(instructor);
@@ -386,7 +449,9 @@ test('courses enforce enrollment, publication, assignment configuration, and pri
     assert.equal(record.modules[0].concepts[0].passed,1);
     assert.equal(record.modules[0].concepts[0].target,'understand');
     assert.ok(!JSON.stringify(progress).includes('PRIVATE'));
-    assert.deepEqual(Object.keys(record.modules[0].concepts[0]).sort(),['id','name','passed','target']);
+    assert.deepEqual(Object.keys(record.modules[0].concepts[0]).sort(),['finalSummary','id','name','passed','target']);
+    assert.equal(record.modules[0].concepts[0].finalSummary,false);
+    assert.equal(record.modules[0].score,null);
     assert.equal((await db.query('select * from public.learning_sessions')).rows.length,0);
     assert.equal((await db.query('select * from public.profiles')).rows.length,1);
     await as(student);
@@ -566,7 +631,13 @@ test('admins can inspect all courses and teach only their own courses', async t 
     assert.equal(result.total, 1);
     assert.equal(result.courses[0].module_count, 3);
     assert.equal(result.courses[0].instructor.id, instructor);
+    assert.deepEqual(result.courses[0].banner, course.banner);
+    assert.equal(result.courses[0].is_public, false);
+    assert.deepEqual(result.courses[0].subjects, course.subjects);
   }
+  const bySubject = async subjects => (await one('select public.admin_list_courses($1,1,$2,$3) as result', [admin, 'Physics', subjects])).result;
+  assert.equal((await bySubject(['Mathematics'])).total, 0);
+  assert.equal((await bySubject(['Mathematics', 'General STEM'])).courses[0].id, course.id);
   assert.equal((await list(1, 'not a course')).total, 0);
   assert.equal((await list(2)).courses.length, 0);
   for (const page of [0, 100001, null]) await assert.rejects(list(page), error => error.code === '22023');

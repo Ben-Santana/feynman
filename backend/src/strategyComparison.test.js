@@ -25,7 +25,7 @@ function fakeQuery({ complete = false, caseId = 'inertia' } = {}) {
       construction: 'Ask about one consequence after contact ends.', prerequisitesSatisfied: 'The student discusses the state after the push.', limitations: ['A prediction alone is ambiguous.'],
       responseSignals: [{ hypothesis: 'Stored push', responsePattern: 'The object slows because the push expires.', interpretation: 'Supports the stored-push hypothesis if friction is excluded.' }, { hypothesis: 'No net influence', responsePattern: 'Velocity remains constant.', interpretation: 'Needs a specific explanation before establishing understanding.' }],
     } };
-    if (response.name === 'respond_to_student') return { message: instructions.includes('Apply the following diagnostic strategy') ? 'On a frictionless surface, what happens to the puck after the push ends?' : 'Could you explain what you mean by stored force?', expression: 'confused' };
+    if (response.name === 'reply_to_teacher') return { message: instructions.includes('Apply the following diagnostic strategy') ? 'On a frictionless surface, what happens to the puck after the push ends?' : 'Could you explain what you mean by stored force?', expression: 'confused' };
     throw new Error(`Unexpected ${response.name}`);
   };
 }
@@ -35,7 +35,7 @@ test('paired generation shares transcript and rubric evaluation, with auditable 
   assert.equal(result.strategy.id, 'remove-condition');
   assert.equal(result.questionPlan.targetQuote, comparisonCases[0].messages[3].content);
   assert.equal(result.calls.filter(call => call.name === 'evaluate_learning').length, 1);
-  const learners = result.calls.filter(call => call.name === 'respond_to_student');
+  const learners = result.calls.filter(call => call.name === 'reply_to_teacher');
   assert.deepEqual(learners[0].request.messages, learners[1].request.messages);
   assert.equal(learners[0].request.instructions.includes('Apply the following diagnostic strategy'), false);
   assert.equal(learners[1].request.instructions.includes('Apply the following diagnostic strategy'), true);
@@ -45,7 +45,7 @@ test('positive-work case retries generic questions in both branches without repe
   const fallback = fakeQuery({ caseId: 'indirect-work' });
   let defaultAttempts = 0, strategyAttempts = 0;
   const result = await compareQuestions('indirect-work', async (instructions, messages, response, options) => {
-    if (response.name !== 'respond_to_student') return fallback(instructions, messages, response, options);
+    if (response.name !== 'reply_to_teacher') return fallback(instructions, messages, response, options);
     assert.match(instructions, /Every question must identify one concrete claim/);
     if (instructions.includes('Apply the following diagnostic strategy')) {
       if (++strategyAttempts === 1) return { message: 'The cart keeps moving. Could you explain your thinking?', expression: 'confused' };
@@ -168,7 +168,7 @@ test('Understand restrictions apply to planning, generation, and checking but le
   let directInstructions;
   const directQuery = fakeQuery({ caseId: fixture.id });
   await chat(fixture, (instructions, messages, response, options) => {
-    if (response.name === 'respond_to_student') directInstructions = instructions;
+    if (response.name === 'reply_to_teacher') directInstructions = instructions;
     return directQuery(instructions, messages, response, options);
   });
   const result = await compareQuestions(fixture.id, fakeQuery({ caseId: fixture.id }));
@@ -215,7 +215,7 @@ test('clear strategy questions can include enough context to exceed the former w
   assert.ok(question.split(/\s+/).length > 45);
   let attempts = 0;
   const result = await compareQuestions('indirect-torque', async (instructions, messages, response, options) => {
-    if (response.name === 'respond_to_student' && instructions.includes('Apply the following diagnostic strategy')) {
+    if (response.name === 'reply_to_teacher' && instructions.includes('Apply the following diagnostic strategy')) {
       attempts++;
       assert.ok(instructions.includes('use multiple sentences when helpful'));
       assert.ok(!instructions.includes('one short'));
@@ -292,7 +292,7 @@ test('selector abstention reuses the rubric question and records the coverage ga
   assert.equal(result.enhanced.message, result.baseline.message);
   assert.equal(result.enhanced.fallback, true);
   assert.equal(result.coverageGap.stage, 'selection');
-  assert.equal(result.calls.filter(call => call.name === 'respond_to_student').length, 1);
+  assert.equal(result.calls.filter(call => call.name === 'reply_to_teacher').length, 1);
   assert.ok(result.calls.some(call => call.name === 'strategy_coverage_gap'));
 });
 
@@ -313,7 +313,7 @@ test('a controlled comparison without a changed condition is rejected before gen
   });
   assert.equal(result.coverageGap.stage, 'selection');
   assert.match(result.coverageGap.reason, /named change/);
-  assert.equal(result.calls.filter(call => call.name === 'respond_to_student').length, 1);
+  assert.equal(result.calls.filter(call => call.name === 'reply_to_teacher').length, 1);
 });
 
 test('a manufactured database ID cannot become an applied strategy', async () => {
@@ -333,7 +333,7 @@ test('a structurally invalid plan falls back without a semantic plan review', as
    return tool.name === 'select_strategy' ? { ...output, plan: { ...output.plan, prerequisitesSatisfied: '' } } : output;
  });
  assert.equal(result.coverageGap.stage, 'selection');
- assert.equal(result.calls.filter(c => c.name === 'respond_to_student').length, 1);
+ assert.equal(result.calls.filter(c => c.name === 'reply_to_teacher').length, 1);
 });
 
 test('persistent malformed strategy questions use the rubric fallback without a reviewer', async () => {
@@ -444,7 +444,7 @@ test('solution leaks and factive claims retry in both branches despite a permiss
   let baselineAttempts = 0, enhancedAttempts = 0;
   const result = await compareQuestions('inertia', async (instructions, messages, response, options) => {
     if (response.name === 'select_strategy') assert.match(instructions, /Keep the scenario and construction free of solution scaffolding/);
-    if (response.name !== 'respond_to_student') return fallback(instructions, messages, response, options);
+    if (response.name !== 'reply_to_teacher') return fallback(instructions, messages, response, options);
     if (instructions.includes('Apply the following diagnostic strategy')) {
       if (++enhancedAttempts === 1) return { message: 'The relationship is F = ma. What happens after contact ends?', expression: 'confused' };
       return { message: 'On a frictionless surface, what happens to the puck after the push ends?', expression: 'confused' };

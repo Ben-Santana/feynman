@@ -1,6 +1,10 @@
 import { useEffect, useId, useRef, useState } from 'react'
 import { activateAccount, supabase, type Account } from '../accounts'
+import type { CharacterAppearance } from '../characterAppearance'
 import { flushSessionSaves } from '../learningStore'
+import { refreshWallet, useWallet } from '../points'
+import { Bloub } from './Bloub'
+import { PointsBalance } from './PointsBalance'
 
 export function ProfileIcon({ kind }: { kind: 'profile' | 'avatar' | 'settings' | 'accounts' | 'developer' | 'sign-out' }) {
   return <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round">
@@ -13,18 +17,25 @@ export function ProfileIcon({ kind }: { kind: 'profile' | 'avatar' | 'settings' 
   </svg>
 }
 
-export function AccountMenu({ account, placement = 'floating' }: { account: Account; placement?: 'floating' | 'sidebar' }) {
+export function AccountMenu({ account, appearance, placement = 'floating' }: { account: Account; appearance: CharacterAppearance; placement?: 'floating' | 'sidebar' }) {
   const [open, setOpen] = useState(false)
   const [error, setError] = useState('')
   const [busy, setBusy] = useState(false)
+  const [roleOpen, setRoleOpen] = useState(false)
+  const [applying, setApplying] = useState(false)
+  const [submitted, setSubmitted] = useState(false)
+  const applicationPending = submitted || account.instructor_application_pending
+  const roleActionsId = useId()
   const root = useRef<HTMLDivElement>(null)
   const trigger = useRef<HTMLButtonElement>(null)
+  const roleToggle = useRef<HTMLButtonElement>(null)
   const panelId = useId()
   const displayName = account.display_name.trim() || account.email.split('@')[0]
-  const initials = displayName.split(/\s+/).slice(0, 2).map(part => Array.from(part)[0]).join('').toUpperCase()
+  const { wallet } = useWallet()
 
   useEffect(() => {
     if (!open) return
+    void refreshWallet()
     const dismiss = (event: PointerEvent) => {
       if (event.target instanceof Node && !root.current?.contains(event.target)) setOpen(false)
     }
@@ -42,6 +53,19 @@ export function AccountMenu({ account, placement = 'floating' }: { account: Acco
     return () => { document.removeEventListener('pointerdown', dismiss); document.removeEventListener('keydown', escape); document.removeEventListener('focusin', dismissOnFocus); window.removeEventListener('popstate', dismissOnNavigation) }
   }, [open])
 
+  async function applyAsProfessor() {
+    setApplying(true); setError('')
+    try {
+      const { error } = await supabase().rpc('apply_as_instructor')
+      if (error) throw error
+      setSubmitted(true)
+      roleToggle.current?.focus()
+      window.dispatchEvent(new Event('focus'))
+    } catch (reason) {
+      setError(reason instanceof Error ? reason.message : 'Could not submit your application. Try again.')
+    } finally { setApplying(false) }
+  }
+
   async function signOut() {
     setBusy(true); setError('')
     try {
@@ -53,20 +77,31 @@ export function AccountMenu({ account, placement = 'floating' }: { account: Acco
       window.history.replaceState(null, '', '/')
     } catch (reason) { setError((reason as Error).message); setBusy(false) }
   }
+  const roleLabel = <>
+    <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round">
+      {account.role === 'admin' ? <><path d="M12 3 4 6v5c0 5 8 10 8 10s8-5 8-10V6l-8-3Z" /><path d="m8.5 12 2.5 2.5 4.5-5" /></> : account.role === 'instructor' ? <><rect x="7" y="3" width="14" height="12" rx="2" /><circle cx="6" cy="14" r="3" /><path d="M1 22v-1a5 5 0 0 1 10 0v1m2-15h4m-4 4h4" /></> : <><path d="m2 9 10-5 10 5-10 5L2 9Zm4 2v6c4 3 8 3 12 0v-6m4-2v7" /></>}
+    </svg>
+    <span>{account.role}</span>
+  </>
   return <div className={`account-menu${placement === 'sidebar' ? ' account-menu-sidebar' : ''}`} ref={root} onKeyDown={event => { if (open && event.key === 'Escape') { event.stopPropagation(); setOpen(false); trigger.current?.focus() } }}>
-    <button ref={trigger} type="button" className="profile-trigger" aria-label="Profile" title="Profile" aria-expanded={open} aria-controls={open ? panelId : undefined} onClick={() => setOpen(value => !value)}>
-      <span className="profile-avatar" aria-hidden="true">{initials || <ProfileIcon kind="profile" />}</span>
+    <button ref={trigger} type="button" className="profile-trigger" aria-label="Profile" title="Profile" aria-expanded={open} aria-controls={open ? panelId : undefined} onClick={() => { setRoleOpen(false); setOpen(value => !value) }}>
+      <span className="profile-avatar" aria-hidden="true"><Bloub static facingForward appearance={appearance} /></span>
       {placement === 'sidebar' && <span className="profile-trigger-copy"><strong>{displayName}</strong><small>{account.email}</small></span>}
       <svg className="profile-chevron" aria-hidden="true" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><path d="m4 6 4 4 4-4" /></svg>
     </button>
     {open && <div className="profile-panel" id={panelId} aria-label="Profile options">
-      <div className="profile-account-type">
-        <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round">
-          {account.role === 'admin' ? <><path d="M12 3 4 6v5c0 5 8 10 8 10s8-5 8-10V6l-8-3Z" /><path d="m8.5 12 2.5 2.5 4.5-5" /></> : account.role === 'instructor' ? <><rect x="7" y="3" width="14" height="12" rx="2" /><circle cx="6" cy="14" r="3" /><path d="M1 22v-1a5 5 0 0 1 10 0v1m2-15h4m-4 4h4" /></> : <><path d="m2 9 10-5 10 5-10 5L2 9Zm4 2v6c4 3 8 3 12 0v-6m4-2v7" /></>}
-        </svg>
-        <span>{account.role}</span>
-      </div>
-      <div className="profile-actions profile-footer"><button className="profile-sign-out" type="button" disabled={busy} onClick={() => void signOut()}><ProfileIcon kind="sign-out" /><span>{busy ? 'Logging out…' : 'Log out'}</span></button></div>
+      {wallet && <PointsBalance className="profile-points" wallet={wallet} />}
+      {account.role === 'student' ? <>
+        <button ref={roleToggle} type="button" className="profile-account-type profile-role-toggle" aria-expanded={roleOpen} aria-controls={roleActionsId} onClick={() => setRoleOpen(value => !value)}>
+          {roleLabel}
+          <svg className="profile-chevron" aria-hidden="true" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><path d="m4 6 4 4 4-4" /></svg>
+        </button>
+        <div id={roleActionsId} className="profile-actions profile-role-actions" hidden={!roleOpen}>
+          {applicationPending ? <p className="profile-notice" role="status">Professor application pending</p> :
+            <button type="button" disabled={applying || busy} onClick={() => void applyAsProfessor()}>{applying ? 'Submitting…' : 'Apply to be a professor'}</button>}
+        </div>
+      </> : <div className="profile-account-type">{roleLabel}</div>}
+      <div className="profile-actions profile-footer"><button className="profile-sign-out" type="button" disabled={busy || applying} onClick={() => void signOut()}><ProfileIcon kind="sign-out" /><span>{busy ? 'Logging out…' : 'Log out'}</span></button></div>
       {error && <p className="account-error profile-notice" role="alert">{error}</p>}
     </div>}
   </div>

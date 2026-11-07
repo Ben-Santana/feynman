@@ -122,6 +122,10 @@ sessions. No new environment variables are required. This version has one
 instructor per course and does not include due dates, prerequisites, course
 archiving.
 
+The **Community library** is currently turned off in the app. Its code and database
+objects remain; set `COMMUNITY_LIBRARY_ENABLED` in `frontend/src/features.ts` to `true`
+to restore the behavior described in the next two paragraphs.
+
 Apply `supabase/migrations/202610210001_community_courses.sql` after the existing
 migrations to enable the **Community library**. Courses stay private by default.
 Teachers can make a course public and choose STEM subject tags during creation or

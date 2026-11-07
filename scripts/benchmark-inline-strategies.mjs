@@ -43,7 +43,7 @@ try {
             if (!evaluation) throw new Error('No evaluator result available to replay.');
             return structuredClone(evaluation);
           }
-          if (branch === 'control' && response.name === 'respond_to_student') {
+          if (branch === 'control' && response.name === 'reply_to_teacher') {
             instructions = instructions.replace(inlineQuestionStrategies(input).instructions, '');
             response = structuredClone(response);
             delete response.schema.properties.strategyChoice;
@@ -56,7 +56,7 @@ try {
             const result = await query(instructions, messages, response, options);
             call.response = structuredClone(result);
             if (response.name === 'evaluate_refined') evaluation = structuredClone(result);
-            return branch === 'control' && response.name === 'respond_to_student' ? { ...result, strategyChoice: { strategyId: 'none', rationale: 'Benchmark control omits catalog selection.', targetQuote: '', rubricItem: '' } } : result;
+            return branch === 'control' && response.name === 'reply_to_teacher' ? { ...result, strategyChoice: { strategyId: 'none', rationale: 'Benchmark control omits catalog selection.', targetQuote: '', rubricItem: '' } } : result;
           } catch (error) { call.error = error.message; throw error; }
           finally {
             call.durationMs = Math.round(performance.now() - callStart);
@@ -70,7 +70,7 @@ try {
       } catch (error) { record.error = error.message; }
       record.elapsedMs = Math.round(performance.now() - started);
       record.evaluatorMs = branch === 'inline' ? evaluatorMs : 0;
-      record.responseMs = record.calls.filter(c => c.name === 'respond_to_student').reduce((n, c) => n + c.durationMs, 0);
+      record.responseMs = record.calls.filter(c => c.name === 'reply_to_teacher').reduce((n, c) => n + c.durationMs, 0);
       if (branch === 'control') record.projectedTotalMs = evaluatorMs + record.elapsedMs;
       save();
       console.log(JSON.stringify({ caseId: id, branch, model: report.model, elapsedMs: record.elapsedMs, responseMs: record.responseMs, projectedTotalMs: record.projectedTotalMs, calls: record.calls.length, strategyId: record.strategy?.strategyId, question: record.question, error: record.error }));

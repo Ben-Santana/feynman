@@ -170,7 +170,7 @@ test('shadow review is blind and cannot change primary eligibility even on disag
     assert.equal(result.legacy.assessment.complete, true);
     assert.equal(result.shadow.status, fail ? 'error' : 'completed');
     if (!fail) assert.equal(result.shadow.wouldBlock, true);
-    assert.equal(result.calls.filter(c => c.name === 'respond_to_student').length, 0);
+    assert.equal(result.calls.filter(c => c.name === 'reply_to_teacher').length, 0);
   }
 });
 

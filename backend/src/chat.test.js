@@ -69,7 +69,7 @@ test('Understand and Apply openings use the rubric and prior conversation withou
   for (const level of ['understand', 'apply']) {
     const previous = [{ role: 'assistant', content: 'What does bit depth describe?' }, { role: 'user', content: 'The number of bits representing each ADC sample.' }];
     const result = await chat(input({ level, topic: 'Discrete-Time Signal Properties and Transformations', criterion: '1. Explain how bit depth affects quantization.', messages: [], priorMessages: previous }), async (system, messages, tool) => {
-      assert.equal(tool.name, 'respond_to_student');
+      assert.equal(tool.name, 'reply_to_teacher');
       assert.match(system, /Explain how bit depth affects quantization/);
       assert.match(system, /one specific question grounded in a single rubric item/);
       assert.match(messages[0].content, /number of bits representing each ADC sample/);
@@ -121,7 +121,7 @@ test('incomplete evaluation gives the classmate only a focus, not assessment fie
     assert.equal(messages.length, 3);
     return classmate;
   });
-  assert.deepEqual(calls, ['evaluate_learning', 'respond_to_student']);
+  assert.deepEqual(calls, ['evaluate_learning', 'reply_to_teacher']);
   assert.equal(result.assessment.complete, false);
 });
 
@@ -198,7 +198,7 @@ test('Remember follow-ups use the evaluator’s specific gap and respond to the 
     assert.match(system, /Do not repeat or paraphrase an earlier question/);
     return { message: 'When you say it stores charge, what is being stored?', expression: 'attentive' };
   });
-  assert.deepEqual(calls, ['evaluate_learning', 'respond_to_student']);
+  assert.deepEqual(calls, ['evaluate_learning', 'reply_to_teacher']);
   assert.match(result.message, /what is being stored/);
   assert.equal(result.assessment.complete, false);
 });
@@ -248,7 +248,7 @@ test('whiteboard image reaches both evaluator and classroom student', async () =
     assert.equal(image.data, boardImage.slice('data:image/png;base64,'.length));
     return responseTool.name === 'evaluate_learning' ? verdict('needs_clarification') : classmate;
   });
-  assert.deepEqual(calls, ['evaluate_learning', 'respond_to_student']);
+  assert.deepEqual(calls, ['evaluate_learning', 'reply_to_teacher']);
   assert.equal(result.message, classmate.message);
   assert.throws(() => validate(input({ messages: messages.map((message, index) => index === 1 ? { ...message, boardImage: 'data:image/png;base64,Zm9v' } : message) })), /Invalid whiteboard image/);
 });
@@ -280,7 +280,7 @@ test('Analyze generates a numbered paper without assessment before review', asyn
     assert.ok(responseTool.schema.properties.paper);
     return { message: 'Could you check my paper?', paper: { exercises: [workedPaper, workedPaper, workedPaper] } };
   });
-  assert.deepEqual(calls, ['respond_to_student']);
+  assert.deepEqual(calls, ['reply_to_teacher']);
   assert.match(result.paper.markdown, /### Step 1/);
   assert.equal(result.paper.papers.length, 3);
   assert.equal(new Set(result.paper.papers.map(p => p.id)).size, 3);

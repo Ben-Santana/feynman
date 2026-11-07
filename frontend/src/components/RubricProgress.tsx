@@ -4,7 +4,7 @@ import { checklistItems } from '../rubricChecklist.js'
 export function RubricProgress({ concept }: { concept: Concept }) {
   return <details className="rubric-progress">
     <summary>Rubric checklist</summary>
-    <p>Items are checked when supported by your answers. Skipped items do not count as demonstrated.</p>
+    <p>Items are checked when supported by your answers. Skipped items score 0 unless you teach them later.</p>
     <div className="rubric-progress-levels">{levelIds.slice(0, targetCount(concept.target)).map((level, index) => {
       const assessment = concept.assessments?.[level] ?? (!concept.assessments && index === concept.passed && !concept.assessment?.complete ? concept.assessment : null)
       const items = checklistItems(concept.rubric[level])

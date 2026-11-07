@@ -1,0 +1,13 @@
+.action-menu-trigger.action-menu-trigger { display: grid; place-items: center; width: 40px; height: 40px; min-height: 0; padding: 0; border: 0; border-radius: 8px; background: transparent; color: var(--muted-foreground); cursor: pointer; }
+.action-menu-trigger.action-menu-trigger:is(:hover:not(:disabled), [aria-expanded="true"]) { background: var(--muted); color: var(--foreground); }
+.action-menu-trigger:focus-visible { outline: 2px solid var(--primary); outline-offset: 3px; }
+.action-menu-trigger svg { width: 16px; height: 16px; }
+.action-menu { position: fixed; top: 0; left: 0; z-index: 1000; width: max-content; min-width: 168px; max-width: calc(100vw - 16px); max-height: calc(100dvh - 16px); overflow-y: auto; padding: 5px; border: 1px solid var(--border); border-radius: 10px; background: var(--background); box-shadow: 0 8px 28px #0002; }
+.action-menu button { display: block; width: 100%; padding: 9px 10px; border: 0; border-radius: 6px; background: transparent; color: var(--foreground); text-align: left; font: inherit; font-size: .8125rem; cursor: pointer; }
+.action-menu button:is(:hover, :focus-visible) { outline: none; background: var(--muted); }
+.action-menu button.action-menu-danger { color: var(--red-strong); }
+.action-menu button.action-menu-danger:is(:hover, :focus-visible) { background: var(--red-soft); }
+@media (max-width: 600px) {
+  .action-menu-trigger.action-menu-trigger { width: 44px; height: 44px; }
+  .action-menu button { padding-block: 12px; }
+}

@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react'
 import { accountSignal } from '../accounts'
 import { loadCourse, updateCourseDetails, type Course, type EnrollmentMode } from '../courseStore'
+import { ConfirmDialog } from './ConfirmDialog'
 import { useToast } from './useToast'
 
 export function CourseEnrollmentToggle({ course, disabled, onUpdated }: { course: Course; disabled: boolean; onUpdated: (course: Course) => void }) {
@@ -57,18 +58,8 @@ export function CourseEnrollmentToggle({ course, disabled, onUpdated }: { course
       <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.3" aria-hidden="true"><path d="m4 6 4-4 4 4M4 10l4 4 4-4" /></svg>
     </button>
     {error && !confirmation && <span className="course-enrollment-error" role="alert">{error}</span>}
-    {confirmation && <OpenEnrollmentDialog pending={confirmation.pending} busy={busy} error={error} onConfirm={() => void confirm()} onClose={() => { setConfirmation(null); setError(''); queueMicrotask(() => button.current?.focus()) }} />}
+    {confirmation && <ConfirmDialog title="Open enrollment?" confirmLabel={busy ? 'Opening…' : 'Hold to open enrollment'} busy={busy} error={error} onConfirm={() => void confirm()} onCancel={() => { setConfirmation(null); setError(''); queueMicrotask(() => button.current?.focus()) }}>
+      {confirmation.pending === 1 ? '1 student is waiting for approval.' : `${confirmation.pending} students are waiting for approval.`} Opening enrollment admits all pending requests immediately. New students can join without approval.
+    </ConfirmDialog>}
   </>
-}
-
-function OpenEnrollmentDialog({ pending, busy, error, onConfirm, onClose }: { pending: number; busy: boolean; error: string; onConfirm: () => void; onClose: () => void }) {
-  const dialog = useRef<HTMLDialogElement>(null)
-  useEffect(() => { const element = dialog.current; element?.showModal(); return () => element?.close() }, [])
-  function close() { if (!busy) { dialog.current?.close(); onClose() } }
-  return <dialog ref={dialog} className="course-edit-dialog course-enrollment-dialog" aria-labelledby="course-enrollment-title" aria-describedby="course-enrollment-warning" onCancel={event => { event.preventDefault(); close() }}>
-    <div className="course-edit-heading"><h2 id="course-enrollment-title">Open enrollment?</h2><button type="button" className="course-dialog-close" aria-label="Close enrollment warning" disabled={busy} onClick={close}><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" aria-hidden="true"><path d="m6 6 12 12M18 6 6 18" /></svg></button></div>
-    <p id="course-enrollment-warning">{pending === 1 ? '1 student is waiting for approval.' : `${pending} students are waiting for approval.`} Opening enrollment admits all pending requests immediately. New students can join without approval.</p>
-    {error && <p className="course-edit-error" role="alert">{error}</p>}
-    <div className="course-edit-footer"><button type="button" disabled={busy} onClick={close} autoFocus>Cancel</button><button type="button" className="course-primary-action" disabled={busy} onClick={onConfirm}>{busy ? 'Opening…' : 'Open enrollment'}</button></div>
-  </dialog>
 }

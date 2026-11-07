@@ -1,5 +1,5 @@
 import { AccountError } from './accounts.js';
-import { assessmentPayload, buildTopicReport, eventKey, digest, researchCsv, csv, dataDictionary, levels } from './topicReports.js';
+import { assessmentPayload, buildTopicReport, openSkippedGoals, eventKey, digest, researchCsv, csv, dataDictionary, levels } from './topicReports.js';
 import { checklistItems } from '../../frontend/src/rubricChecklist.js';
 
 export const validUuid = value => typeof value === 'string' && /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(value);
@@ -23,7 +23,7 @@ export function createTopicReportService(getClient) {
       const canonical = { ...input, conceptId, topic: concept.name, learningType: state.configuration.learningType, criterion: concept.rubric[input.level], aspects: checklistItems(concept.rubric[input.level]), researchScoring: true };
       const key = eventKey(canonical);
       const previous = state.events.find(e => e.event_key === key);
-      return { input: canonical, state, sessionId, key, previous };
+      return { input: canonical, state, sessionId, key, previous, openSkips: openSkippedGoals(state, conceptId, input.level) };
     },
     async record(account, prepared, assessment, versions) {
       return rpc('append_topic_assessment', { actor_id: account.id, target_session: prepared.sessionId, request_key: prepared.key, event_payload: assessmentPayload(prepared.input, assessment, { ...versions, rubric: digest(prepared.state.configuration) }) });
@@ -49,7 +49,8 @@ export function createTopicReportService(getClient) {
       report.finishMode = completed ? 'completed' : 'early';
       if (!save) return { report, snapshots: state.snapshots };
       const saved = await rpc('save_topic_report', { actor_id: account.id, target_session: sessionId, expected_watermark: report.watermark, mode: report.finishMode, report_document: report });
-      return { ...saved, snapshots: [{ id: saved.id, createdAt: saved.createdAt, watermark: report.watermark, finishMode: report.finishMode }, ...state.snapshots.filter(s => s.id !== saved.id)] };
+      // A snapshot saved earlier at this watermark holds the same evidence but may predate newer report fields.
+      return { ...saved, report, snapshots: [{ id: saved.id, createdAt: saved.createdAt, watermark: report.watermark, finishMode: report.finishMode }, ...state.snapshots.filter(s => s.id !== saved.id)] };
     },
     async export(account, params) {
       if (account.role !== 'admin') throw new AccountError('Admin access required.', 403);

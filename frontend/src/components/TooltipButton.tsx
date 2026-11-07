@@ -1,4 +1,4 @@
-import { useLayoutEffect, useRef, useState, type ButtonHTMLAttributes } from 'react'
+import { useLayoutEffect, useRef, useState, type ComponentPropsWithRef } from 'react'
 import { createPortal } from 'react-dom'
 import { useButtonTooltip, type TooltipAnchor } from './useButtonTooltip'
 import { CursorTooltip } from './CursorTooltip'
@@ -13,7 +13,7 @@ export function ButtonTooltip({ id, text, anchor, variant = 'default' }: { id: s
   return createPortal(<span ref={element} id={id} className={`board-tooltip floating-button-tooltip${variant === 'warning' ? ' warning-tooltip' : ''}`} role="tooltip" style={{ left, top: variant === 'warning' ? anchor.top + 54 : anchor.top }}>{text}</span>, document.body)
 }
 
-export function TooltipButton({ tooltip, tooltipVariant, tooltipFollowPointer = false, children, onPointerEnter, onPointerMove, onPointerLeave, onFocus, onBlur, onClick, ...props }: ButtonHTMLAttributes<HTMLButtonElement> & { tooltip: string; tooltipVariant?: 'default' | 'warning'; tooltipFollowPointer?: boolean }) {
+export function TooltipButton({ tooltip, tooltipVariant, tooltipFollowPointer = false, children, onPointerEnter, onPointerMove, onPointerLeave, onFocus, onBlur, onClick, ...props }: ComponentPropsWithRef<'button'> & { tooltip: string; tooltipVariant?: 'default' | 'warning'; tooltipFollowPointer?: boolean }) {
   const hint = useButtonTooltip()
   return <>
     <button {...props} aria-describedby={hint.describedBy}

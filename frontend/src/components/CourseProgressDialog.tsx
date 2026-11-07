@@ -1,15 +1,14 @@
 import { useEffect, useRef, useState } from 'react'
 import type { CourseModule, StudentProgress } from '../courseStore'
+import { formatScore, progressStatus as status, type StudentModuleProgress as Progress } from '../courseScores'
 import { levelIds, targetCount, type Concept } from '../learningFlow'
 import { learningTypes, type LearningType } from '../learningTypes.js'
 import { checklistItems } from '../rubricChecklist.js'
 
-type Progress = StudentProgress['modules'][number]
 export type CourseProgressSelection = { courseId: string; kind: 'student' | 'module'; id: string }
 
-function status(progress?: Progress) {
-  if (!progress?.started) return 'Not started'
-  return progress.concepts.length > 0 && progress.concepts.every(concept => concept.passed >= targetCount(concept.target)) ? 'Complete' : 'In progress'
+function statusLabel(progress?: Progress) {
+  return status(progress) === 'Complete' && typeof progress?.score === 'number' ? `Complete · ${formatScore(progress.score)}` : status(progress)
 }
 
 function ConceptProgress({ progress }: { progress?: Progress }) {
@@ -58,7 +57,7 @@ export function CourseProgressDialog({ selection, modules, students, onClose }: 
       {student.status === 'enrolled' ? <><p className="course-progress-total">{completeCount} / {published.length} topics complete</p>
         <div className="course-progress-list">{published.map(value => {
           const progress = student.modules.find(item => item.moduleId === value.id)
-          return <section className="course-progress-card" key={value.id}><div className="course-progress-card-heading"><h3>{value.title}</h3><span className="course-progress-status" data-complete={status(progress) === 'Complete'}>{status(progress)}</span></div><ConceptProgress progress={progress} /></section>
+          return <section className="course-progress-card" key={value.id}><div className="course-progress-card-heading"><h3>{value.title}</h3><span className="course-progress-status" data-complete={status(progress) === 'Complete'}>{statusLabel(progress)}</span></div><ConceptProgress progress={progress} /></section>
         })}</div>{!published.length && <p>No published topics yet.</p>}
       </> : <p>{student.status === 'pending' ? 'Pending approval' : 'Request rejected'}</p>}
     </> : module ? <>
@@ -66,7 +65,7 @@ export function CourseProgressDialog({ selection, modules, students, onClose }: 
       {view === 'rubric' ? <ModuleRubric module={module} /> : <><p className="course-progress-total">{completeCount} / {enrolled.length} students complete</p>
         <div className="course-progress-list">{enrolled.map(value => {
           const progress = value.modules.find(item => item.moduleId === module.id)
-          return <section className="course-progress-card" key={value.studentId}><div className="course-progress-card-heading"><div><h3>{value.name}</h3><p>{value.email}</p></div><span className="course-progress-status" data-complete={status(progress) === 'Complete'}>{status(progress)}</span></div><ConceptProgress progress={progress} /></section>
+          return <section className="course-progress-card" key={value.studentId}><div className="course-progress-card-heading"><div><h3>{value.name}</h3><p>{value.email}</p></div><span className="course-progress-status" data-complete={status(progress) === 'Complete'}>{statusLabel(progress)}</span></div><ConceptProgress progress={progress} /></section>
         })}</div>{!enrolled.length && <p>No enrolled students yet.</p>}
       </>}
     </> : <p>Progress is no longer available. Close this popup and retry loading the course.</p>}
