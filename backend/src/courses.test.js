@@ -120,7 +120,7 @@ test('module deletion requires its owning instructor and retains modules with ch
   await assert.rejects(one('select public.delete_course_module($1,2)', [moduleId]), error => error.code === '42501');
   await as(instructor);
   await assert.rejects(one('delete from public.course_modules where id=$1', [moduleId]), error => error.code === '42501');
-  for (const revision of [0, 1, null]) await assert.rejects(one('select public.delete_course_module($1,$2)', [moduleId, revision]), error => error.code === '40001');
+  for (const revision of [0, 1, null]) await assert.rejects(one('select public.delete_course_module($1,$2)', [moduleId, revision]), error => error.code === 'PT409');
   await db.exec('reset role');
   assert.equal((await one('select count(*)::int as count from public.course_assignments')).count, 2);
   await db.query('update public.profiles set approved=false where id=$1', [instructor]);
@@ -339,7 +339,7 @@ test('courses enforce enrollment, publication, assignment configuration, and pri
   });
   await t.test('publication validates drafts, strips source data, and locks configuration',async () => {
     await as(instructor);
-    await assert.rejects(one('select * from public.publish_course_module($1,99)',[moduleId]),error => error.code === '40001');
+    await assert.rejects(one('select * from public.publish_course_module($1,99)',[moduleId]),error => error.code === 'PT409');
     const invalid = doc(); invalid.session.concepts[0].rubric.remember = '';
     await saveDraft(invalid,1);
     await assert.rejects(one('select * from public.publish_course_module($1,2)',[moduleId]),error => error.code === '23514');
@@ -348,7 +348,7 @@ test('courses enforce enrollment, publication, assignment configuration, and pri
     assert.ok(published.published_at);
     assert.equal(published.document.session.files,undefined);
     assert.equal(published.document.session.messages,undefined);
-    await assert.rejects(saveDraft(doc('Changed'),4),error => error.code === '40001');
+    await assert.rejects(saveDraft(doc('Changed'),4),error => error.code === 'PT409');
     await as(student);
     assert.equal((await db.query('select * from public.course_modules')).rows.length,1);
     await assert.rejects(saveDraft(),error => error.code === '42501');
@@ -372,7 +372,7 @@ test('courses enforce enrollment, publication, assignment configuration, and pri
     session.document.session.concepts[0].messages.push({role:'user',content:'PRIVATE STUDENT CHAT'});
     session = await save(session.document);
     assert.equal(session.revision,2);
-    await assert.rejects(save(session.document),error => error.code === '40001');
+    await assert.rejects(save(session.document),error => error.code === 'PT409');
     const config = (await one('select public.assignment_chat_configuration($1,$2) as config',[session.id,'energy'])).config;
     assert.equal(config.concept.name,'Energy');
     await as(outsider);
@@ -450,7 +450,7 @@ test('course appearance edits enforce ownership, revision checks, and private ba
   course = await update(' Physics 101 ',null,null);
   assert.equal(course.name,'Physics 101'); assert.equal(course.code,originalCode);
   for (const name of ['','   ','x'.repeat(121)]) await assert.rejects(update(name,null,null),error=>error.code==='23514');
-  await assert.rejects(update('Stale title',null,null,1),error=>error.code==='40001');
+  await assert.rejects(update('Stale title',null,null,1),error=>error.code==='PT409');
   for (const id of [student,other,pending]) {
     await as(id);
     await assert.rejects(update('Forged',{type:'none'},null),error=>error.code==='42501');
@@ -495,7 +495,7 @@ test('course appearance edits enforce ownership, revision checks, and private ba
   assert.deepEqual(course.banner,{type:'none'});
   const results=await Promise.allSettled([update('First edit',null,null),update('Second edit',null,null)]);
   assert.equal(results.filter(value=>value.status==='fulfilled').length,1);
-  assert.equal(results.filter(value=>value.status==='rejected' && value.reason.code==='40001').length,1);
+  assert.equal(results.filter(value=>value.status==='rejected' && value.reason.code==='PT409').length,1);
   await db.exec('reset role');
   const bucket=await one("select * from storage.buckets where id='course-banners'");
   assert.equal(bucket.public,false); assert.equal(bucket.file_size_limit,5000000);
@@ -514,7 +514,7 @@ test('dashboard banners keep avatar settings, enforce ownership and revisions, a
   assert.equal((await one('select appearance from public.user_customizations')).appearance.name, 'Original avatar');
   await db.query('update public.user_customizations set appearance=$1 where user_id=$2', [{ name: 'Updated avatar' }, student]);
   assert.equal((await one('select dashboard_banner from public.user_customizations')).dashboard_banner.preset, 'dusk');
-  await assert.rejects(save({ type: 'none' }, 0), error => error.code === '40001');
+  await assert.rejects(save({ type: 'none' }, 0), error => error.code === 'PT409');
   for (const banner of [{ type: 'preset', preset: 'invalid' }, { type: 'image', path: foreignImage }, { type: 'image', path: firstImage }, null]) await assert.rejects(save(banner, 1), error => error.code === '23514');
   await assert.rejects(db.query('update public.user_customizations set dashboard_banner=$1', [{ type: 'none' }]), error => error.code === '42501');
   await db.query("insert into storage.objects(bucket_id,name) values('dashboard-banners',$1),('dashboard-banners',$2)", [firstImage, unusedImage]);
@@ -644,7 +644,7 @@ test('community courses expose published topics and star totals while keeping en
   await as(instructor);
   await assert.rejects(one("select public.set_course_sharing($1,true,'Invalid subject',$2)", [course.id, course.appearance_revision]), error => error.code === '23514');
   course = await one("select * from public.set_course_sharing($1,true,'Electrical Engineering',$2)", [course.id, course.appearance_revision]);
-  await assert.rejects(one("select public.set_course_sharing($1,false,'Physics',1)", [course.id]), error => error.code === '40001');
+  await assert.rejects(one("select public.set_course_sharing($1,false,'Physics',1)", [course.id]), error => error.code === 'PT409');
   await as(outsider);
   const listed = await library();
   assert.equal(listed.length, 1);
@@ -737,7 +737,7 @@ test('subject tags support multiple selections and stars are available only on p
   await as(instructor);
   course = await share(['Mathematics', 'Electrical Engineering', 'Mathematics']);
   assert.deepEqual(course.subjects, ['Mathematics', 'Electrical Engineering']);
-  await assert.rejects(share(['Physics'], course.appearance_revision - 1), error => error.code === '40001');
+  await assert.rejects(share(['Physics'], course.appearance_revision - 1), error => error.code === 'PT409');
   await as(student);
   const library = (await one('select public.community_courses() as courses')).courses;
   assert.deepEqual(library[0].subjects, ['Mathematics', 'Electrical Engineering']);

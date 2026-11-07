@@ -30,7 +30,7 @@ function fixture(t) {
       if (state.beforeWrite) { const wait = state.beforeWrite; state.beforeWrite = null; await wait(); }
       if (state.fail) return json({ code: '503', message: 'Disconnected' }, 503);
       const existing = state.rows.get(key);
-      if ((existing?.revision || 0) !== body.expected_revision) return json({ code: '40001', message: 'Conflict' }, 409);
+      if ((existing?.revision || 0) !== body.expected_revision) return json({ code: 'PT409', message: 'Conflict' }, 409);
       const row = { owner_id: userId, id: body.session_id, title: body.session_title, document: body.session_document, revision: body.expected_revision + 1, updated_at: new Date().toISOString() };
       state.rows.set(key, row); state.writes.push(row);
       return json(new Headers(init.headers).get('Accept')?.includes('object') ? row : [row]);

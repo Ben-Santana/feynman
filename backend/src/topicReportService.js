@@ -6,7 +6,7 @@ export const validUuid = value => typeof value === 'string' && /^[0-9a-f]{8}-[0-
 export function createTopicReportService(getClient) {
   async function rpc(name, args) {
     const { data, error } = await getClient().rpc(name, args);
-    if (error) throw new AccountError(error.code === '42501' ? 'Session access or signed consent required.' : error.code === '40001' ? 'The assessment changed. Retry saving the report.' : error.code === '23514' ? error.message : ['PGRST202', '42P01'].includes(error.code) ? 'Topic reports are not configured. Apply the latest database migration and retry.' : 'Could not save or load the topic report. Please retry.', error.code === '42501' ? 403 : ['40001', '23514'].includes(error.code) ? 409 : 503);
+    if (error) throw new AccountError(error.code === '42501' ? 'Session access or signed consent required.' : error.code === 'PT409' ? 'The assessment changed. Retry saving the report.' : error.code === '23514' ? error.message : ['PGRST202', '42P01'].includes(error.code) ? 'Topic reports are not configured. Apply the latest database migration and retry.' : 'Could not save or load the topic report. Please retry.', error.code === '42501' ? 403 : ['40001', '23514'].includes(error.code) ? 409 : 503);
     return data;
   }
   async function context(account, sessionId) {

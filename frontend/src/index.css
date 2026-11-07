@@ -798,6 +798,13 @@ div.paper-grade-field .paper-grade-word { opacity: 1; }
 .setup-concepts .setup-actions { align-items: flex-end; }
 .setup-actions-right { display: grid; gap: 12px; width: calc((100% - 28px) / 2 - 28px); min-width: 0; margin-left: auto; }
 .setup-actions-right .validation-action { justify-self: end; margin-left: 0; }
+.confirm-dialog { width: min(520px, calc(100vw - 32px)); margin: auto; padding: 28px; font-family: "Fredoka", ui-rounded, system-ui, sans-serif; border: 1px solid var(--border); border-radius: 18px; background: var(--background); color: var(--foreground); box-shadow: 0 20px 80px #0003; }
+.confirm-dialog::backdrop { background: #0006; }
+.confirm-dialog h2 { margin: 0 0 12px; font-size: 1.625rem; font-weight: 500; }
+.confirm-dialog p { line-height: 1.6; }
+.confirm-dialog-actions, .learning-type-change-actions { display: flex; justify-content: flex-end; flex-wrap: wrap; gap: 12px; margin-top: 24px; }
+.confirm-dialog button:focus-visible { outline: 2px solid var(--primary); outline-offset: 3px; }
+.confirm-dialog-error { margin: 12px 0 0; color: var(--red-strong); font-size: .875rem; }
 .setup-secondary { padding: 10px 14px; border: 1px solid var(--border); border-radius: 11px; background: transparent; color: var(--foreground); font: inherit; cursor: pointer; transition: border-color .2s ease, color .2s ease; }
 .setup-secondary:is(:hover, :focus-visible):not(:disabled) { border-color: var(--primary); color: var(--primary); }
 .setup-autofill { display: block; width: 100%; padding: 7px 12px; border-color: var(--primary); background: var(--primary); color: var(--primary-foreground); }

@@ -1,3 +1,4 @@
+import { ConfirmDialog } from './components/ConfirmDialog'
 import { useToast } from './components/useToast'
 import { rubricSkipReason } from './rubricFallback.js'
 import { ChatComposer } from './components/ChatComposer'
@@ -128,6 +129,7 @@ export default function App({ account, onProfileUpdated, authMode }: { account: 
   const moduleRecoveryQueue = useRef(Promise.resolve())
   const saveStatus = useSyncExternalStore(subscribeSaveStatus, getSaveStatus)
   const [resolvingSave, setResolvingSave] = useState(false)
+  const [resolveSaveError, setResolveSaveError] = useState('')
   const navigate = useCallback((path: string, replace = false) => {
     if (isModuleEditor && path.split('?')[0] !== page && moduleDirty.current && !window.confirm('Leave the topic editor? Unsaved changes will be kept on this device.')) return
     void flushSessionSaves().catch(() => {})
@@ -309,12 +311,12 @@ export default function App({ account, onProfileUpdated, authMode }: { account: 
   }
   async function resolveSave(keepCopy: boolean) {
     if (!saveStatus.sessionId || resolvingSave) return
-    setResolvingSave(true)
+    setResolvingSave(true); setResolveSaveError('')
     try {
       setHydrated(false)
       await resolveSessionConflict(saveStatus.sessionId, keepCopy)
       setLoadVersion(value => value + 1)
-    } catch (reason) { reportError(reason); setHydrated(true) }
+    } catch (reason) { setResolveSaveError(reason instanceof Error ? reason.message : 'Could not resolve this conflict. Please retry.'); setHydrated(true) }
     finally { setResolvingSave(false) }
   }
   async function commitModule(publish = false) {
@@ -668,10 +670,12 @@ export default function App({ account, onProfileUpdated, authMode }: { account: 
       {!started && setupStep === 'class-type' && pendingLearningType && <LearningTypeChangeDialog learningType={pendingLearningType} onConfirm={confirmLearningTypeChange} onCancel={() => setPendingLearningType(null)} />}
     </main>
   }
+  const conflictSession = savedSessions.find(record => record.id === saveStatus.sessionId)
   const content = <>
-    {(saveStatus.state === 'error' || saveStatus.state === 'conflict') && <div className="learning-save-notice" role="alert"><p>{saveStatus.message}</p>
-      {saveStatus.state === 'error' ? <button onClick={() => void flushSessionSaves().catch(reason => reportError(reason))}>Retry saving</button> : <><button disabled={resolvingSave} onClick={() => void resolveSave(false)}>Reload server version</button>{!savedSessions.find(record => record.id === saveStatus.sessionId)?.assignment && <button disabled={resolvingSave} onClick={() => void resolveSave(true)}>Save a copy</button>}</>}
-    </div>}
+    {saveStatus.state === 'error' && <div className="learning-save-notice" role="alert"><p>{saveStatus.message}</p><button onClick={() => void flushSessionSaves().catch(reason => reportError(reason))}>Retry saving</button></div>}
+    {saveStatus.state === 'conflict' && <ConfirmDialog key={saveStatus.sessionId} title={conflictSession?.title ? `“${conflictSession.title}” changed on another device` : 'Session changed on another device'} confirmLabel="Use saved version" busy={resolvingSave} error={resolveSaveError} onConfirm={() => void resolveSave(false)} secondaryAction={conflictSession?.assignment ? undefined : { label: 'Keep a copy', onClick: () => void resolveSave(true) }}>
+      {conflictSession?.assignment ? 'Assigned topics can’t be copied. Using the saved version discards this device’s work.' : 'Keep a copy to save this device’s work as a new session, or use the saved version and discard it.'}
+    </ConfirmDialog>}
     {survey.error && !isChatPage && <p className="account-error" role="alert">{survey.error}</p>}
     {renderPage()}
     {survey.status && !survey.status.submittedAt && <LearningSurveyDialog open={survey.open} status={survey.status} onLater={() => { survey.close(); if (isChatPage && !(started && sessionComplete(concepts))) navigate('/sessions') }} onSubmitted={survey.submitted} />}

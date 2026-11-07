@@ -53,7 +53,7 @@ test('server persistence freezes configuration, deduplicates retries, preserves 
   assert.notEqual(resumed.id, report.id); assert.equal(resumed.report.first.percent, 100); assert.equal(resumed.report.final.percent, 50);
   const original = await f.service.report(f.account, f.session.id, { snapshotId: report.id });
   assert.equal(original.report.final.percent, 100); assert.equal(original.snapshots.length, 2);
-  await assert.rejects(f.db.query('select public.save_topic_report($1,$2,0,\'early\',\'{}\')', [student, f.session.id]), error => error.code === '40001');
+  await assert.rejects(f.db.query('select public.save_topic_report($1,$2,0,\'early\',\'{}\')', [student, f.session.id]), error => error.code === 'PT409');
   const admin = { id: other, role: 'admin' };
   const exported = await f.service.export(admin, new URLSearchParams({ kind: 'topics', course: f.course.id }));
   assert.ok(exported.content.includes('"50"')); assert.ok(!exported.content.includes(student)); assert.ok(!exported.content.includes('Energy is force'));

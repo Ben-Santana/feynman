@@ -202,7 +202,7 @@ export function createLearningStore({ client = supabase, getAccount = requireAcc
           : await client().rpc('save_learning_session', { session_id: id, session_title: item.record.title, session_document: document, expected_revision: item.revision }).abortSignal(signal).single()
         boundary(userId, signal)
         if (response.error) {
-          if (response.error.code === '40001') {
+          if (response.error.code === 'PT409') {
             conflicts.add(id); setStatus({ state: 'conflict', sessionId: id, message: 'This session changed on another device. Your local work is preserved.' }); continue
           }
           throw new Error('Could not save your learning. Your work is preserved on this device.')
