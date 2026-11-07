@@ -543,7 +543,7 @@ test('account migration enforces database and storage permissions in PostgreSQL'
   });
   await t.test('students retain access while admins review their professor applications', async () => {
     await db.exec('reset role');
-    await db.exec(await readFile(new URL('../../supabase/migrations/202611050008_student_instructor_applications.sql', import.meta.url), 'utf8'));
+    await db.exec(await readFile(new URL('../../supabase/migrations/202611050009_student_instructor_applications.sql', import.meta.url), 'utf8'));
     await as(openAccount, 'authenticated', 'password');
     await db.query('select public.apply_as_instructor()');
     await db.query('select public.apply_as_instructor()');
