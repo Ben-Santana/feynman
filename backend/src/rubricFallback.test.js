@@ -130,4 +130,25 @@ test('later levels check off earlier skips without blocking the turn', async () 
   const failed = await chat(request, run(async () => { throw new Error('Evaluator offline'); }), undefined, { evaluator: 'legacy', openSkips });
   assert.deepEqual(failed.assessment.skipRecovery, []);
   assert.equal(failed.message, 'What changes if the plates move apart?');
+
+  for (const validRecovery of [true, false]) {
+    const calls = [];
+    const combined = await chat(request, async (_, sent, tool) => {
+      calls.push(tool.name);
+      assert.equal(tool.name, 'evaluate_with_recovery');
+      const [activeMaterial, recoveryMaterial] = sent[0].content.map(block => JSON.parse(block.text));
+      assert.equal(activeMaterial.level, 'understand');
+      assert.equal(recoveryMaterial[0].material.level, 'remember');
+      assert.equal(recoveryMaterial[0].material.transcript, undefined);
+      const assessment = {
+        reason: 'Assessed.', nextEvidenceObjective: '',
+        evidence: [{ id: 'e1', messageId: 'a1', quote: 'the energy is stored in the electric field' }],
+        judgments: [judged('criterion_1', 'supported'), judged('level_task', 'supported')],
+      };
+      return { active: assessment, recovery_1: validRecovery ? assessment : { judgments: {} } };
+    }, undefined, { openSkips, skipRecoveryMode: 'combined' });
+    assert.deepEqual(calls, ['evaluate_with_recovery']);
+    assert.equal(combined.assessment.complete, true);
+    assert.deepEqual(combined.assessment.skipRecovery, validRecovery ? result.assessment.skipRecovery : []);
+  }
 });

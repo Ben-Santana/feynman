@@ -121,3 +121,9 @@ Run `node scripts/replay-evaluator-policy.mjs --advanced --analyze-only gpt-6.1-
 Run `node scripts/replay-evaluator-policy.mjs --chat gpt-6.1-sol` to replay the ordinary chat path. The independent Apply and Analyze answers passed on the original tasks. The copied answers stayed open and generated follow-ups with fresh givens. An explicit rubric requirement to apply the method to a trip with a stationary interval stayed open and generated a question about that interval.
 
 Run `node scripts/replay-evaluator-policy.mjs --complete gpt-6.1-sol` for the completion cases. Apply passed after the learner calculated and interpreted a new average speed. Analyze passed after the learner used an additional control group to draw a fresh inference about temperature. The explicit transfer case passed after the learner included the stationary interval and explained its effect. All three completed with no blockers.
+
+## Response performance
+
+- Ordinary follow-ups use a shortlist of up to three strategies and keep the full transcript. Repeated live screening measured a 44% reduction in follow-up request size from the shortlist, with mixed timing.
+- A retry names the actual validation error. Valid questions with invalid optional strategy metadata return immediately. Pending prerequisite detours still require valid continuation metadata.
+- Earlier skipped goals keep their original grading level and remain outside active completion. Run `node scripts/benchmark-skipped-recovery.mjs gpt-6.1-sol` to compare split and combined calls. The four synthetic pairs agreed on active completion and statuses, recovered credit, and recorded mistakes. The combined branch made one grading call per turn instead of three, but it was slower in all four pairs, so ordinary chat uses split recovery.

@@ -4,6 +4,7 @@ import { Readable } from 'node:stream';
 import { chat } from './chat.js';
 import { createApiServer } from './server.js';
 import { testAuthorization, testAccountService } from './accessTestHelper.js';
+import { inlineQuestionStrategies } from './inlineQuestionStrategies.js';
 
 const input = () => ({ level: 'understand', learningType: 'theoretical', topic: 'Motion', aspects: ['Explain motion after contact ends'], messages: [{ role: 'assistant', content: 'What happens after the push ends?' }, { role: 'user', content: 'The stored push gradually runs out, so the puck slows.' }] });
 function evaluatorResponse(messages, { status = 'supported', invalidQuote = false } = {}) {
@@ -14,6 +15,18 @@ function evaluatorResponse(messages, { status = 'supported', invalidQuote = fals
 function plan(request) {
   return { strategyId: 'remove-condition', rationale: 'Examine persistence after contact ends.', plan: { targetMessageIndex: 1, targetQuote: request.messages[1].content, rubricItem: request.aspects[0], objective: 'Distinguish continued motion from continuing contact.', scenario: 'A puck moves on a horizontal frictionless surface after the hand lets go.', assumptions: ['No horizontal external interaction'], heldFixed: ['Surface and puck'], varied: ['Contact with the hand'], construction: 'Ask about the claimed cause after contact ends.', prerequisitesSatisfied: 'The learner discusses motion after a push.', limitations: ['One answer is not a stable belief.'], responseSignals: [{ hypothesis: 'Stored push', responsePattern: 'Push runs out.', interpretation: 'Investigate the stored-push hypothesis.' }, { hypothesis: 'No continuing influence', responsePattern: 'Motion continues.', interpretation: 'Ask for evidence of the relationship.' }] } };
 }
+
+test('strategy shortlist prioritizes evidence operations and can omit strategy selection', () => {
+  const request = input();
+  const options = inlineQuestionStrategies(request, {
+    objective: 'Compare the result under a changed condition and explain why.',
+    blockers: ['transfer_check_needed'],
+  });
+  assert.deepEqual(options.property.properties.strategyId.enum, [
+    'controlled-comparison', 'boundary-case', 'method-applicability', 'none',
+  ]);
+  assert.equal(inlineQuestionStrategies(request, { objective: 'Continue the lesson.' }), null);
+});
 
 test('ordinary chat chooses a catalog strategy and generates its question in the same call', async () => {
   const request = input(), calls = [];
@@ -34,17 +47,15 @@ test('ordinary chat chooses a catalog strategy and generates its question in the
   assert.equal(result.assessment.complete, false);
 });
 
-test('inline strategy rejects fabricated grounding and retries the reply without reevaluation', async () => {
+test('inline strategy discards fabricated grounding without retrying a valid question', async () => {
   const calls = [];
-  let replies = 0;
   const result = await chat(input(), async (instructions, messages, tool) => {
     calls.push(tool.name);
     if (tool.name === 'evaluate_refined') return evaluatorResponse(messages, { status: 'flawed' });
-    if (++replies === 1) return { message: 'What keeps acting after contact ends?', expression: 'attentive', strategyChoice: { strategyId: 'remove-condition', rationale: 'Probe the removal.', targetQuote: 'Invented student statement.', rubricItem: input().aspects[0] } };
-    assert.match(instructions, /Ground the strategy in an exact current learner quote/);
-    return { message: 'What interaction acts on the puck after contact ends?', expression: 'attentive', strategyChoice: { strategyId: 'none', rationale: 'No safe catalog fit.', targetQuote: '', rubricItem: '' } };
+    return { message: 'What keeps acting after contact ends?', expression: 'attentive', strategyChoice: { strategyId: 'remove-condition', rationale: 'Probe the removal.', targetQuote: 'Invented student statement.', rubricItem: input().aspects[0] } };
   });
-  assert.deepEqual(calls, ['evaluate_refined', 'reply_to_teacher', 'reply_to_teacher']);
+  assert.deepEqual(calls, ['evaluate_refined', 'reply_to_teacher']);
+  assert.equal(result.message, 'What keeps acting after contact ends?');
   assert.equal(result.learnerModel.strategyId, null);
   assert.equal(result.learnerModel.coverageGap.stage, 'inline_selection');
 });
@@ -137,7 +148,8 @@ test('ordinary chat API sends actual catalog rules and returns a grounded inline
     assert.equal(tool.name, 'reply_to_teacher');
     const records = JSON.parse(instructions.split('Reviewed strategies: ')[1].split('\n')[0]);
     assert.deepEqual(records.find(s => s.id === selected.id).constructionRules, selected.constructionRules);
-    assert.deepEqual(records.map(s => s.id).sort(), strategies.filter(s => s.reviewStatus === 'design_reviewed' && s.levels.includes(request.level)).map(s => s.id).sort());
+    assert.ok(records.length > 0 && records.length <= 3);
+    assert.deepEqual(tool.schema.properties.strategyChoice.properties.strategyId.enum, [...records.map(s => s.id), 'none']);
     assert.ok(tool.schema.required.includes('strategyChoice'));
     return { message: 'In your explanation, what keeps acting on the puck after contact ends?', expression: 'confused', strategyChoice: { strategyId: selected.id, rationale: 'Examine the remaining influence after contact ends.', targetQuote: request.messages[1].content, rubricItem: request.aspects[0] } };
   } });

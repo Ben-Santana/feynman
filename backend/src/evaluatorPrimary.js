@@ -54,7 +54,7 @@ export function primaryAssessmentTool(context, task) {
 }
 
 export function normalizePrimaryAssessment(result, context, task) {
-  if (context.researchScoring && result?.judgments?.some(j => typeof j.partialCredit?.awarded !== 'boolean' || typeof j.partialCredit?.reason !== 'string' || j.partialCredit.reason.length > 2000 || (j.partialCredit.awarded && !j.partialCredit.reason.trim()))) {
+  if (context.researchScoring && Array.isArray(result?.judgments) && result.judgments.some(j => typeof j?.partialCredit?.awarded !== 'boolean' || typeof j.partialCredit?.reason !== 'string' || j.partialCredit.reason.length > 2000 || (j.partialCredit.awarded && !j.partialCredit.reason.trim()))) {
     throw new InvalidOutputError('Return an explicit partialCredit judgment and a specific reason for any partial credit.');
   }
   // A single rationale replaces repeated prose, without defaulting any judgment,
