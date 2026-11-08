@@ -3,6 +3,9 @@ import { accountFetch } from '../accounts'
 import './AdminPage.css'
 import './AdminAnalyticsPage.css'
 import { ResearchExports } from './ResearchExports'
+import { SalgSurveySection } from './AdminSalgSurveyPage'
+import { EngagementSection, PreTopicSection } from './AnalyticsResearch'
+import { analyticsTabs, loadResearchCourses, type ResearchCourse } from '../research'
 
 type Metric = 'cost' | 'tokens'
 type UsageRow = { name: string; cost: number | null; tokens: number; calls: number }
@@ -68,7 +71,7 @@ function FeatureBars({ rows, metric }: { rows: UsageRow[]; metric: Metric }) {
   </li>)}</ul>
 }
 
-export function AdminAnalyticsPage({ onNavigate }: { onNavigate: (path: string) => void }) {
+function UsageSection() {
   const [days, setDays] = useState(30)
   const [metric, setMetric] = useState<Metric>('cost')
   const [user, setUser] = useState('')
@@ -94,9 +97,8 @@ export function AdminAnalyticsPage({ onNavigate }: { onNavigate: (path: string) 
   const users = [...(data?.users || [])].sort((a, b) => Number(b[metric] || 0) - Number(a[metric] || 0)).filter(row => `${row.name} ${row.email || ''}`.toLowerCase().includes(search.toLowerCase()))
   const top = [...(data?.features || [])].sort((a, b) => Number(b[metric] || 0) - Number(a[metric] || 0))[0]
   const topShare = totals && top && Number(totals[metric]) > 0 ? Number(top[metric]) / Number(totals[metric]) * 100 : 0
-  return <section className="admin-page analytics-overview" aria-labelledby="analytics-title"><div className="admin-shell">
-    <header className="credit-header"><h1 id="analytics-title">Analytics</h1><div className="credit-controls"><label><span className="credit-sr-only">Date range</span><select value={days} onChange={event => { startRequest(); setDays(Number(event.target.value)) }}><option value={7}>Last 7 days</option><option value={30}>Last 30 days</option><option value={90}>Last 90 days</option></select></label><button type="button" disabled={loading} onClick={() => { startRequest(); setVersion(value => value + 1) }}>Refresh</button></div></header>
-    <div className="credit-section-heading"><h2>Credit usage</h2><div className="credit-metric-switch" role="group" aria-label="Usage metric"><button type="button" aria-pressed={metric === 'cost'} onClick={() => setMetric('cost')}>Spend (USD)</button><button type="button" aria-pressed={metric === 'tokens'} onClick={() => setMetric('tokens')}>Tokens</button></div></div>
+  return <section className="analytics-section" aria-labelledby="usage-title">
+    <div className="credit-section-heading"><h2 id="usage-title">AI credit usage</h2><div className="credit-controls"><div className="credit-metric-switch" role="group" aria-label="Usage metric"><button type="button" aria-pressed={metric === 'cost'} onClick={() => setMetric('cost')}>Spend (USD)</button><button type="button" aria-pressed={metric === 'tokens'} onClick={() => setMetric('tokens')}>Tokens</button></div><label><span className="credit-sr-only">Date range</span><select value={days} onChange={event => { startRequest(); setDays(Number(event.target.value)) }}><option value={7}>Last 7 days</option><option value={30}>Last 30 days</option><option value={90}>Last 90 days</option></select></label><button type="button" disabled={loading} onClick={() => { startRequest(); setVersion(value => value + 1) }}>Refresh</button></div></div>
     <div className="credit-scope"><label htmlFor="credit-user-filter">Usage for</label><select id="credit-user-filter" value={user} onChange={event => selectUser(event.target.value)}><option value="">All users</option>{data?.users.filter(row => row.id).map(row => <option value={row.id!} key={row.id}>{row.name}{row.email ? ` · ${row.email}` : ''}</option>)}{user && !selectedUser && <option value={user}>Selected user</option>}</select>{user && <button type="button" onClick={() => selectUser('')}>Clear</button>}</div>
     {error && <p role="alert" className="admin-error">{error}</p>}
     <div aria-busy={loading}>
@@ -121,7 +123,29 @@ export function AdminAnalyticsPage({ onNavigate }: { onNavigate: (path: string) 
         <p className="credit-updated">Updated {new Date(data.generatedAt).toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' })}</p>
       </>}
     </div>
-    <ResearchExports />
-    <nav aria-label="Analytics reports" className="analytics-reports"><button type="button" className="analytics-report" onClick={() => onNavigate('/admin/analytics/salg-survey')}><span>SALG survey</span><span aria-hidden="true">→</span></button></nav>
+  </section>
+}
+
+export function AdminAnalyticsPage({ page, onNavigate }: { page: string; onNavigate: (path: string) => void }) {
+  const [course, setCourse] = useState('')
+  const [courses, setCourses] = useState<ResearchCourse[]>([])
+  const [coursesError, setCoursesError] = useState('')
+  useEffect(() => {
+    let disposed = false
+    void loadResearchCourses().then(result => { if (!disposed) setCourses(result) }).catch(reason => { if (!disposed) setCoursesError(reason.message) })
+    return () => { disposed = true }
+  }, [])
+  const research = page !== '/admin/analytics/ai-usage' && page !== '/admin/analytics/salg-survey'
+  return <section className="admin-page analytics-overview" aria-labelledby="analytics-title"><div className="admin-shell">
+    <header className="credit-header"><h1 id="analytics-title">Analytics</h1>
+      {research && <label className="analytics-course"><span>Course</span><select value={course} onChange={event => setCourse(event.target.value)}><option value="">All courses</option>{courses.map(item => <option key={item.id} value={item.id}>{item.name}</option>)}</select></label>}
+    </header>
+    <nav className="analytics-tabs" aria-label="Analytics sections">{analyticsTabs.map(([path, label]) => <button type="button" key={path} aria-current={page === path ? 'page' : undefined} onClick={() => onNavigate(path)}>{label}</button>)}</nav>
+    {coursesError && research && <p role="alert" className="admin-error">{coursesError}</p>}
+    {page === '/admin/analytics/pre-topic' ? <PreTopicSection course={course} />
+      : page === '/admin/analytics/scores' ? <ResearchExports course={course} courseName={courses.find(item => item.id === course)?.name} />
+      : page === '/admin/analytics/salg-survey' ? <SalgSurveySection />
+      : page === '/admin/analytics/ai-usage' ? <UsageSection />
+      : <EngagementSection course={course} />}
   </div></section>
 }

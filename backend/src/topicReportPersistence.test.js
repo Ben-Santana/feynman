@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { courseFixture } from './courses.test.js';
+import { courseFixture, startTopic } from './courses.test.js';
 import { createTopicReportService } from './topicReportService.js';
 
 const student = '11111111-1111-4111-8111-111111111111';
@@ -17,7 +17,7 @@ async function fixture(t) {
   await f.one('select public.publish_course_module($1,1)', [moduleId]);
   await f.as(student);
   await f.one('select public.join_course($1)', [course.code]);
-  const session = await f.one('select * from public.start_course_module($1)', [moduleId]);
+  const session = await startTopic(f.one, moduleId);
   await f.db.exec('reset role');
   // Admin export is restricted independently of the service role.
   await f.db.query("update public.user_roles set role='admin' where user_id=$1", [other]);
@@ -104,7 +104,7 @@ test('restarting an assigned module keeps its previous report and resumes a clea
   assert.equal(fresh.document.session.concepts[0].passed, 0);
   assert.equal(fresh.document.session.concepts[0].messages.length, 1);
   assert.equal((await f.one(restart, args)).id, fresh.id);
-  assert.equal((await f.one('select * from public.start_course_module($1)', [moduleId])).id, fresh.id);
+  assert.equal((await startTopic(f.one, moduleId)).id, fresh.id);
   await f.as(instructor);
   await assert.rejects(f.one(restart, args), error => error.code === '42501');
   await f.db.exec('reset role');

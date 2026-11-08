@@ -25,7 +25,8 @@ import { loadCloudAppearance, saveCloudAppearance } from './cloudAppearance'
 import { accountFetch, accountSignal, type Account, type AccountSignInMethod } from './accounts'
 import { AdminAIModelPage } from './components/AdminAIModelPage'
 import { AdminAnalyticsPage } from './components/AdminAnalyticsPage'
-import { AdminSalgSurveyPage } from './components/AdminSalgSurveyPage'
+import { isAnalyticsPath } from './research'
+import { useActivityTracking } from './useActivityTracking'
 import { LearningSurveyDialog } from './components/LearningSurveyDialog'
 import { useLearningSurvey } from './useLearningSurvey'
 import { AdminPage } from './components/AdminPage'
@@ -140,9 +141,8 @@ export default function App({ account, onProfileUpdated, authMode }: { account: 
   const isDeveloperPage = page === '/developer'
   const adminCourseMatch = /^\/admin\/(?:all-)?courses(?:\/([^/]+))?$/.exec(page)
   const isAdminCoursesPage = Boolean(adminCourseMatch)
-  const isSalgSurveyPage = page === '/admin/analytics/salg-survey'
   const isAdminAIModelPage = page === '/admin/ai-model'
-  const isAnalyticsPage = page === '/admin/analytics' || isSalgSurveyPage
+  const isAnalyticsPage = isAnalyticsPath(page)
   const moduleMatch = /^\/courses\/([^/]+)\/modules\/([^/]+)\/edit$/.exec(page)
   const moduleCourseId = moduleMatch?.[1]
   const moduleId = moduleMatch?.[2]
@@ -190,6 +190,7 @@ export default function App({ account, onProfileUpdated, authMode }: { account: 
   const [aiByName, setAiByName] = useState(true)
   const [rubricInstructions, setRubricInstructions] = useState('')
   const [savedSessions, setSavedSessions] = useState<SavedSession<Concept, Session>[]>([])
+  useActivityTracking(account, page, sessionId)
   const survey = useLearningSurvey(account, `${page}:${saveStatus.state}:${savedSessions.filter(record => record.started && sessionComplete(record.concepts)).map(record => record.id).join(',')}`)
   const sessionsRef = useRef<SavedSession<Concept, Session>[]>([])
   const assignment = isModuleEditor ? undefined : savedSessions.find(record => record.id === sessionId)?.assignment
@@ -711,7 +712,7 @@ export default function App({ account, onProfileUpdated, authMode }: { account: 
   function renderPage() {
     if (page === '/profile' || page === '/settings') return <SettingsPage account={account} authMode={authMode} onProfileUpdated={onProfileUpdated} appearance={appearance} />
     if (isAdminAIModelPage) return account.role === 'admin' && account.hosted ? <main><AdminAIModelPage /></main> : <main><p>Page unavailable.</p></main>
-    if (isAnalyticsPage) return account.role === 'admin' ? <main>{isSalgSurveyPage ? <AdminSalgSurveyPage onNavigate={navigateFromSidebar} /> : <AdminAnalyticsPage onNavigate={navigateFromSidebar} />}</main> : <main><p>Admin access required.</p></main>
+    if (isAnalyticsPage) return account.role === 'admin' ? <main><AdminAnalyticsPage page={page} onNavigate={navigateFromSidebar} /></main> : <main><p>Admin access required.</p></main>
     if (isChatPage && account.role === 'student' && (!survey.ready || survey.error || (survey.status && !survey.status.submittedAt && !(started && sessionComplete(concepts))))) return <main className="survey-required"><h1>Learning survey</h1>{survey.error ? <p role="alert">{survey.error}</p> : <p>{survey.ready ? 'Complete the survey before continuing to another topic.' : 'Checking survey status…'}</p>}<button onClick={() => void survey.guard()}> {survey.status && !survey.status.submittedAt ? 'Complete survey' : 'Retry'}</button><button onClick={() => navigate('/sessions')}>Back to sessions</button></main>
     if (page === '/inbox') return canTeachCourses(account.role) ? null : <main className="account-login"><p>Instructor access required.</p><button onClick={() => navigate('/dashboard')}>Back to dashboard</button></main>
     if (page === '/admin') return account.role === 'admin' ? <main><AdminPage key={adminTargetId ?? 'directory'} targetId={adminTargetId} onNavigate={navigateFromSidebar} /></main> : <main className="account-login"><p>Admin access required.</p><button onClick={() => navigate('/sessions')}>Back to sessions</button></main>

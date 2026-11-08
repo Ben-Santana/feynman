@@ -24,3 +24,15 @@
 .survey-dialog-heading { display: flex; justify-content: space-between; align-items: center; gap: 12px; margin-bottom: 12px; }
 .learning-survey-dialog h2 { font-size: 1.6rem; line-height: 1.3; font-weight: 600; }
 .learning-survey-dialog h3 { font-size: 1.15rem; line-height: 1.4; font-weight: 600; margin-bottom: 8px; }
+
+.pre-topic-dialog { width: min(720px, calc(100vw - 32px)); }
+.pre-topic-dialog .pre-topic-name { margin: 0 0 12px; font-weight: 550; }
+.pre-topic-dialog .pre-topic-purpose { margin: 0; padding: 14px 16px; border-radius: 10px; background: var(--surface, #f4f4f4); color: var(--muted-foreground, #555); font-size: .9rem; }
+.pre-topic-dialog .survey-fields { margin-top: 24px; }
+.pre-topic-dialog .survey-fields section { margin-top: 8px; }
+.pre-topic-dialog .survey-fields section .survey-question legend { font-weight: 500; }
+.pre-topic-scale { grid-template-columns: repeat(5, minmax(0, 1fr)); }
+.pre-topic-scale label { justify-content: center; flex-direction: column; gap: 6px; text-align: center; }
+.pre-topic-expected { display: grid; gap: 12px; margin: 20px 0 0; font-weight: 550; }
+.pre-topic-expected select { justify-self: start; min-width: 180px; padding: 10px 12px; border: 1px solid #8887; border-radius: 8px; background: var(--background, #fff); color: inherit; font: inherit; font-weight: 400; }
+@media (max-width: 600px) { .pre-topic-scale { grid-template-columns: repeat(2, minmax(0, 1fr)); } .pre-topic-scale label { flex-direction: row; justify-content: flex-start; text-align: left; } }

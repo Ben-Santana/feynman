@@ -3,7 +3,7 @@ import type { Account } from '../accounts'
 import { accountSignal } from '../accounts'
 import { canTeachCourses } from '../coursePermissions'
 import { COMMUNITY_LIBRARY_ENABLED } from '../features'
-import { decideEnrollment, deleteCourse, deleteModule, leaveCourse, loadCourse, loadCourses, setCoursePin, setCourseStar, startModule, courseSubjects, COURSE_SUBJECTS, type CourseCollection, type Course, type Enrollment, type CourseModule, type ModuleSession, type ModuleProgress, type StudentProgress, type CoursePerson } from '../courseStore'
+import { decideEnrollment, deleteCourse, deleteModule, leaveCourse, loadCourse, loadCourses, setCoursePin, setCourseStar, startModule, needsPreTopic, moduleConcepts, courseSubjects, COURSE_SUBJECTS, type CourseCollection, type Course, type Enrollment, type CourseModule, type ModuleSession, type ModuleProgress, type StudentProgress, type CoursePerson } from '../courseStore'
 import { createCourseStarUpdates } from '../courseStars'
 import { useConfirm } from './useConfirm'
 import { useToast } from './useToast'
@@ -20,6 +20,7 @@ import { CourseProgressDialog, type CourseProgressSelection } from './CourseProg
 import { JoinCourseDialog } from './JoinCourseDialog'
 import { LibraryEmptyState } from './LibraryEmptyState'
 import { CollectionAddButton, CollectionSearch } from './CollectionSearch'
+import { PreTopicDialog } from './PreTopicDialog'
 import './CoursesPage.css'
 
 type CourseDetail = { course: Course; enrollment?: Enrollment; modules: CourseModule[]; progress: StudentProgress[]; ownProgress: ModuleProgress[]; people: CoursePerson[] }
@@ -38,6 +39,7 @@ export function CoursesPage({ account, courseId, collection = 'enrolled', sessio
   const [showJoinDialog, setShowJoinDialog] = useState(false)
   const [view, setView] = useState<'modules' | 'complete' | 'scores' | 'people'>('modules')
   const [progressSelection, setProgressSelection] = useState<CourseProgressSelection | null>(null)
+  const [preTopic, setPreTopic] = useState<CourseModule | null>(null)
   const toast = useToast()
   const confirm = useConfirm()
   const [starUpdates] = useState(() => {
@@ -131,7 +133,11 @@ export function CoursesPage({ account, courseId, collection = 'enrolled', sessio
       })
     } : undefined}>{ownCourse && module.published_at ? <button type="button" className="course-module course-row-button" key={module.id} onClick={() => setProgressSelection({ courseId: courseId!, kind: 'module', id: module.id })}>{moduleCopy}<span className="course-row-arrow" aria-hidden="true">›</span></button> : <article className="course-module" key={module.id}>
       {moduleCopy}
-      {ownCourse ? !module.published_at && <button disabled={busy} onClick={() => onNavigate(`/courses/${courseId}/modules/${module.id}/edit`)}>Edit draft</button> : <button disabled={busy} onClick={() => void act(async () => { if (!complete && !await onBeforeTopic()) return; onOpenAssignment(await startModule(module.id, !member)) })}>{complete ? 'View summary' : started ? 'Continue' : 'Teach topic'}</button>}
+      {ownCourse ? !module.published_at && <button disabled={busy} onClick={() => onNavigate(`/courses/${courseId}/modules/${module.id}/edit`)}>Edit draft</button> : <button disabled={busy} onClick={() => void act(async () => {
+        if (!complete && !await onBeforeTopic()) return
+        try { onOpenAssignment(await startModule(module.id, !member)) }
+        catch (reason) { if (!needsPreTopic(reason)) throw reason; setPreTopic(module) }
+      })}>{complete ? 'View summary' : started ? 'Continue' : 'Teach topic'}</button>}
     </article>}
     </DeleteMenu>
   }
@@ -149,6 +155,7 @@ export function CoursesPage({ account, courseId, collection = 'enrolled', sessio
     {!courseId ? <h1 id="courses-title" className="sr-only">{collection === 'community' ? 'Community' : 'My Courses'}</h1> : detail ? <CourseHeader course={detail.course} canEdit={Boolean(ownCourse)} disabled={busy} onUpdated={courseUpdated} onStar={() => starUpdates.toggle(detail.course)} /> : <h1 id="courses-title">Course</h1>}
     {error && <div className="course-error" role="alert"><p>{error}</p><button onClick={() => setVersion(value => value + 1)}>Retry loading</button></div>}
     {!courseId ? <>
+      {preTopic && <PreTopicDialog key={preTopic.id} moduleId={preTopic.id} title={preTopic.title || 'Untitled topic'} concepts={moduleConcepts(preTopic)} onCancel={() => setPreTopic(null)} onSubmitted={async () => { const record = await startModule(preTopic.id); setPreTopic(null); setVersion(value => value + 1); onOpenAssignment(record) }} />}
       {showJoinDialog && account.role === 'student' && <JoinCourseDialog onClose={() => setShowJoinDialog(false)} onJoined={enrollment => { setShowJoinDialog(false); onNavigate(`/courses/${enrollment.course_id}`) }} />}
       <div className="course-library-toolbar collection-toolbar">
         <CollectionSearch label="Search courses" value={search} onChange={setSearch} filters={COMMUNITY_LIBRARY_ENABLED ? {

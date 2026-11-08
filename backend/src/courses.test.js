@@ -10,6 +10,11 @@ const outsider = '44444444-4444-4444-8444-444444444444';
 const pending = '55555555-5555-4555-8555-555555555555';
 const moduleId = 'aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa';
 
+// First starts require the pre-topic questions; answers are neutral placeholders.
+export async function startTopic(one, id) {
+  await one("select public.submit_topic_prequestionnaire($1,'none',50,coalesce((select jsonb_object_agg(c->>'id',3) from public.course_modules m cross join lateral jsonb_array_elements(m.document->'session'->'concepts') c where m.id=$1),'{}'::jsonb))", [id]);
+  return one('select * from public.start_course_module($1)', [id]);
+}
 export async function courseFixture(t, beforeMigration = async () => {}) {
   const db = new PGlite(); t.after(() => db.close());
   await db.exec(`
@@ -113,8 +118,8 @@ test('module deletion requires its owning instructor and retains modules with ch
   await one('select public.publish_course_module($1,1)', [keepId]);
   await as(student);
   await one('select public.join_course($1)', [course.code]);
-  const removedSession = await one('select * from public.start_course_module($1)', [moduleId]);
-  const keptSession = await one('select * from public.start_course_module($1)', [keepId]);
+  const removedSession = await startTopic(one, moduleId);
+  const keptSession = await startTopic(one, keepId);
   const personalId = 'dddddddd-dddd-4ddd-8ddd-dddddddddddd';
   await one('select public.save_learning_session($1,$2,$3,0)', [personalId, 'Personal', { version: 1, session: { title: 'Personal' } }]);
   for (const id of [student, other, outsider, pending]) {
@@ -159,7 +164,7 @@ test('leaving removes only the student enrollment and pin, revokes module access
     await one('select public.join_course($1)', [joined.code]);
     await one('select public.set_course_pin($1,true)', [joined.id]);
   }
-  let session = await one('select * from public.start_course_module($1)', [moduleId]);
+  let session = await startTopic(one, moduleId);
   session.document.session.concepts[0].passed = 1;
   session.document.session.concepts[0].messages.push({ role: 'user', content: 'Saved answer' });
   session = await one('select * from public.save_learning_session($1,$2,$3,1)', [session.id, session.title, session.document]);
@@ -170,7 +175,7 @@ test('leaving removes only the student enrollment and pin, revokes module access
   assert.equal((await one('select count(*)::int as count from public.course_modules')).count, 0);
   assert.deepEqual((await one('select * from public.learning_sessions where id=$1', [session.id])).document, session.document);
   assert.equal((await one('select count(*)::int as count from public.course_assignments')).count, 1);
-  await assert.rejects(one('select public.start_course_module($1)', [moduleId]), error => error.code === '42501');
+  await assert.rejects(startTopic(one, moduleId), error => error.code === '42501');
   await assert.rejects(one('select public.assignment_chat_configuration($1,$2)', [session.id, 'energy']), error => error.code === '42501');
   await assert.rejects(one('select public.save_learning_session($1,$2,$3,$4)', [session.id, session.title, session.document, session.revision]), error => error.code === '42501');
   await assert.rejects(one('select public.set_course_pin($1,true)', [course.id]), error => error.code === '42501');
@@ -183,7 +188,7 @@ test('leaving removes only the student enrollment and pin, revokes module access
   assert.equal((await one('select count(*)::int as count from public.course_pins')).count, 1);
   await as(student);
   assert.equal((await one('select * from public.join_course($1)', [course.code])).status, 'enrolled');
-  const resumed = await one('select * from public.start_course_module($1)', [moduleId]);
+  const resumed = await startTopic(one, moduleId);
   assert.equal(resumed.id, session.id);
   assert.deepEqual(resumed.document, session.document);
   await one('select public.leave_course($1)', [course.id]);
@@ -191,11 +196,11 @@ test('leaving removes only the student enrollment and pin, revokes module access
   await one("select public.set_course_enrollment($1,'approval')", [course.id]);
   await as(student);
   assert.equal((await one('select * from public.join_course($1)', [course.code])).status, 'pending');
-  await assert.rejects(one('select public.start_course_module($1)', [moduleId]), error => error.code === '42501');
+  await assert.rejects(startTopic(one, moduleId), error => error.code === '42501');
   await as(instructor);
   await one("select public.decide_course_enrollment($1,$2,'enrolled')", [course.id, student]);
   await as(student);
-  assert.equal((await one('select * from public.start_course_module($1)', [moduleId])).id, session.id);
+  assert.equal((await startTopic(one, moduleId)).id, session.id);
 });
 
 test('students can cancel pending requests but cannot clear rejections or leave for another account', async t => {
@@ -269,7 +274,7 @@ test('course deletion requires its owning instructor and is blocked when chats e
   await one('select public.publish_course_module($1,1)', [moduleId]);
   await as(student);
   await one('select public.join_course($1)', [course.code]);
-  const assigned = await one('select * from public.start_course_module($1)', [moduleId]);
+  const assigned = await startTopic(one, moduleId);
   await one('select public.set_course_pin($1,true)', [course.id]);
   const personalId = 'cccccccc-cccc-4ccc-8ccc-cccccccccccc';
   await one('select public.save_learning_session($1,$2,$3,0)', [personalId, 'Personal work', { version: 1, session: { title: 'Personal work' } }]);
@@ -303,7 +308,7 @@ test('course scores expose only finished topic percentages to the student and th
   await one('select public.publish_course_module($1,1)', [moduleId]);
   await as(student);
   await one('select public.join_course($1)', [course.code]);
-  const session = await one('select * from public.start_course_module($1)', [moduleId]);
+  const session = await startTopic(one, moduleId);
   const ownScores = async id => (await one('select public.own_topic_scores($1) as scores', [[session.id]])).scores.find(value => value.sessionId === id)?.score;
   const teacherScore = async () => {
     await as(instructor);
@@ -344,7 +349,7 @@ test('course progress reports a saved final summary as a flag without its text',
   await one('select public.publish_course_module($1,1)', [moduleId]);
   await as(student);
   await one('select public.join_course($1)', [course.code]);
-  const session = await one('select * from public.start_course_module($1)', [moduleId]);
+  const session = await startTopic(one, moduleId);
   session.document.session.concepts[0].finalSummary = 'PRIVATE summary';
   await one('select * from public.save_learning_session($1,$2,$3,1)', [session.id, session.title, session.document]);
   await as(instructor);
@@ -383,7 +388,7 @@ test('courses enforce enrollment, publication, assignment configuration, and pri
     assert.equal(joined.status,'pending');
     assert.equal((await one('select * from public.join_course($1)',[course.code])).status,'pending');
     assert.equal((await db.query('select * from public.course_modules')).rows.length,0);
-    await assert.rejects(one('select * from public.start_course_module($1)',[moduleId]),error => error.code === '42501');
+    await assert.rejects(startTopic(one, moduleId),error => error.code === '42501');
     await assert.rejects(one("update public.course_enrollments set status='enrolled'"),error => error.code === '42501');
   });
   await t.test('rejection survives rejoining and open enrollment admits only pending requests',async () => {
@@ -419,8 +424,8 @@ test('courses enforce enrollment, publication, assignment configuration, and pri
   let session;
   await t.test('starts resume one assigned session and ordinary writes cannot change the assignment',async () => {
     await as(student);
-    session = await one('select * from public.start_course_module($1)',[moduleId]);
-    const starts = await Promise.all(Array.from({length:4},() => one('select * from public.start_course_module($1)',[moduleId])));
+    session = await startTopic(one, moduleId);
+    const starts = await Promise.all(Array.from({length:4},() => startTopic(one, moduleId)));
     assert.ok(starts.every(row => row.id === session.id));
     assert.equal((await one('select count(*)::int as count from public.course_assignments')).count,1);
     assert.equal(session.document.session.started,true);
@@ -766,7 +771,7 @@ test('community courses expose published topics and star totals while keeping en
   await as(instructor);
   await one("select public.decide_course_enrollment($1,$2,'enrolled')", [course.id, student]);
   await as(student);
-  const assigned = await one('select * from public.start_course_module($1)', [moduleId]);
+  const assigned = await startTopic(one, moduleId);
   assert.equal(assigned.document.session.assignment.courseId, course.id);
   await as(instructor);
   course = await one("select * from public.set_course_sharing($1,false,'Electrical Engineering',$2)", [course.id, course.appearance_revision]);

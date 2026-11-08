@@ -27,10 +27,13 @@ async function rpc<T>(name: string, args: Record<string, unknown>): Promise<T> {
   signal.throwIfAborted()
   if (error) {
     if (error.code === 'PGRST202' || error.code === '42P01') throw new Error('Courses are not configured. Apply the latest course migrations, then retry.')
-    throw new Error(error.message || 'Could not save changes. Please retry.')
+    throw Object.assign(new Error(error.message || 'Could not save changes. Please retry.'), { code: error.code })
   }
   return data as T
 }
+// The first start of an assigned topic waits for the pre-topic questions.
+export const needsPreTopic = (reason: unknown) => (reason as { code?: string } | null)?.code === 'FA010'
+export const moduleConcepts = (module: CourseModule) => ((module.document.session.concepts as { id: string; name: string }[] | undefined) ?? []).map(({ id, name }) => ({ id, name }))
 export async function loadCourses() {
   const signal = accountSignal()
   const [courses, enrollments, pins, community, stars, counts] = await Promise.all([
