@@ -50,7 +50,7 @@ import { SummaryUnavailable } from './components/SessionSummary'
 import { TopicReport } from './components/TopicReport'
 import { Whiteboard, type WhiteboardHandle } from './components/Whiteboard'
 import { saveModuleRecovery, loadModuleRecovery, subscribeSaveStatus, getSaveStatus, resolveSessionConflict, loadSessions, queueSessionSave, flushSessionSaves, type SavedSession } from './learningStore'
-import { advanceConcept, assessmentTranscript, conceptFinished, restoreLearning, sessionComplete, startConcepts, targetCount, type ChatResult, type Concept, type ConceptRubric, type Level, type Message, type Session } from './learningFlow'
+import { advanceConcept, assessmentTranscript, conceptFinished, levelIds, restoreLearning, sessionComplete, startConcepts, targetCount, type ChatResult, type Concept, type ConceptRubric, type Level, type Message, type Session } from './learningFlow'
 import { learningReward, playLearningReward, prepareLearningSounds } from './learningSounds'
 import { draftTarget, editCriterion, fillMissingRubric, genericRubric, highestFilledLevel, mergeSuggestions, restoreDraft } from './rubricSetup'
 import { generateRubricBatches } from './rubricGeneration'
@@ -196,6 +196,8 @@ export default function App({ account, onProfileUpdated, authMode }: { account: 
   const assignment = isModuleEditor ? undefined : savedSessions.find(record => record.id === sessionId)?.assignment
   const sessionBackPath = assignment ? `/courses/${assignment.courseId}` : '/sessions'
   const [concepts, setConcepts] = useState<Concept[]>([newConcept()])
+  const latestConcepts = useRef(concepts)
+  useEffect(() => { latestConcepts.current = concepts }, [concepts])
   const hasRubric = concepts.some(concept => levels.some(level => checklistItems(concept.rubric[level.id]).length > 0))
   const [active, setActive] = useState<string>('')
   const [started, setStarted] = useState(false)
@@ -587,10 +589,17 @@ export default function App({ account, onProfileUpdated, authMode }: { account: 
     if (!files.length || uploading) return
     setUploading(true); setError('')
     try {
-      const result = await post<{ names: string[] }>('/api/concept-suggestions', { files: await encodedFiles(), learningType }, AbortSignal.timeout(225000))
-      const next = mergeSuggestions(concepts, result.names, name => newConcept(name))
+      const result = await post<{ concepts: { name: string; target: Level }[] }>('/api/concept-suggestions', { files: await encodedFiles(), learningType }, AbortSignal.timeout(225000))
+      const suggestedLevels = new Map(result.concepts.map(({ name, target }) => [name.trim(), target]))
+      const newTargets: Record<string, Level> = {}
+      const next = mergeSuggestions(latestConcepts.current, [...suggestedLevels.keys()], name => {
+        const concept = newConcept(name)
+        const target = suggestedLevels.get(name)
+        newTargets[concept.id] = target && levelIds.includes(target) ? target : 'remember'
+        return concept
+      })
       setConcepts(next)
-      setSelectedTargets(targets => Object.fromEntries(next.map(concept => [concept.id, targets[concept.id] ?? null])))
+      setSelectedTargets(targets => Object.fromEntries(next.map(concept => [concept.id, targets[concept.id] ?? newTargets[concept.id] ?? null])))
     } catch (reason) { reportError(reason) }
     finally { setUploading(false) }
   }

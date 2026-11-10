@@ -16,7 +16,7 @@ export function fruitFlyResponse(path: string, body: unknown): unknown {
   if (path === '/api/chat') return { message: fruitFlyBuzz(), assessment: null, expression: 'excited', calls: [] }
   if (path === '/api/rubric') return { concepts: input.concepts?.map(concept => ({ name: concept.name, rubric: fruitFlyRubric(concept.target) })) }
   if (path === '/api/developer/rubric') return { items: [fruitFlyBuzz()] }
-  if (path === '/api/concept-suggestions') return { names: [fruitFlyBuzz()] }
+  if (path === '/api/concept-suggestions') return { concepts: [{ name: fruitFlyBuzz(), target: 'remember' }] }
   return undefined
 }
 

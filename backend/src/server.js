@@ -238,7 +238,7 @@ export function createApiServer({ query, hosted = false, env = process.env, prom
         if (!configured) return send(503, { error: configurationError });
         try {
           if (req.url === '/api/developer/rubric') return send(200, await generateLevelRubric(input, selectedQuery, loadPrompts(promptsPath)));
-          if (req.url === '/api/concept-suggestions') return send(200, { names: await suggestConceptsFromFiles(input.files, selectedQuery, input.learningType, loadPrompts(promptsPath)) });
+          if (req.url === '/api/concept-suggestions') return send(200, { concepts: await suggestConceptsFromFiles(input.files, selectedQuery, input.learningType, loadPrompts(promptsPath)) });
           if (req.url === '/api/rubric') return send(200, { concepts: await generateRubric(input, selectedQuery, loadPrompts(promptsPath)) });
           return send(200, { concepts: await conceptsFromStudyTest(input, selectedQuery, loadPrompts(promptsPath)) });
         } catch (error) { return send(error instanceof InvalidOutputError ? 502 : error instanceof AIError ? error.status : /^(Upload|Choose|Enter|Could not read|Could not generate)/.test(error.message) ? 400 : /^Rubric generation took too long/.test(error.message) ? 504 : 502, { error: error.message }); }

@@ -35,7 +35,7 @@ test('rubrics preserve names, fill targeted levels with buzzes, and leave later 
   assert.equal(result.concepts[0].rubric.analyze, '');
   Object.values(result.concepts[1].rubric).forEach(text => assert.match(text, buzz));
   assert.match(fruitFlyResponse('/api/developer/rubric', {}).items[0], buzz);
-  assert.match(fruitFlyResponse('/api/concept-suggestions', {}).names[0], buzz);
+  assert.match(fruitFlyResponse('/api/concept-suggestions', {}).concepts[0].name, buzz);
 });
 
 test('selection persists, bypasses AI locally, and never leaks the joke model into provider headers', t => {

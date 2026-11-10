@@ -287,13 +287,13 @@ export const promptCatalog = [
   {
     "id": "rubric.suggestConcepts",
     "group": "Rubric creation",
-    "title": "Suggest concept names",
+    "title": "Suggest concepts and learning levels",
     "variables": [
       "curriculumContext",
       "learningTypeGuidance"
     ],
     "subgroup": "Generation & extraction",
-    "description": "The system prompt sent when Autofill concepts from files calls /api/concept-suggestions. Generates topic names to append to session setup, without generating their rubrics."
+    "description": "The system prompt sent when Autofill concepts from files calls /api/concept-suggestions. Suggests topic names and learning levels for session setup."
   },
   {
     "id": "rubric.curriculumContext",
@@ -341,7 +341,7 @@ export const promptCatalog = [
     "title": "Suggest request",
     "variables": [],
     "subgroup": "File requests",
-    "description": "Sent as user-message text alongside uploaded files when Autofill concepts from files requests topic suggestions. The separate system prompt controls how the names are generated."
+    "description": "Sent as user-message text alongside uploaded files when Autofill concepts from files requests topic suggestions. The system prompt guides concept and level selection."
   },
   {
     "id": "profile.theoretical.rubricGuidance",

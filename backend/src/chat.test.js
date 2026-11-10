@@ -28,13 +28,13 @@ test('multiple files suggest names and generate only targeted criteria', async (
     { name: 'first.txt', type: 'text/plain', data: Buffer.from('Capacitors store energy.').toString('base64') },
     { name: 'second.txt', type: 'text/plain', data: Buffer.from('Resistors oppose current.').toString('base64') },
   ];
-  const names = await suggestConceptsFromFiles(files, async (_, messages, responseTool) => {
+  const suggestions = await suggestConceptsFromFiles(files, async (_, messages, responseTool) => {
     assert.equal(responseTool.name, 'suggest_concepts');
     assert.match(JSON.stringify(messages), /Capacitors store energy/);
     assert.match(JSON.stringify(messages), /Resistors oppose current/);
-    return { names: ['Capacitors', 'Resistors'] };
+    return { concepts: [{ name: 'Capacitors', target: 'apply' }, { name: 'Resistors', target: 'invalid' }, { name: 'Inductors' }] };
   });
-  assert.deepEqual(names, ['Capacitors', 'Resistors']);
+  assert.deepEqual(suggestions, [{ name: 'Capacitors', target: 'apply' }, { name: 'Resistors', target: 'remember' }, { name: 'Inductors', target: 'remember' }]);
   const result = await generateRubric({ concepts: [{ name: 'Capacitors', target: 'understand' }], files }, async (system, messages, responseTool) => {
     assert.equal(responseTool.name, 'generate_rubric');
     assert.match(JSON.stringify(messages), /Capacitors store energy/);

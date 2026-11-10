@@ -150,9 +150,25 @@ async function conceptsFromStudyTestOnce(file, query, prompts = loadPrompts()) {
 async function suggestConceptsFromFilesOnce(files, query, selectedType, prompts = loadPrompts()) {
   const learningType = resolveLearningType(selectedType);
   const content = contentsFromFiles(files);
-  const result = await query(prompts.text('rubric.suggestConcepts', { curriculumContext: prompts.text('rubric.curriculumContext'), learningTypeGuidance: prompts.text('profile.' + learningType + '.rubricGuidance') }), [{ role: 'user', content: [{ type: 'text', text: prompts.text('rubric.suggestRequest') }, ...content] }], tool('suggest_concepts', { names: { type: 'array', minItems: 1, maxItems: 20, items: { type: 'string' } } }));
-  if (!Array.isArray(result?.names) || !result.names.length || result.names.length > 20 || result.names.some(name => typeof name !== 'string' || !name.trim() || name.length > 300)) throw new InvalidOutputError('Could not generate concept names. Please retry.');
-  return [...new Set(result.names.map(name => name.trim()))];
+  const result = await query(prompts.text('rubric.suggestConcepts', { curriculumContext: prompts.text('rubric.curriculumContext'), learningTypeGuidance: prompts.text('profile.' + learningType + '.rubricGuidance') }), [{ role: 'user', content: [{ type: 'text', text: prompts.text('rubric.suggestRequest') }, ...content] }], tool('suggest_concepts', {
+    concepts: {
+      type: 'array', minItems: 1, maxItems: 20,
+      items: {
+        type: 'object',
+        properties: { name: { type: 'string' }, target: { type: 'string', enum: levels } },
+        required: ['name', 'target'],
+        additionalProperties: false,
+      },
+    },
+  }));
+  if (!Array.isArray(result?.concepts) || !result.concepts.length || result.concepts.length > 20 || result.concepts.some(concept => typeof concept?.name !== 'string' || !concept.name.trim() || concept.name.length > 300)) throw new InvalidOutputError('Could not generate concept suggestions. Please retry.');
+  const suggestions = new Map();
+  for (const { name, target } of result.concepts) {
+    const trimmed = name.trim();
+    const key = trimmed.toLowerCase();
+    if (!suggestions.has(key)) suggestions.set(key, { name: trimmed, target: levels.includes(target) ? target : 'remember' });
+  }
+  return [...suggestions.values()];
 }
 
 async function generateLevelRubricOnce(input, query, prompts = loadPrompts()) {
