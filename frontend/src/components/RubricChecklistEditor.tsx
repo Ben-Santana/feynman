@@ -1,3 +1,4 @@
+import { rubricMath } from '../rubricMath'
 import { useLayoutEffect, useRef, useState, type ComponentProps } from 'react'
 import { MathText } from './PaperReview'
 import { checklistRows, checklistText } from '../rubricChecklist.js'
@@ -17,7 +18,7 @@ export function RubricChecklistEditor({ id, name, value, invalid, disabled, onCh
   return <div ref={editor} id={id} className={`rubric-checklist-editor ${invalid ? 'validation-field' : ''}`} tabIndex={-1} role="group" aria-label={`${name} checklist`} aria-invalid={invalid}>
     <ul>{items.map((item, index) => <li key={index}>
       <div className="rubric-item-content"><AutosizeTextarea hidden={editing !== index && !!item} onFocus={() => setEditing(index)} onBlur={() => setEditing(null)} aria-label={`${name}, item ${index + 1}`} value={item} rows={1} maxLength={1000} disabled={disabled} placeholder="What must the learner demonstrate?" onChange={event => update(items.flatMap((entry, i) => i === index ? (checklistRows(event.target.value).length ? checklistRows(event.target.value) : ['']) : [entry]))} />
-      {editing !== index && !!item && <div className="rubric-item-formatted" role="button" tabIndex={disabled ? -1 : 0} aria-disabled={disabled} aria-label={`Edit ${name}, item ${index + 1}`} onClick={() => { if (!disabled) setEditing(index) }} onKeyDown={event => { if (!disabled && (event.key === 'Enter' || event.key === ' ')) { event.preventDefault(); setEditing(index) } }}><MathText>{item}</MathText></div>}</div>
+      {editing !== index && !!item && <div className="rubric-item-formatted" role="button" tabIndex={disabled ? -1 : 0} aria-disabled={disabled} aria-label={`Edit ${name}, item ${index + 1}`} onClick={() => { if (!disabled) setEditing(index) }} onKeyDown={event => { if (!disabled && (event.key === 'Enter' || event.key === ' ')) { event.preventDefault(); setEditing(index) } }}><MathText>{rubricMath(item)}</MathText></div>}</div>
       <button type="button" className="rubric-item-remove" disabled={disabled} aria-label={`Remove ${name} item ${index + 1}`} onClick={() => { setEditing(null); update(items.filter((_, i) => i !== index)) }}><span aria-hidden="true">−</span></button>
     </li>)}</ul>
     <button type="button" className="rubric-item-add" disabled={disabled || items.length >= 20 || value.length > 990} onClick={() => { setEditing(items.length); update([...items, '']) }}>＋ Add item</button>

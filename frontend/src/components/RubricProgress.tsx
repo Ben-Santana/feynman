@@ -1,3 +1,4 @@
+import { rubricMath } from '../rubricMath'
 import { MathText } from './PaperReview'
 import { levelIds, targetCount, type Concept } from '../learningFlow'
 import { checklistItems } from '../rubricChecklist.js'
@@ -13,7 +14,7 @@ export function RubricProgress({ concept }: { concept: Concept }) {
         const judgment = assessment?.criteria.find(criterion => criterion.aspect === item)
         const checked = !judgment?.skipped && (judgment?.status === 'supported' || (!judgment && index < concept.passed))
         const status = judgment?.skipped ? 'Skipped' : checked ? 'Demonstrated' : judgment?.status === 'flawed' ? 'Needs revision' : judgment?.status === 'needs_clarification' ? 'Needs clarification' : 'Not yet demonstrated'
-        return <li key={itemIndex}><label><input type="checkbox" checked={checked} disabled aria-label={`${item}: ${status}`} /><span><MathText>{item}</MathText><small>{status}</small></span></label></li>
+        return <li key={itemIndex}><label><input type="checkbox" checked={checked} disabled aria-label={`${item}: ${status}`} /><span><MathText>{rubricMath(item)}</MathText><small>{status}</small></span></label></li>
       })}</ol></section>
     })}</div>
   </details>
