@@ -962,3 +962,13 @@ div.paper-grade-field .paper-grade-word { opacity: 1; }
 
 .points-balance { display: flex; align-items: center; gap: 8px; font-variant-numeric: tabular-nums; }
 .points-dot { flex: none; width: 8px; height: 8px; border-radius: 50%; background: var(--primary); }
+
+.rubric-item-content { flex: 1; min-width: 0; }
+.rubric-item-formatted { padding: 6px 4px; overflow-wrap: anywhere; font-size: 0.875rem; line-height: 1.4; }
+.rubric-item-formatted p, .rubric-progress li p { margin: 0; }
+.rubric-item-formatted .katex-display, .rubric-progress .katex-display { max-width: 100%; overflow-x: auto; overflow-y: hidden; margin: 6px 0; }
+
+.chat-panel .rubric-checklist-editor textarea[hidden] { display: none; }
+.rubric-item-formatted { cursor: text; border-radius: 4px; }
+.rubric-item-formatted:focus-visible { outline: 1px solid var(--primary); }
+.rubric-progress label > span { min-width: 0; }
