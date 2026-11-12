@@ -43,7 +43,7 @@ import { loadTopicReport } from './topicReports'
 import { SessionsPage } from './components/SessionsPage'
 import { PaperReview, type Review } from './components/PaperReview'
 import { ReviewFeedback } from './components/ReviewFeedback'
-import { RubricChecklistEditor } from './components/RubricChecklistEditor'
+import { AutosizeTextarea, RubricChecklistEditor } from './components/RubricChecklistEditor'
 import { checklistItems } from './rubricChecklist.js'
 import { RubricAutoGenerateToggle } from './components/RubricAutoGenerateToggle'
 import { SummaryUnavailable } from './components/SessionSummary'
@@ -767,7 +767,7 @@ export default function App({ account, onProfileUpdated, authMode }: { account: 
                 <th scope="col"><span className="sr-only">Actions</span></th>
               </tr></thead>
               <tbody>{concepts.map((concept, index) => <tr key={concept.id}>
-                <th scope="row" className="rubric-concept-cell"><label className="sr-only" htmlFor={`concept-${concept.id}`}>Concept {index + 1} name</label><input id={`concept-${concept.id}`} value={concept.name} onChange={event => updateConcept(concept.id, { name: event.target.value })} placeholder="Concept" maxLength={300} disabled={uploading} aria-invalid={validationError?.fieldId === `concept-${concept.id}`} className={validationError?.fieldId === `concept-${concept.id}` ? 'validation-field' : undefined} /></th>
+                <th scope="row" className="rubric-concept-cell"><label className="sr-only" htmlFor={`concept-${concept.id}`}>Concept {index + 1} name</label><AutosizeTextarea rows={1} id={`concept-${concept.id}`} value={concept.name} onChange={event => updateConcept(concept.id, { name: event.target.value })} placeholder="Concept" maxLength={300} disabled={uploading} aria-invalid={validationError?.fieldId === `concept-${concept.id}`} className={validationError?.fieldId === `concept-${concept.id}` ? 'validation-field' : undefined} /></th>
                 {levels.map((level, levelIndex) => { const target = highestFilledLevel(concept.rubric); const required = target !== null && levelIndex <= levels.findIndex(item => item.id === target); return <td key={level.id} className={required ? 'rubric-required-cell' : undefined}><RubricChecklistEditor id={`${concept.id}-${level.id}`} name={`${concept.name || `Concept ${index + 1}`}: ${level.name}`} value={concept.rubric[level.id]} onChange={value => { const next = editCriterion(concept, level.id, value); setValidationError(null); setConcepts(items => items.map(item => item.id === concept.id ? next : item)); setSelectedTargets(targets => ({ ...targets, [concept.id]: highestFilledLevel(next.rubric) })) }} invalid={validationError?.fieldId === `${concept.id}-${level.id}`} disabled={uploading} /></td> })}
                 <td className="rubric-actions-cell">{concepts.length > 1 && <button type="button" className="concept-remove" aria-label={`Remove concept ${index + 1}`} onClick={() => { setValidationError(null); setConcepts(items => items.filter(item => item.id !== concept.id)) }}>−</button>}</td>
               </tr>)}</tbody>

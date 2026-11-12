@@ -24,7 +24,7 @@ export function RubricChecklistEditor({ id, name, value, invalid, disabled, onCh
   </div>
 }
 
-function AutosizeTextarea(props: ComponentProps<'textarea'>) {
+export function AutosizeTextarea(props: ComponentProps<'textarea'>) {
   const ref = useRef<HTMLTextAreaElement>(null)
   useLayoutEffect(() => {
     const element = ref.current

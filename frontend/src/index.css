@@ -772,8 +772,8 @@ div.paper-grade-field .paper-grade-word { opacity: 1; }
 .rubric-grid tbody .rubric-concept-cell { padding: 16px 12px; border-bottom: 1px solid var(--border); }
 .chat-panel .rubric-grid textarea { display: block; min-height: 0; padding: 12px 14px; border: 0; border-radius: 0; background: color-mix(in srgb, var(--foreground) 14%, var(--background)); font-size: 0.875rem; resize: none; }
 .chat-panel .rubric-grid .rubric-required-cell textarea { background: var(--background); }
-.chat-panel .rubric-grid .rubric-concept-cell input { height: auto; min-height: 0; padding: 2px 0; border: 0; border-radius: 0; background: transparent; font-size: 1.1875rem; font-weight: 500; line-height: 1.35; }
-.chat-panel .rubric-grid .rubric-concept-cell input::placeholder { color: #b8b8b8; opacity: 1; }
+.chat-panel .rubric-grid .rubric-concept-cell textarea { overflow: hidden; overflow-wrap: anywhere; height: auto; min-height: 0; padding: 2px 0; border: 0; border-radius: 0; background: transparent; font-size: 1.1875rem; font-weight: 500; line-height: 1.35; }
+.chat-panel .rubric-grid .rubric-concept-cell textarea::placeholder { color: #b8b8b8; opacity: 1; }
 .rubric-grid .rubric-actions-cell { border: 0; background: transparent; }
 .rubric-grid .rubric-actions-cell .concept-remove { position: absolute; top: 50%; left: 50%; display: grid; place-items: center; padding: 0; transform: translate(-50%, -50%); }
 .rubric-grid .rubric-actions-cell .concept-remove:hover { background: transparent; color: var(--muted-foreground); }
