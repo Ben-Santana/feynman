@@ -35,7 +35,8 @@ function shortlist(input, candidates, { objective, aspect, blockers = [], contra
 
 // Select and instantiate a method inside the existing response call. This is
 // deliberately smaller than the separate experimental selection/plan pipeline.
-export function inlineQuestionStrategies(input, evidence) {
+export function inlineQuestionStrategies(input, evidence, focusAspect) {
+  const activeAspects = focusAspect ? input.aspects.filter(aspect => aspect === focusAspect) : input.aspects;
   const eligible = retrieveStrategies(null, input).map(({ strategy }) => strategy);
   const candidates = evidence ? shortlist(input, eligible, evidence) : eligible;
   if (!candidates.length) return null;
@@ -44,7 +45,7 @@ export function inlineQuestionStrategies(input, evidence) {
     strategyId: { type: 'string', enum: [...candidates.map(s => s.id), 'none'] },
     rationale: { type: 'string' },
     targetQuote: { type: 'string' },
-    rubricItem: { type: 'string', enum: [...input.aspects, ''] },
+    rubricItem: { type: 'string', enum: [...activeAspects, ''] },
     background: includesBridge || !evidence ? backgroundChoiceSchema(input) : { type: 'null' },
   };
   const records = candidates.map(s => ({
@@ -65,7 +66,7 @@ export function inlineQuestionStrategies(input, evidence) {
         return { strategyId: null, selectionMethod: 'inline_response', rationale: choice.rationale, coverageGap: { stage: 'inline_selection', reason: choice.rationale } };
       }
       if (!candidates.some(s => s.id === choice.strategyId)) throw new InvalidOutputError('Choose a reviewed strategy compatible with the active level or none.');
-      if (typeof choice.targetQuote !== 'string' || !choice.targetQuote.trim() || !input.messages.some(m => m.role === 'user' && m.content.includes(choice.targetQuote)) || !input.aspects.includes(choice.rubricItem)) throw new InvalidOutputError('Ground the strategy in an exact current learner quote and an active rubric item.');
+      if (typeof choice.targetQuote !== 'string' || !choice.targetQuote.trim() || !input.messages.some(m => m.role === 'user' && m.content.includes(choice.targetQuote)) || !activeAspects.includes(choice.rubricItem)) throw new InvalidOutputError('Ground the strategy in an exact current learner quote and an active rubric item.');
       return { ...choice, ...(background ? { background } : {}), selectionMethod: 'inline_response', coverageGap: null };
     },
   };

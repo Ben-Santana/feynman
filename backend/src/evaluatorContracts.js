@@ -67,7 +67,7 @@ function assertShape(result, definitions) {
 }
 function cite(context, citation) {
   const message = context.messages.find(m => m.id === citation.messageId);
-  if (!message || message.role !== 'user' || !citation.quote.trim()) return null;
+  if (!message || message.role !== 'user' || message.skipRubricItem || message.helpRequest || message.finishAssessment || !citation.quote.trim()) return null;
   // Each excerpt must occur in a single original learner field, never joined fields.
   const fields = [message.content, message.review?.explanation].filter(v => typeof v === 'string');
   const image = citation.quote === '[Whiteboard image]' && Boolean(message.boardImage);
