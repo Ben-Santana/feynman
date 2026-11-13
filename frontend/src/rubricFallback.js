@@ -1,5 +1,5 @@
 // Shared policy for the chat UI and API. No model call is needed to unlock support.
-export const RUBRIC_SKIP_AFTER = 3;
+export const RUBRIC_SKIP_AFTER = 6;
 const substantiveReply = message => message.role === 'user' && !message.skipRubricItem && !message.helpRequest && !message.finishAssessment && !message.review;
 
 export function expressesFrustration(content) {
@@ -14,6 +14,10 @@ export function rubricAttempts(messages, aspect) {
 }
 
 export function rubricSkipReason(messages, aspect) {
+  return skipReason(messages, aspect, RUBRIC_SKIP_AFTER, 3);
+}
+
+function skipReason(messages, aspect, attemptThreshold, frustrationThreshold) {
   if (!aspect) return null;
   // A declined offer starts a fresh attempt window for this item.
   const declined = messages.findLastIndex(message => message.role === 'assistant' && message.rubricFocus === aspect && message.skipOfferDeclined);
@@ -26,16 +30,18 @@ export function rubricSkipReason(messages, aspect) {
       // The opening question may not have a focus until the first assessment.
       || (!messages[index - 1]?.rubricFocus && messages[index + 1]?.rubricFocus === aspect))
     && expressesFrustration(message.content));
-  if (frustrated) return 'frustration';
-  return rubricAttempts(messages, aspect) >= RUBRIC_SKIP_AFTER ? 'attempts' : null;
+  const attempts = rubricAttempts(messages, aspect);
+  if (frustrated && attempts >= frustrationThreshold) return 'frustration';
+  return attempts >= attemptThreshold ? 'attempts' : null;
 }
 
 export function skippedRubricItems(messages, aspects) {
   const skipped = new Set();
   messages.forEach((message, index) => {
     if (message.skipRubricItem === undefined) return;
+    // Keep skips recorded under the earlier policy valid when reopening saved chats.
     const aspect = message.skipRubricItem;
-    if (message.role !== 'user' || !aspects.includes(aspect) || skipped.has(aspect) || messages[index - 1]?.rubricFocus !== aspect || !rubricSkipReason(messages.slice(0, index), aspect)) throw new Error('Reply to this rubric item three times before skipping it, or use the earlier option when frustrated.');
+    if (message.role !== 'user' || !aspects.includes(aspect) || skipped.has(aspect) || messages[index - 1]?.rubricFocus !== aspect || !skipReason(messages.slice(0, index), aspect, 3, 0)) throw new Error('Skip is not available for this rubric item yet.');
     skipped.add(aspect);
   });
   return skipped;
