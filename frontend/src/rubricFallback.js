@@ -15,6 +15,10 @@ export function rubricAttempts(messages, aspect) {
 
 export function rubricSkipReason(messages, aspect) {
   if (!aspect) return null;
+  // A declined offer starts a fresh attempt window for this item.
+  const declined = messages.findLastIndex(message => message.role === 'assistant' && message.rubricFocus === aspect && message.skipOfferDeclined);
+  if (declined >= 0) messages = messages.slice(declined);
+
   const frustrated = messages.some((message, index) => substantiveReply(message)
     && !messages[index - 1]?.assistance
     && !messages[index - 1]?.background

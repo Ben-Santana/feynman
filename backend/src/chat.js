@@ -70,7 +70,7 @@ export function validate(body) {
   }
   let latestPaper;
   for (const m of body.messages) {
-    for (const [name, role] of [['helpRequest', 'user'], ['finishAssessment', 'user'], ['assistance', 'assistant'], ['independentCheck', 'assistant']]) {
+    for (const [name, role] of [['helpRequest', 'user'], ['finishAssessment', 'user'], ['assistance', 'assistant'], ['independentCheck', 'assistant'], ['skipOfferDeclined', 'assistant']]) {
       if (m[name] !== undefined && (typeof m[name] !== 'boolean' || m.role !== role)) throw new Error('Invalid learning action.');
     }
     if (m.boardImage !== undefined) {

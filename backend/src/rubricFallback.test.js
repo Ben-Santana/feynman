@@ -152,3 +152,17 @@ test('later levels check off earlier skips without blocking the turn', async () 
     assert.deepEqual(combined.assessment.skipRecovery, validRecovery ? result.assessment.skipRecovery : []);
   }
 });
+
+
+test('declining a skip clears old frustration and attempts, then permits a later offer', async () => {
+  const { rubricSkipReason } = await import('../../frontend/src/rubricFallback.js');
+  const messages = history(); messages[1].content = 'This is frustrating.';
+  messages.at(-1).skipOfferDeclined = true;
+  assert.equal(rubricSkipReason(messages, aspect), null);
+  assert.equal(rubricSkipReason(messages.slice(0, -1), aspect), 'frustration');
+  for (let i = 0; i < 3; i++) {
+    messages.push({ role: 'user', content: 'Another attempt.' }, { role: 'assistant', content: 'Why?', rubricFocus: aspect });
+    assert.equal(rubricSkipReason(messages, aspect), i === 2 ? 'attempts' : null);
+  }
+  assert.deepEqual([...skippedRubricItems([...messages, skip], [aspect])], [aspect]);
+});
