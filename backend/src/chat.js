@@ -124,14 +124,30 @@ function contentsFromFiles(files) {
   return files.flatMap(file => [{ type: 'text', text: `Source file: ${String(file?.name || 'Untitled').slice(0, 200)}` }, ...fileContent(file)]);
 }
 const levels = ['remember', 'understand', 'apply', 'analyze'];
+const checklistLimit = 1000;
+// Saved rubric levels are capped at 1,000 characters (see the courses migration).
+// Tell the model the budget in the schema itself, not only in the prompt.
+const checklistSchema = { type: 'array', maxItems: 8, description: `Checklist items for this level. All items together, numbered one per line, must fit within ${checklistLimit} characters.`, items: { type: 'string', minLength: 1, maxLength: 240 } };
+function rubricOutputError(reason, message = 'Could not generate a complete rubric. Please retry.') {
+  return Object.assign(new InvalidOutputError(message), { reason });
+}
+// Models sometimes overshoot the combined budget. Keep the leading items that
+// fit rather than rejecting the whole rubric and returning a 502.
+function fitChecklist(items, level) {
+  const kept = [...items];
+  while (kept.length > 1 && checklistText(kept).length > checklistLimit) kept.pop();
+  const text = checklistText(kept);
+  if (text.length > checklistLimit) throw rubricOutputError(`The ${level} checklist's first item is ${text.length} characters, over the ${checklistLimit}-character limit.`);
+  return text;
+}
 function normalizeGeneratedRubrics(concepts) {
   if (!Array.isArray(concepts)) return;
   for (const concept of concepts) {
     for (const level of levels) {
       const items = concept?.rubric?.[level];
       if (!Array.isArray(items)) continue;
-      if (items.length > 20 || items.some(item => typeof item !== 'string' || !item.trim() || /[\r\n]/.test(item))) throw new InvalidOutputError('Could not generate a complete rubric. Please retry.');
-      concept.rubric[level] = checklistText(items.map(item => item.trim()));
+      if (items.some(item => typeof item !== 'string' || !item.trim() || /[\r\n]/.test(item))) throw rubricOutputError(`The ${level} checklist has an empty or multi-line item.`);
+      concept.rubric[level] = fitChecklist(items.map(item => item.trim()), level);
     }
   }
 }
@@ -139,7 +155,7 @@ function normalizeGeneratedRubrics(concepts) {
 async function conceptsFromStudyTestOnce(file, query, prompts = loadPrompts()) {
   const learningType = resolveLearningType(file?.learningType);
   const content = fileContent(file);
-  const schema = { concepts: { type: 'array', minItems: 1, maxItems: 20, items: { type: 'object', properties: { name: { type: 'string' }, rubric: { type: 'object', properties: Object.fromEntries(levels.map(level => [level, { type: 'array', maxItems: 20, items: { type: 'string', minLength: 1, maxLength: 1000 } }])), required: levels, additionalProperties: false } }, required: ['name', 'rubric'], additionalProperties: false } } };
+  const schema = { concepts: { type: 'array', minItems: 1, maxItems: 20, items: { type: 'object', properties: { name: { type: 'string' }, rubric: { type: 'object', properties: Object.fromEntries(levels.map(level => [level, checklistSchema])), required: levels, additionalProperties: false } }, required: ['name', 'rubric'], additionalProperties: false } } };
   const system = prompts.text('rubric.extractConcepts', { curriculumContext: prompts.text('rubric.curriculumContext'), writingGuidance: prompts.text('rubric.writingGuidance'), learningTypeGuidance: prompts.text('profile.' + learningType + '.rubricGuidance') });
   const result = await query(system, [{ role: 'user', content: [{ type: 'text', text: prompts.text('rubric.extractRequest') }, ...content] }], tool('extract_concepts', schema));
   const concepts = result?.concepts;
@@ -207,13 +223,20 @@ async function generateRubricOnce(input, query, prompts = loadPrompts()) {
   const files = input.files ?? [];
   if (!Array.isArray(files)) throw new Error('Upload a valid list of files.');
   const content = files.length ? contentsFromFiles(files) : [];
-  const schema = { concepts: { type: 'array', minItems: input.concepts.length, maxItems: input.concepts.length, items: { type: 'object', properties: { name: { type: 'string' }, rubric: { type: 'object', properties: Object.fromEntries(levels.map(level => [level, { type: 'array', maxItems: 20, items: { type: 'string', minLength: 1, maxLength: 1000 } }])), required: levels, additionalProperties: false } }, required: ['name', 'rubric'], additionalProperties: false } } };
+  const schema = { concepts: { type: 'array', minItems: input.concepts.length, maxItems: input.concepts.length, items: { type: 'object', properties: { name: { type: 'string' }, rubric: { type: 'object', properties: Object.fromEntries(levels.map(level => [level, checklistSchema])), required: levels, additionalProperties: false } }, required: ['name', 'rubric'], additionalProperties: false } } };
   const system = prompts.text('rubric.generate', { curriculumContext: prompts.text('rubric.curriculumContext'), writingGuidance: prompts.text('rubric.writingGuidance'), learningTypeGuidance: prompts.text('profile.' + learningType + '.rubricGuidance'), grounding: files.length ? prompts.text('rubric.groundInFiles') : prompts.text('rubric.groundInKnowledge') });
   const batchSystem = previousRubric.length ? `${system}\nThe previousRubric contains completed concepts from earlier batches. Use it as context for consistent scope and criteria. Return only the requested concepts, in their given order; do not repeat or revise the previous rubric.` : system;
   const result = await query(batchSystem, [{ role: 'user', content: [{ type: 'text', text: JSON.stringify({ concepts: input.concepts, ...(previousRubric.length ? { previousRubric } : {}), ...(additionalInstructions ? { additionalInstructions } : {}) }) }, ...content] }], tool('generate_rubric', schema));
   if (result && typeof result === 'object') result.concepts = orderByNames(result.concepts, input.concepts.map(concept => concept.name), 'name');
   normalizeGeneratedRubrics(result?.concepts);
-  if (!Array.isArray(result?.concepts) || result.concepts.length !== input.concepts.length || result.concepts.some((item, index) => item?.name !== input.concepts[index].name || !item.rubric || levels.some((level, i) => typeof item.rubric[level] !== 'string' || item.rubric[level].length > 1000 || (i <= levels.indexOf(input.concepts[index].target) && !item.rubric[level].trim())))) throw new InvalidOutputError('Could not generate a complete rubric. Please retry.');
+  if (!Array.isArray(result?.concepts)) throw rubricOutputError(`The concepts were missing or their names did not match the ${input.concepts.length} requested.`);
+  result.concepts.forEach((item, index) => {
+    const target = levels.indexOf(input.concepts[index].target);
+    levels.forEach((level, i) => {
+      if (typeof item.rubric?.[level] !== 'string' || item.rubric[level].length > checklistLimit) throw rubricOutputError(`The ${level} checklist for "${item.name}" is missing or too long.`);
+      if (i <= target && !item.rubric[level].trim()) throw rubricOutputError(`The ${level} checklist for "${item.name}" is empty.`);
+    });
+  });
   return result.concepts.map((item, index) => ({ name: item.name, rubric: Object.fromEntries(levels.map((level, i) => [level, i <= levels.indexOf(input.concepts[index].target) ? item.rubric[level].trim() : ''])) }));
 }
 
