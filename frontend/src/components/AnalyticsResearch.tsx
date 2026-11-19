@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from 'react'
+import { Select } from './Select'
 import { downloadResearchRows, downloadTrackingDictionary, loadResearchAnalytics, priorExposureOptions, ratingScale, type ResearchAnalytics } from '../research'
 
 const number = new Intl.NumberFormat('en-US', { maximumFractionDigits: 0 })
@@ -7,6 +8,8 @@ const share = (part: number, whole: number) => whole ? percent(part / whole * 10
 const signed = (value: number | null) => value === null ? '—' : `${Number(value) > 0 ? '+' : Number(value) < 0 ? '−' : ''}${Math.abs(Math.round(Number(value)))} pts`
 const dayLabel = (date: string) => new Date(`${date}T12:00:00Z`).toLocaleDateString('en-US', { month: 'short', day: 'numeric', timeZone: 'UTC' })
 const fullDate = (value: string) => new Date(value).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })
+
+export const dateRangeOptions = [7, 30, 90].map(n => ({ value: String(n), label: `Last ${n} days` }))
 
 export type DownloadItem = { label: string; detail: string; disabled?: string; run: () => Promise<void> | void }
 export function DownloadList({ items }: { items: DownloadItem[] }) {
@@ -101,7 +104,7 @@ export function EngagementSection({ course }: { course: string }) {
   const e = data?.engagement
   return <section className="analytics-section" aria-labelledby="engagement-title">
     <header className="analytics-section-header"><div><h2 id="engagement-title">Engagement and retention</h2><p className="analytics-section-note">Consented students{course ? ' enrolled in this course' : ''}. Active time counts minutes with the app visible and in use.</p></div>
-      <div className="credit-controls"><label><span className="credit-sr-only">Date range</span><select value={days} onChange={event => setDays(Number(event.target.value))}><option value={7}>Last 7 days</option><option value={30}>Last 30 days</option><option value={90}>Last 90 days</option></select></label><button type="button" disabled={!data && !error} onClick={refresh}>Refresh</button></div>
+      <div className="credit-controls"><Select label="Date range" hideLabel className="custom-select-inline credit-range" value={String(days)} options={dateRangeOptions} onChange={value => setDays(Number(value))} /><button type="button" disabled={!data && !error} onClick={refresh}>Refresh</button></div>
     </header>
     {error && <p role="alert" className="admin-error">{error}</p>}
     {!data && !error && <p className="credit-loading" role="status">Loading engagement…</p>}

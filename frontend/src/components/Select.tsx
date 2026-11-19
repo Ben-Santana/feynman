@@ -3,8 +3,10 @@ import './Select.css'
 
 type SelectOption = { value: string; label: string }
 
-export function Select({ label, value, options, onChange }: {
+export function Select({ label, value, options, onChange, hideLabel = false, className }: {
   label: string
+  hideLabel?: boolean
+  className?: string
   value: string
   options: readonly SelectOption[]
   onChange: (value: string) => void
@@ -85,10 +87,10 @@ export function Select({ label, value, options, onChange }: {
     setOpen(true)
   }
 
-  return <div className="custom-select" ref={root} onBlur={event => {
+  return <div className={['custom-select', className].filter(Boolean).join(' ')} ref={root} onBlur={event => {
     if (!event.currentTarget.contains(event.relatedTarget as Node | null)) setOpen(false)
   }}>
-    <span className="custom-select-label" id={`${id}-label`}>{label}</span>
+    <span className={hideLabel ? 'custom-select-label custom-select-label-hidden' : 'custom-select-label'} id={`${id}-label`}>{label}</span>
     <button ref={trigger} type="button" className="custom-select-trigger" role="combobox"
       aria-labelledby={`${id}-label ${id}-value`} aria-expanded={open} aria-haspopup="listbox"
       aria-controls={open ? `${id}-list` : undefined} aria-activedescendant={open ? `${id}-option-${active}` : undefined}

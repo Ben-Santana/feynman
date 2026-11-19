@@ -13,3 +13,8 @@
 .custom-select-option[aria-selected="true"][data-active="true"] { background: color-mix(in srgb, var(--primary) 13%, var(--background)); }
 .custom-select-option > svg { flex: none; width: 16px; height: 16px; }
 @media (prefers-reduced-motion: reduce) { .custom-select button.custom-select-trigger, .custom-select-trigger > svg { transition: none; } }
+.custom-select-label-hidden { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+.custom-select.custom-select-inline { display: flex; align-items: center; gap: 10px; }
+.custom-select-inline .custom-select-label { flex: none; font-size: .8125rem; }
+.custom-select-inline button.custom-select-trigger { min-height: 40px; font-size: .8125rem; }
+.custom-select-inline .custom-select-list { inset-inline: auto 0; min-width: 100%; width: max-content; max-width: min(420px, 90vw); }

@@ -2,9 +2,10 @@ import { useEffect, useRef, useState } from 'react'
 import { accountFetch } from '../accounts'
 import './AdminPage.css'
 import './AdminAnalyticsPage.css'
+import { Select } from './Select'
 import { ResearchExports } from './ResearchExports'
 import { SalgSurveySection } from './AdminSalgSurveyPage'
-import { EngagementSection, PreTopicSection } from './AnalyticsResearch'
+import { dateRangeOptions, EngagementSection, PreTopicSection } from './AnalyticsResearch'
 import { analyticsTabs, loadResearchCourses, type ResearchCourse } from '../research'
 
 type Metric = 'cost' | 'tokens'
@@ -98,8 +99,8 @@ function UsageSection() {
   const top = [...(data?.features || [])].sort((a, b) => Number(b[metric] || 0) - Number(a[metric] || 0))[0]
   const topShare = totals && top && Number(totals[metric]) > 0 ? Number(top[metric]) / Number(totals[metric]) * 100 : 0
   return <section className="analytics-section" aria-labelledby="usage-title">
-    <div className="credit-section-heading"><h2 id="usage-title">AI credit usage</h2><div className="credit-controls"><div className="credit-metric-switch" role="group" aria-label="Usage metric"><button type="button" aria-pressed={metric === 'cost'} onClick={() => setMetric('cost')}>Spend (USD)</button><button type="button" aria-pressed={metric === 'tokens'} onClick={() => setMetric('tokens')}>Tokens</button></div><label><span className="credit-sr-only">Date range</span><select value={days} onChange={event => { startRequest(); setDays(Number(event.target.value)) }}><option value={7}>Last 7 days</option><option value={30}>Last 30 days</option><option value={90}>Last 90 days</option></select></label><button type="button" disabled={loading} onClick={() => { startRequest(); setVersion(value => value + 1) }}>Refresh</button></div></div>
-    <div className="credit-scope"><label htmlFor="credit-user-filter">Usage for</label><select id="credit-user-filter" value={user} onChange={event => selectUser(event.target.value)}><option value="">All users</option>{data?.users.filter(row => row.id).map(row => <option value={row.id!} key={row.id}>{row.name}{row.email ? ` · ${row.email}` : ''}</option>)}{user && !selectedUser && <option value={user}>Selected user</option>}</select>{user && <button type="button" onClick={() => selectUser('')}>Clear</button>}</div>
+    <div className="credit-section-heading"><h2 id="usage-title">AI credit usage</h2><div className="credit-controls"><div className="credit-metric-switch" role="group" aria-label="Usage metric"><button type="button" aria-pressed={metric === 'cost'} onClick={() => setMetric('cost')}>Spend (USD)</button><button type="button" aria-pressed={metric === 'tokens'} onClick={() => setMetric('tokens')}>Tokens</button></div><Select label="Date range" hideLabel className="custom-select-inline credit-range" value={String(days)} options={dateRangeOptions} onChange={value => { startRequest(); setDays(Number(value)) }} /><button type="button" disabled={loading} onClick={() => { startRequest(); setVersion(value => value + 1) }}>Refresh</button></div></div>
+    <div className="credit-scope"><Select label="Usage for" className="custom-select-inline" value={user} onChange={selectUser} options={[{ value: '', label: 'All users' }, ...(data?.users.filter(row => row.id).map(row => ({ value: row.id!, label: `${row.name}${row.email ? ` · ${row.email}` : ''}` })) ?? []), ...(user && !selectedUser ? [{ value: user, label: 'Selected user' }] : [])]} />{user && <button type="button" onClick={() => selectUser('')}>Clear</button>}</div>
     {error && <p role="alert" className="admin-error">{error}</p>}
     <div aria-busy={loading}>
       <dl className="credit-stats">
@@ -138,7 +139,7 @@ export function AdminAnalyticsPage({ page, onNavigate }: { page: string; onNavig
   const research = page !== '/admin/analytics/ai-usage' && page !== '/admin/analytics/salg-survey'
   return <section className="admin-page analytics-overview" aria-labelledby="analytics-title"><div className="admin-shell">
     <header className="credit-header"><h1 id="analytics-title">Analytics</h1>
-      {research && <label className="analytics-course"><span>Course</span><select value={course} onChange={event => setCourse(event.target.value)}><option value="">All courses</option>{courses.map(item => <option key={item.id} value={item.id}>{item.name}</option>)}</select></label>}
+      {research && <Select label="Course" className="custom-select-inline analytics-course" value={course} onChange={setCourse} options={[{ value: '', label: 'All courses' }, ...courses.map(item => ({ value: item.id, label: item.name }))]} />}
     </header>
     <nav className="analytics-tabs" aria-label="Analytics sections">{analyticsTabs.map(([path, label]) => <button type="button" key={path} aria-current={page === path ? 'page' : undefined} onClick={() => onNavigate(path)}>{label}</button>)}</nav>
     {coursesError && research && <p role="alert" className="admin-error">{coursesError}</p>}

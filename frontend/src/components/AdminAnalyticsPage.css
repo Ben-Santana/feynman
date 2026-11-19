@@ -66,8 +66,8 @@
 .credit-header h1 { margin: 0; font-size: 1.75rem; }
 .credit-controls { justify-content: flex-end; gap: 8px; }
 .credit-controls select, .credit-scope select, .credit-user-search input { min-height: 40px; max-width: 100%; border: 1px solid var(--border); border-radius: 8px; padding: 8px 12px; background: var(--background); color: var(--foreground); font: inherit; font-size: .8125rem; }
-.credit-controls button { background: var(--foreground); color: var(--background); }
-.credit-controls button:hover:not(:disabled) { opacity: .8; }
+.credit-controls > button { background: var(--foreground); color: var(--background); }
+.credit-controls > button:hover:not(:disabled) { opacity: .8; }
 .credit-section-heading { margin-bottom: 20px; }
 .credit-section-heading h2 { margin: 0; font: 500 1.125rem/1.4 "Fredoka", ui-rounded, system-ui, sans-serif; }
 .credit-metric-switch { display: flex; padding: 3px; border: 1px solid var(--border); border-radius: 9px; background: var(--surface); }
@@ -76,7 +76,7 @@
 .credit-scope { display: flex; align-items: center; gap: 12px; margin-bottom: 20px; font-size: .8125rem; }
 .credit-scope label { flex: none; color: var(--muted-foreground); }
 .credit-scope select { min-width: 0; max-width: 360px; }
-.credit-scope button { background: transparent; color: var(--foreground); }
+.credit-scope > button { background: transparent; color: var(--foreground); }
 .credit-stats { display: grid; grid-template-columns: 1.2fr 1fr .8fr; margin: 0 0 20px; border: 1px solid var(--border); border-radius: 12px; background: var(--background); }
 .credit-stats > div { min-width: 0; padding: 22px 24px; }
 .credit-stats > div + div { border-left: 1px solid var(--border); }
@@ -168,7 +168,9 @@
 
 /* Tabbed analytics shell */
 .analytics-course { display: flex; align-items: center; gap: 10px; font-size: .8125rem; color: var(--muted-foreground); }
-.analytics-course select { min-height: 40px; max-width: min(360px, 60vw); border: 1px solid var(--border); border-radius: 8px; padding: 8px 12px; background: var(--background); color: var(--foreground); font: inherit; font-size: .8125rem; }
+.analytics-course button.custom-select-trigger { width: min(360px, 60vw); }
+.credit-range button.custom-select-trigger { width: 150px; }
+.credit-scope .custom-select button.custom-select-trigger { width: min(360px, 100%); }
 .analytics-tabs { display: flex; gap: 4px; margin: -8px 0 32px; border-bottom: 1px solid var(--border); overflow-x: auto; scrollbar-width: none; }
 .admin-page .analytics-tabs button { flex: none; min-height: 40px; margin-bottom: -1px; padding: 8px 14px; border: 0; border-bottom: 2px solid transparent; border-radius: 0; background: transparent; color: var(--muted-foreground); font-size: .8125rem; }
 .admin-page .analytics-tabs button:hover { color: var(--foreground); }
@@ -232,7 +234,7 @@
 .analytics-overview :focus-visible { outline: 2px solid var(--ring); outline-offset: 2px; }
 @media (max-width: 1100px) { .analytics-stats { grid-template-columns: repeat(3, minmax(0, 1fr)); } .analytics-stats > div:nth-child(4) { border-left: 0; } .analytics-stats > div:nth-child(n + 4) { border-top: 1px solid var(--border); } .analytics-two-column { grid-template-columns: minmax(0, 1fr); } }
 @media (max-width: 600px) {
-  .analytics-course { width: 100%; } .analytics-course select { flex: 1; max-width: none; font-size: 1rem; }
+  .analytics-course { width: 100%; } .analytics-course button.custom-select-trigger { flex: 1; width: auto; }
   .analytics-tabs { margin-bottom: 24px; }
   .analytics-stats { grid-template-columns: repeat(2, minmax(0, 1fr)); }
   .analytics-stats > div { padding: 16px; }
