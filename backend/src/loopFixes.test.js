@@ -73,15 +73,17 @@ test('the plain ask appears on the second reply to an item, on a request to rewo
   const angry = (await run(turns(weights, ['bro are you dumb or just trying to waste my time']), [], fixes)).system;
   assert.match(angry, /which single piece/);
   assert.match(angry, /apology of at most six words/);
+  assert.doesNotMatch((await run(turns(weights, ['the weights are 2, 4, 2, 1 like I said']), [], fixes)).system, /which single piece/);
+  assert.doesNotMatch((await run(turns(weights, ['8, 4, 2, 1', 'still 8, 4, 2, 1']), ['missing', 'flawed'], fixes)).system, /which single piece/);
 });
 
 test('wider frustration and clarity phrases from real chats are heard, ordinary teaching is not', () => {
-  for (const text of ['how do you not understand that I understand at this point?', 'bro are you dumb or just trying to waste my time?', "as the name suggests and as I've said twice now, 2421 has the values 2,4,2,1", 'which I said', 'Please keep up']) {
+  for (const text of ['how do you not understand that I understand at this point?', 'bro are you dumb or just trying to waste my time?', "as the name suggests and as I've said twice now, 2421 has the values 2,4,2,1", 'Please keep up']) {
     assert.equal(expressesFrustration(text), false, text);
     assert.equal(expressesFrustration(text, { broad: true }), true, text);
   }
   for (const text of ['Could you rephrase this question?', 'could you please point out the issue in simple terms', "i don't get this question at all reword"]) assert.equal(asksForClarity(text), true, text);
-  for (const text of ['BCD gives each digit its own four bits.', 'The weights are 2, 4, 2 and 1, so 1011 is 5.']) {
+  for (const text of ['BCD gives each digit its own four bits.', 'The weights are 2, 4, 2 and 1, so 1011 is 5.', 'the limits are -inf to positive inf like I said']) {
     assert.equal(expressesFrustration(text, { broad: true }), false, text);
     assert.equal(asksForClarity(text), false, text);
   }

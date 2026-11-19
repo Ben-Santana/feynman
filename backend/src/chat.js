@@ -431,7 +431,7 @@ export async function chat(input, query, prompts = loadPrompts(), { evaluator = 
   const frustrationTarget = frustrated
     && checked?.criteria.find(item => item.aspect === messages.at(-2)?.rubricFocus && !item.skipped && item.status !== 'supported');
   const target = (input.practiceGoal ? { aspect: input.practiceGoal } : null) || frustrationTarget || previousFocus || (contradictionIndex >= 0 && !checked.criteria[contradictionIndex].skipped ? checked.criteria[contradictionIndex] : null) || checked?.criteria.find(item => !item.skipped && item.status === 'flawed') || checked?.criteria.find(item => !item.skipped && item.status !== 'supported');
-  const plainAsk = Boolean(checked && target && !input.practiceGoal && needsPlainAsk(fixes, messages, target.aspect));
+  const plainAsk = Boolean(checked && target && !input.practiceGoal && needsPlainAsk(fixes, messages, target.aspect, target.status));
   const followUpJudgment = checked?.refined?.judgments[target ? checked.criteria.findIndex(item => item.aspect === target.aspect) : checked.criteria.length];
   const transferNeeded = followUpJudgment?.blockers.includes('transfer_check_needed');
   const independenceNeeded = followUpJudgment?.blockers.includes('independent_check_needed');

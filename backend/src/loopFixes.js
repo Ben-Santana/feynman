@@ -23,12 +23,13 @@ export function keepEarnedCredit(checked, earned = []) {
   return next;
 }
 
-export function needsPlainAsk(fixes, messages, aspect) {
-  if (!fixes.plainAsk || !aspect) return false;
+// A wrong claim still needs the ordinary probe, so the plain ask is for missing or unclear items only.
+export function needsPlainAsk(fixes, messages, aspect, status) {
+  if (!fixes.plainAsk || !aspect || status === 'flawed') return false;
   const latest = messages.at(-1)?.content || '';
   return rubricAttempts(messages, aspect) >= 2 || asksForClarity(latest) || expressesFrustration(latest, { broad: Boolean(fixes.hearFrustration) });
 }
 
 export const oneItemInstruction = ' The evaluator objective may list several requirements. Use only the part about this requirement and ignore the rest. Ask about one thing, in one sentence, with no second request joined by "and".';
 
-export const plainAskInstruction = frustrated => ` The teacher has already answered about this requirement more than once, or asked what you need. Change approach for this message only. Read the whole conversation first and do not ask again for anything the teacher has already stated, even tersely. Do not say you are lost, stuck, tangled or confused, and do not ask about another example. Say plainly, in one short sentence, which single piece you still do not have, then ask for exactly that piece. Name the kind of thing you need (a rule, a value, a name, a reason) and what it is about, using the teacher's own vocabulary. Never state or hint at its content.${frustrated ? ' Open with an apology of at most six words for going in circles.' : ''}`;
+export const plainAskInstruction = frustrated => ` The teacher has already answered about this requirement more than once, or asked what you need. Change approach for this message only. Read the whole conversation first and do not ask again for anything the teacher has already stated correctly, even tersely. Do not say you are lost, stuck, tangled or confused, and do not ask about another example. Say plainly, in one short sentence, which single piece you still do not have, then ask for exactly that piece. Name the kind of thing you need (a rule, a value, a name, a reason) and what it is about, using the teacher's own vocabulary. Never state or hint at its content.${frustrated ? ' Open with an apology of at most six words for going in circles.' : ''}`;

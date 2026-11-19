@@ -2,8 +2,10 @@
 export const RUBRIC_SKIP_AFTER = 6;
 const substantiveReply = message => message.role === 'user' && !message.skipRubricItem && !message.helpRequest && !message.finishAssessment && !message.review;
 
-// Wider phrases seen in real chats: insults at the classmate and "I already said this".
-const broadFrustration = /\b(?:are you (?:dumb|stupid|slow|serious|kidding|even listening)|wast(?:e|ing) (?:of )?my time|how do you not (?:understand|get)|keep up|(?:as|like) i(?:'ve| have)?(?: just| already)? (?:said|told|mentioned|pointed out)|i(?:'ve| have)? (?:already|just) (?:said|told|answered|explained)|i keep (?:saying|telling|pointing)|(?:twice|three times|again and again) now|which i said|bad review)\b/i;
+// Wider phrases seen in real chats, aimed at the classmate.
+const broadFrustration = /\b(?:are you (?:dumb|stupid|slow|serious|kidding|even listening)|wast(?:e|ing) (?:of )?my time|how do you not (?:understand|get)|keep up|i keep (?:saying|telling|pointing)|(?:twice|three times|again and again) now|bad review)\b/i;
+// "Like I said" is ordinary speech on a first reply, so it only brings the skip offer forward.
+const repeatingSelf = /\b(?:(?:as|like) i(?:'ve| have)?(?: just| already)? (?:said|told|mentioned|pointed out)|i(?:'ve| have)? (?:already|just) (?:said|told|answered|explained)|which i said)\b/i;
 
 export function asksForClarity(content) {
   return /\b(?:re-?word|re-?phrase|say (?:that|it) (?:again|differently)|what (?:do|are) you (?:want|need|asking|mean|looking for)|point out (?:the|your) (?:issue|problem|confusion)|i (?:don't|do not) (?:get|understand) (?:this|the|your|that) question|in simpler? terms|what(?:'s| is) (?:the|your) (?:issue|problem|question))\b/i.test(content.replace(/[’]/g, "'"));
@@ -37,7 +39,7 @@ function skipReason(messages, aspect, attemptThreshold, frustrationThreshold, br
     && (messages[index - 1]?.rubricFocus === aspect
       // The opening question may not have a focus until the first assessment.
       || (!messages[index - 1]?.rubricFocus && messages[index + 1]?.rubricFocus === aspect))
-    && expressesFrustration(message.content, { broad }));
+    && (expressesFrustration(message.content, { broad }) || (broad && repeatingSelf.test(message.content.replace(/[’]/g, "'")))));
   const attempts = rubricAttempts(messages, aspect);
   if (frustrated && attempts >= frustrationThreshold) return 'frustration';
   return attempts >= attemptThreshold ? 'attempts' : null;
