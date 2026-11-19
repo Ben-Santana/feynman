@@ -2,7 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { chat } from './chat.js';
 import { readFixes, keepEarnedCredit } from './loopFixes.js';
-import { asksForClarity, expressesFrustration, rubricSkipReason } from '../../frontend/src/rubricFallback.js';
+import { admitsNotKnowing, asksForClarity, expressesFrustration, rubricSkipReason, skippedRubricItems } from '../../frontend/src/rubricFallback.js';
 
 const bcd = 'States the 8421 BCD code for each digit.', weights = 'Gives the 2421 weights.';
 const table = '5                  1011   0101\n6                  1100   0110';
@@ -85,8 +85,18 @@ test('requests to reword are recognised, ordinary teaching is not', () => {
   }
 });
 
-test('the earlier skip offer comes after four replies', () => {
-  const four = [...turns(weights, ['a', 'b', 'c', 'd']), { role: 'assistant', content: 'Which?', rubricFocus: weights }];
-  assert.equal(rubricSkipReason(four, weights), null);
-  assert.equal(rubricSkipReason(four, weights, { early: true }), 'attempts');
+test('the skip offer needs frustration or the learner saying they do not know, never reply count alone', () => {
+  const offer = replies => rubricSkipReason([...turns(weights, replies), { role: 'assistant', content: 'Which?', rubricFocus: weights }], weights, { aware: true });
+  assert.equal(offer(['2, 4, 2, 1', 'as I said, 2421', 'the weights are in the name', 'a', 'b', 'c', 'd']), null);
+  for (const text of ["I don't know", 'idk honestly', "I can't remember the weights", 'not sure about that one', "we haven't covered that", "I'm confused about the weights"]) assert.equal(offer([text]), 'unsure', text);
+  assert.equal(offer(['This is bullshit.']), 'frustration');
+  for (const text of ["I don't understand the question", 'Could you rephrase this question?', "I don't know what you are asking", 'could you please point out the issue in simple terms', 'Why are you asking if I would like to skip?']) {
+    assert.equal(admitsNotKnowing(text), false, text);
+    assert.equal(offer([text]), null, text);
+  }
+  const declined = [...turns(weights, ["I don't know"]), { role: 'assistant', content: 'Which?', rubricFocus: weights, skipOfferDeclined: true }, { role: 'user', content: '2, 4, 2, 1' }, { role: 'assistant', content: 'Which?', rubricFocus: weights }];
+  assert.equal(rubricSkipReason(declined, weights, { aware: true }), null);
+  const skip = { role: 'user', content: 'Skip this rubric item', skipRubricItem: weights };
+  assert.deepEqual([...skippedRubricItems([...turns(weights, ["I don't know"]), { role: 'assistant', content: 'Which?', rubricFocus: weights }, skip], [weights])], [weights]);
+  assert.throws(() => skippedRubricItems([...turns(weights, ['2, 4, 2, 1']), { role: 'assistant', content: 'Which?', rubricFocus: weights }, skip], [weights]), /not available/);
 });

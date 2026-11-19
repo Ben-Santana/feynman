@@ -4,7 +4,7 @@ import { rubricAttempts, skippedRubricItems } from '../../frontend/src/rubricFal
 import { chat } from './chat.js';
 import { advanceConcept, assessmentTranscript } from '../../frontend/src/learningFlow.ts';
 const aspect = 'Stored energy';
-const history = (count = 3) => [...Array.from({ length: count }, () => [{ role: 'assistant', content: 'Why?', rubricFocus: aspect }, { role: 'user', content: 'I am unsure.' }]).flat(), { role: 'assistant', content: 'Which field?', rubricFocus: aspect }];
+const history = (count = 3) => [...Array.from({ length: count }, () => [{ role: 'assistant', content: 'Why?', rubricFocus: aspect }, { role: 'user', content: 'It holds charge.' }]).flat(), { role: 'assistant', content: 'Which field?', rubricFocus: aspect }];
 const skip = { role: 'user', content: 'Skip this item.', skipRubricItem: aspect };
 test('saved skips under the three-reply policy remain valid, excluding learning actions', () => {
   assert.equal(rubricAttempts(history(), aspect), 3);
