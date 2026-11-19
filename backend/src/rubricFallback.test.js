@@ -54,7 +54,7 @@ test('after a skip, follow-up targets a remaining item and keeps the skipped mar
 
 test('frustration or profanity unlocks skipping after three replies for that item', async () => {
   const { expressesFrustration, rubricSkipReason } = await import('../../frontend/src/rubricFallback.js');
-  for (const content of ["I'm frustrated", 'This is so frustrating.', 'What the fuck does this mean?', 'This is bullshit.', 'I still don’t understand.', 'I give up.', 'Stop asking the same thing.']) {
+  for (const content of ['What the fuck does this mean?', 'This is bullshit.', 'I ALREADY SAID THIS', 'STOP ASKING ME THAT', 'NO. WRONG QUESTION.']) {
     assert.equal(expressesFrustration(content), true, content);
     const messages = history(3); messages[1].content = content;
     assert.equal(rubricSkipReason(messages, aspect), 'frustration');
@@ -65,24 +65,24 @@ test('frustration or profanity unlocks skipping after three replies for that ite
 
 test('ordinary uncertainty, quoted profanity, and assistant frustration do not unlock early skipping', async () => {
   const { expressesFrustration, rubricSkipReason } = await import('../../frontend/src/rubricFallback.js');
-  for (const content of ['I am unsure.', 'I need to understand this assignment.', 'The class is about energy.', 'The character says "what the fuck".', '> This is bullshit.\nHere is my explanation.', 'The word frustration appears in the source.']) assert.equal(expressesFrustration(content), false, content);
-  const messages = history(1); messages[0].content = 'This is frustrating.';
+  for (const content of ["I'm frustrated", 'I give up.', 'Stop asking the same thing.', 'ASCII AND BCD', 'THE WEIGHTS ARE 2, 4, 2, 1', 'I am unsure.', 'I need to understand this assignment.', 'The class is about energy.', 'The character says "what the fuck".', '> This is bullshit.\nHere is my explanation.', 'The word frustration appears in the source.']) assert.equal(expressesFrustration(content), false, content);
+  const messages = history(1); messages[0].content = 'This is bullshit.';
   assert.equal(rubricSkipReason(messages, aspect), null);
-  messages[1].content = 'This is frustrating.'; messages[1].helpRequest = true;
+  messages[1].content = 'This is bullshit.'; messages[1].helpRequest = true;
   assert.equal(rubricSkipReason(messages, aspect), null);
 });
 
 test('frustration in the opening answer is tied to the first assessed item', async () => {
   const { rubricSkipReason } = await import('../../frontend/src/rubricFallback.js');
   const messages = history(4); delete messages[0].rubricFocus;
-  messages[1].content = "I'm frustrated. This makes no sense.";
+  messages[1].content = 'This is bullshit.';
   assert.equal(rubricSkipReason(messages, aspect), 'frustration');
   assert.deepEqual([...skippedRubricItems([...messages, skip], [aspect])], [aspect]);
 });
 
 test('a frustrated reply keeps the current unresolved item available to skip', async () => {
   const other = 'Electric field';
-  const messages = history(3).slice(0, -1); messages.at(-1).content = 'This is frustrating.';
+  const messages = history(3).slice(0, -1); messages.at(-1).content = 'This is bullshit.';
   const result = await chat({ level: 'remember', topic: 'Capacitors', aspects: [other, aspect], messages }, async (system, _messages, tool) => {
     if (tool.name === 'reply_to_teacher') {
       assert.ok(system.includes('unresolved requirement: "Stored energy"'));
@@ -156,7 +156,7 @@ test('later levels check off earlier skips without blocking the turn', async () 
 
 test('declining a skip clears old frustration and attempts, then permits a later offer', async () => {
   const { rubricSkipReason } = await import('../../frontend/src/rubricFallback.js');
-  const messages = history(); messages[1].content = 'This is frustrating.';
+  const messages = history(); messages[1].content = 'This is bullshit.';
   messages.at(-1).skipOfferDeclined = true;
   assert.equal(rubricSkipReason(messages, aspect), null);
   assert.equal(rubricSkipReason(messages.slice(0, -1), aspect), 'frustration');
@@ -173,7 +173,7 @@ test('skip offers wait for six focused replies, or three with frustration', asyn
   for (let count = 0; count <= 6; count++) {
     const messages = history(count);
     assert.equal(rubricSkipReason(messages, aspect), count >= 6 ? 'attempts' : null);
-    if (count) messages[1].content = 'This is frustrating.';
+    if (count) messages[1].content = 'This is bullshit.';
     assert.equal(rubricSkipReason(messages, aspect), count >= 3 ? 'frustration' : null);
   }
 });

@@ -426,7 +426,7 @@ export async function chat(input, query, prompts = loadPrompts(), { evaluator = 
     if (checked.complete || checked.readyToAdvance) return { message: skipped.size ? 'This level is finished. Skipped items still count if you teach them later.' : 'Thank you for teaching me!', assessment: checked, expression: 'excited' };
   }
   const contradictionIndex = checked?.refined?.judgments.filter(j => j.criterionId !== 'level_task').findIndex(j => j.status !== 'supported' && j.contradictions.length);
-  const frustrated = expressesFrustration(messages.at(-1)?.content || '', { broad: Boolean(fixes.hearFrustration) });
+  const frustrated = expressesFrustration(messages.at(-1)?.content || '');
   const previousFocus = fixes.stayOnItem && checked?.criteria.find(item => item.aspect === messages.at(-2)?.rubricFocus && !item.skipped && item.status !== 'supported');
   const frustrationTarget = frustrated
     && checked?.criteria.find(item => item.aspect === messages.at(-2)?.rubricFocus && !item.skipped && item.status !== 'supported');

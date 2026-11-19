@@ -2,32 +2,28 @@
 export const RUBRIC_SKIP_AFTER = 6;
 const substantiveReply = message => message.role === 'user' && !message.skipRubricItem && !message.helpRequest && !message.finishAssessment && !message.review;
 
-// Wider phrases seen in real chats, aimed at the classmate.
-const broadFrustration = /\b(?:are you (?:dumb|stupid|slow|serious|kidding|even listening)|wast(?:e|ing) (?:of )?my time|how do you not (?:understand|get)|keep up|i keep (?:saying|telling|pointing)|(?:twice|three times|again and again) now|bad review)\b/i;
-// "Like I said" is ordinary speech on a first reply, so it only brings the skip offer forward.
-const repeatingSelf = /\b(?:(?:as|like) i(?:'ve| have)?(?: just| already)? (?:said|told|mentioned|pointed out)|i(?:'ve| have)? (?:already|just) (?:said|told|answered|explained)|which i said)\b/i;
-
 export function asksForClarity(content) {
   return /\b(?:re-?word|re-?phrase|say (?:that|it) (?:again|differently)|what (?:do|are) you (?:want|need|asking|mean|looking for)|point out (?:the|your) (?:issue|problem|confusion)|i (?:don't|do not) (?:get|understand) (?:this|the|your|that) question|in simpler? terms|what(?:'s| is) (?:the|your) (?:issue|problem|question))\b/i.test(content.replace(/[’]/g, "'"));
 }
 
-export function expressesFrustration(content, { broad = false } = {}) {
+// Deliberately narrow: obvious swearing, or a shouted (all-caps) negative message.
+export function expressesFrustration(content) {
   // Ignore quoted material so a quotation in an explanation is not treated as distress.
   const text = content.replace(/^>.*$/gm, '').replace(/```[\s\S]*?```/g, '').replace(/"[^"\n]*"|“[^”\n]*”/g, '').replace(/[’]/g, "'");
-  if (broad && broadFrustration.test(text)) return true;
-  return /\b(?:fuck\w*|shit|shitty|bullshit|damn|goddamn|wtf|bitch|asshole|bastard)\b|\bwhat the hell\b/i.test(text)
-    || /\b(?:i(?:'m| am| feel|\s+get(?:ting)?)\s+(?:so\s+|really\s+|very\s+)?(?:frustrated|annoyed|angry|fed up|overwhelmed|pissed off|sick of this)|(?:this|it|that)\s+(?:is\s+|feels\s+)?(?:so\s+|really\s+)?(?:frustrating|annoying|pointless|impossible|stupid)|(?:this|it)\s+sucks|i\s+(?:give up|want to give up|can't do this|cannot do this|hate this)|(?:this|it|that)\s+(?:still\s+)?(?:makes no sense|doesn't make sense)|(?:i\s+)?still\s+(?:don't|do not|can't|cannot)\s+(?:get|understand)|stop\s+(?:asking|repeating))\b/i.test(text);
+  if (/\b(?:fuck\w*|shit|shitty|bullshit|damn|goddamn|wtf|bitch|asshole|bastard)\b|\bwhat the hell\b/i.test(text)) return true;
+  const letters = text.replace(/[^a-zA-Z]/g, '');
+  return letters.length >= 8 && letters === letters.toUpperCase() && /\b(?:NO|STOP|WRONG|ALREADY|ENOUGH|AGAIN|WHY|UGH|HATE|DUMB|STUPID|USELESS|ANNOYING|POINTLESS|SAID|TOLD)\b/.test(text);
 }
 
 export function rubricAttempts(messages, aspect) {
   return messages.reduce((count, message, index) => count + Number(substantiveReply(message) && messages[index - 1]?.rubricFocus === aspect), 0);
 }
 
-export function rubricSkipReason(messages, aspect, { early = false, broad = false } = {}) {
-  return skipReason(messages, aspect, early ? 4 : RUBRIC_SKIP_AFTER, 3, broad);
+export function rubricSkipReason(messages, aspect, { early = false } = {}) {
+  return skipReason(messages, aspect, early ? 4 : RUBRIC_SKIP_AFTER, 3);
 }
 
-function skipReason(messages, aspect, attemptThreshold, frustrationThreshold, broad = false) {
+function skipReason(messages, aspect, attemptThreshold, frustrationThreshold) {
   if (!aspect) return null;
   // A declined offer starts a fresh attempt window for this item.
   const declined = messages.findLastIndex(message => message.role === 'assistant' && message.rubricFocus === aspect && message.skipOfferDeclined);
@@ -39,7 +35,7 @@ function skipReason(messages, aspect, attemptThreshold, frustrationThreshold, br
     && (messages[index - 1]?.rubricFocus === aspect
       // The opening question may not have a focus until the first assessment.
       || (!messages[index - 1]?.rubricFocus && messages[index + 1]?.rubricFocus === aspect))
-    && (expressesFrustration(message.content, { broad }) || (broad && repeatingSelf.test(message.content.replace(/[’]/g, "'")))));
+    && expressesFrustration(message.content));
   const attempts = rubricAttempts(messages, aspect);
   if (frustrated && attempts >= frustrationThreshold) return 'frustration';
   return attempts >= attemptThreshold ? 'attempts' : null;

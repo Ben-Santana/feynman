@@ -2,7 +2,7 @@
 // developer tools request turns it on, so learners see no change until one is promoted.
 import { asksForClarity, expressesFrustration, rubricAttempts } from '../../frontend/src/rubricFallback.js';
 
-export const fixNames = ['keepCredit', 'tolerantQuotes', 'stayOnItem', 'plainAsk', 'hearFrustration', 'clearSkip'];
+export const fixNames = ['keepCredit', 'tolerantQuotes', 'stayOnItem', 'plainAsk', 'clearSkip'];
 
 export function readFixes(experiment, aspects = []) {
   if (!experiment || typeof experiment !== 'object' || Array.isArray(experiment)) return {};
@@ -27,7 +27,7 @@ export function keepEarnedCredit(checked, earned = []) {
 export function needsPlainAsk(fixes, messages, aspect, status) {
   if (!fixes.plainAsk || !aspect || status === 'flawed') return false;
   const latest = messages.at(-1)?.content || '';
-  return rubricAttempts(messages, aspect) >= 2 || asksForClarity(latest) || expressesFrustration(latest, { broad: Boolean(fixes.hearFrustration) });
+  return rubricAttempts(messages, aspect) >= 2 || asksForClarity(latest) || expressesFrustration(latest);
 }
 
 export const oneItemInstruction = ' The evaluator objective may list several requirements. Use only the part about this requirement and ignore the rest. Ask about one thing, in one sentence, with no second request joined by "and".';

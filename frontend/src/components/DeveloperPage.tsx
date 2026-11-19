@@ -31,7 +31,6 @@ const fixOptions = [
   ['tolerantQuotes', 'Tolerant quote matching'],
   ['stayOnItem', 'One item, one point'],
   ['plainAsk', 'Say what is missing'],
-  ['hearFrustration', 'Hear frustration'],
   ['clearSkip', 'Clear skip offer'],
 ] as const
 type FixName = typeof fixOptions[number][0]
@@ -348,7 +347,7 @@ function ChatPlayground({ dirtyPrompts, characterName, fixes = false }: { dirtyP
         {run && <header className="developer-conversation-heading"><div><h2>{run.topic}</h2><p>{nameLevel(run.level)} · {learningTypes[run.learningType].label}</p></div><button type="button" className="developer-button-secondary" disabled={working} onClick={() => { setSavedId(''); setSaveNotice(''); setRun(null); setCallTurns([]); setMessages([]); setResult(null); setDraft(''); setError('') }}>Clear test</button></header>}
         <div ref={log} className="developer-chat-log" role="log" aria-label="Test conversation" aria-live="polite">
           {[...messages, ...(pending ? [pending] : [])].map((message, index) => {
-            const skipItem = fixes && !pending && !finished && message.role === 'assistant' && index === messages.length - 1 && message.rubricFocus && rubricSkipReason(messages, message.rubricFocus, { early: fixFlags.clearSkip, broad: fixFlags.hearFrustration }) ? message.rubricFocus : undefined
+            const skipItem = fixes && !pending && !finished && message.role === 'assistant' && index === messages.length - 1 && message.rubricFocus && rubricSkipReason(messages, message.rubricFocus, { early: fixFlags.clearSkip }) ? message.rubricFocus : undefined
             const offer = skipItem && <SkipRubricButton busy={working} onSkip={() => { void send(undefined, undefined, skipItem) }} onContinue={() => setMessages(current => current.map((item, itemIndex) => itemIndex === index ? { ...item, skipOfferDeclined: true } : item))} />
             return <div key={index} className={`chat-message ${message.role} ${message.paper ? 'developer-message-with-paper' : ''}`}><div className="chat-message-copy"><span>{message.assistance ? 'Prerequisite review' : message.role === 'user' ? 'You' : characterName}</span><div className="chat-message-text"><ChatText>{skipItem && !fixFlags.clearSkip ? 'Alright, no problem. Would you like to skip this?' : message.content}</ChatText></div>{skipItem && fixFlags.clearSkip && <p className="developer-skip-offer">Skip this one and move on?</p>}{offer}</div>{message.paper && <PaperReview characterName={characterName} key={`${message.paper.id}-${reviewVersion}`} paper={message.paper} review={revisingReview ? undefined : messages.findLast(item => item.review?.paperId === message.paper?.id)?.review} busy={working} error={error} onSubmit={send} autoOpen={revisingReview && message.paper.id === paper?.id} onClose={() => setRevisingReview(false)} />}</div>
           })}
