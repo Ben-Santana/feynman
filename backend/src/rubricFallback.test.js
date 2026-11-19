@@ -54,7 +54,7 @@ test('after a skip, follow-up targets a remaining item and keeps the skipped mar
 
 test('frustration or profanity unlocks skipping after three replies for that item', async () => {
   const { expressesFrustration, rubricSkipReason } = await import('../../frontend/src/rubricFallback.js');
-  for (const content of ['What the fuck does this mean?', 'This is bullshit.', 'I ALREADY SAID THIS', 'STOP ASKING ME THAT', 'NO. WRONG QUESTION.']) {
+  for (const content of ['What the fuck does this mean?', 'This is bullshit.', 'I ALREADY SAID THIS', 'STOP ASKING ME THAT', 'NO. WRONG QUESTION.', 'it is NOT the same thing', 'that is WRONG', "I DON'T know"]) {
     assert.equal(expressesFrustration(content), true, content);
     const messages = history(3); messages[1].content = content;
     assert.equal(rubricSkipReason(messages, aspect), 'frustration');
@@ -65,7 +65,7 @@ test('frustration or profanity unlocks skipping after three replies for that ite
 
 test('ordinary uncertainty, quoted profanity, and assistant frustration do not unlock early skipping', async () => {
   const { expressesFrustration, rubricSkipReason } = await import('../../frontend/src/rubricFallback.js');
-  for (const content of ["I'm frustrated", 'I give up.', 'Stop asking the same thing.', 'ASCII AND BCD', 'THE WEIGHTS ARE 2, 4, 2, 1', 'I am unsure.', 'I need to understand this assignment.', 'The class is about energy.', 'The character says "what the fuck".', '> This is bullshit.\nHere is my explanation.', 'The word frustration appears in the source.']) assert.equal(expressesFrustration(content), false, content);
+  for (const content of ["I'm frustrated", 'I give up.', 'Stop asking the same thing.', 'ASCII AND BCD', 'THE WEIGHTS ARE 2, 4, 2, 1', 'A NOT gate inverts its input.', 'F = A AND NOT B', 'it is not the same thing', 'No, that is wrong.', 'I am unsure.', 'I need to understand this assignment.', 'The class is about energy.', 'The character says "what the fuck".', '> This is bullshit.\nHere is my explanation.', 'The word frustration appears in the source.']) assert.equal(expressesFrustration(content), false, content);
   const messages = history(1); messages[0].content = 'This is bullshit.';
   assert.equal(rubricSkipReason(messages, aspect), null);
   messages[1].content = 'This is bullshit.'; messages[1].helpRequest = true;

@@ -6,13 +6,14 @@ export function asksForClarity(content) {
   return /\b(?:re-?word|re-?phrase|say (?:that|it) (?:again|differently)|what (?:do|are) you (?:want|need|asking|mean|looking for)|point out (?:the|your) (?:issue|problem|confusion)|i (?:don't|do not) (?:get|understand) (?:this|the|your|that) question|in simpler? terms|what(?:'s| is) (?:the|your) (?:issue|problem|question))\b/i.test(content.replace(/[’]/g, "'"));
 }
 
-// Deliberately narrow: obvious swearing, or a shouted (all-caps) negative message.
+// Deliberately narrow: obvious swearing, or a negative word written in capitals ("it is NOT ...").
 export function expressesFrustration(content) {
   // Ignore quoted material so a quotation in an explanation is not treated as distress.
   const text = content.replace(/^>.*$/gm, '').replace(/```[\s\S]*?```/g, '').replace(/"[^"\n]*"|“[^”\n]*”/g, '').replace(/[’]/g, "'");
   if (/\b(?:fuck\w*|shit|shitty|bullshit|damn|goddamn|wtf|bitch|asshole|bastard)\b|\bwhat the hell\b/i.test(text)) return true;
-  const letters = text.replace(/[^a-zA-Z]/g, '');
-  return letters.length >= 8 && letters === letters.toUpperCase() && /\b(?:NO|STOP|WRONG|ALREADY|ENOUGH|AGAIN|WHY|UGH|HATE|DUMB|STUPID|USELESS|ANNOYING|POINTLESS|SAID|TOLD)\b/.test(text);
+  // A capitalised NOT beside gate or operator words is Boolean logic, not emphasis.
+  const logic = /\b(?:AND|OR|NAND|NOR|XOR|XNOR)\b/.test(text) || /\bNOT[- ](?:gate|operator|operation|function)/i.test(text);
+  return /\b(?:NO|NEVER|STOP|WRONG|DON'T|DONT|CAN'T|CANT|WON'T|WONT|ALREADY|ENOUGH|AGAIN|HATE|DUMB|STUPID|USELESS|POINTLESS|ANNOYING)\b/.test(text) || (!logic && /\bNOT\b/.test(text));
 }
 
 export function rubricAttempts(messages, aspect) {
