@@ -86,6 +86,17 @@ evaluatorTestCases.push(...evaluatorChallengeCases);
 evaluatorTestCases.push(...evaluatorBorderlineCases);
 evaluatorTestCases.push(...evaluatorLongCases);
 
+const andGateRubric = 'Explains why an AND gate acts as a conditional switch that passes a signal only when every input is high.';
+evaluatorTestCases.push(entry('understand-and-gate-concise-condition', request('understand', 'AND gates', [andGateRubric], [
+  'Explain how the gate decides its output.', 'A B F, 0 0 0, 0 1 0, 1 0 0, 1 1 1',
+  'Why is the last output 1?', 'When A and B are both 1, the AND condition is satisfied, meaning F, the output, is 1',
+  'What is AND checking?', 'AND is checking if both inputs are 1',
+  'Could you explain that again?', 'No',
+], 'theoretical'), true, [supported], ['skip-regression', 'concise', 'understand'], 'An accurate truth table and concise condition-to-output explanation satisfy the behavioral relationship; a later refusal does not contradict that evidence.'));
+evaluatorTestCases.push(entry('understand-and-gate-wrong-condition', request('understand', 'AND gates', [andGateRubric], [
+  'Explain how the gate decides its output.', 'The output is 1 if either input is 1, even when the other is 0.',
+], 'theoretical'), false, [['flawed']], ['skip-regression', 'concise', 'understand'], 'Generous wording must still reject the incorrect OR relationship.'));
+
 // Developer UI catalog: keep author expectations outside model inputs.
 export const evaluatorComparisonCases = evaluatorTestCases.map(c => {
   const sample = evaluatorSamples.find(s => s.id === c.id);

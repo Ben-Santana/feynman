@@ -772,8 +772,8 @@ div.paper-grade-field .paper-grade-word { opacity: 1; }
 .rubric-grid tbody .rubric-concept-cell { padding: 16px 12px; border-bottom: 1px solid var(--border); }
 .chat-panel .rubric-grid textarea { display: block; min-height: 0; padding: 12px 14px; border: 0; border-radius: 0; background: color-mix(in srgb, var(--foreground) 14%, var(--background)); font-size: 0.875rem; resize: none; }
 .chat-panel .rubric-grid .rubric-required-cell textarea { background: var(--background); }
-.chat-panel .rubric-grid .rubric-concept-cell input { height: auto; min-height: 0; padding: 2px 0; border: 0; border-radius: 0; background: transparent; font-size: 1.1875rem; font-weight: 500; line-height: 1.35; }
-.chat-panel .rubric-grid .rubric-concept-cell input::placeholder { color: #b8b8b8; opacity: 1; }
+.chat-panel .rubric-grid .rubric-concept-cell textarea { overflow: hidden; overflow-wrap: anywhere; height: auto; min-height: 0; padding: 2px 0; border: 0; border-radius: 0; background: transparent; font-size: 1.1875rem; font-weight: 500; line-height: 1.35; }
+.chat-panel .rubric-grid .rubric-concept-cell textarea::placeholder { color: #b8b8b8; opacity: 1; }
 .rubric-grid .rubric-actions-cell { border: 0; background: transparent; }
 .rubric-grid .rubric-actions-cell .concept-remove { position: absolute; top: 50%; left: 50%; display: grid; place-items: center; padding: 0; transform: translate(-50%, -50%); }
 .rubric-grid .rubric-actions-cell .concept-remove:hover { background: transparent; color: var(--muted-foreground); }
@@ -962,3 +962,13 @@ div.paper-grade-field .paper-grade-word { opacity: 1; }
 
 .points-balance { display: flex; align-items: center; gap: 8px; font-variant-numeric: tabular-nums; }
 .points-dot { flex: none; width: 8px; height: 8px; border-radius: 50%; background: var(--primary); }
+
+.rubric-item-content { flex: 1; min-width: 0; }
+.rubric-item-formatted { padding: 6px 4px; overflow-wrap: anywhere; font-size: 0.875rem; line-height: 1.4; }
+.rubric-item-formatted p, .rubric-progress li p { margin: 0; }
+.rubric-item-formatted .katex-display, .rubric-progress .katex-display { max-width: 100%; overflow-x: auto; overflow-y: hidden; margin: 6px 0; }
+
+.chat-panel .rubric-checklist-editor textarea[hidden] { display: none; }
+.rubric-item-formatted { cursor: text; border-radius: 4px; }
+.rubric-item-formatted:focus-visible { outline: 1px solid var(--primary); }
+.rubric-progress label > span { min-width: 0; }

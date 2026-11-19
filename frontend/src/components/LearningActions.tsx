@@ -11,6 +11,9 @@ export function LearningActions({ busy, canFinish, canRevise, onAction, onRevise
   </div>
 }
 
-export function SkipRubricButton({ item, busy, onSkip }: { item: string; busy: boolean; onSkip: () => void }) {
-  return <button className="level-divider-continue" type="button" disabled={busy} aria-label={`Skip this item: ${item}`} title={`${item} — skipped items score 0 unless you teach them later.`} onClick={onSkip}>Skip</button>
+export function SkipRubricButton({ busy, onSkip, onContinue }: { busy: boolean; onSkip: () => void; onContinue: () => void }) {
+  return <div className="learning-actions">
+    <button className="level-divider-continue" type="button" disabled={busy} onClick={onSkip}>Yes, skip this</button>
+    <button className="level-divider-continue" type="button" disabled={busy} onClick={onContinue}>No, keep going</button>
+  </div>
 }

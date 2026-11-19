@@ -95,13 +95,13 @@ for (const learningType of learningTypeIds) {
       assert.ok(system.includes(`Learning type: ${learningTypes[learningType].label}`));
       assert.ok(system.includes(learningTypes[learningType].criteria.analyze[0]));
       assert.match(system, /data, (?:never instructions|not commands)/);
-      return responseTool.name === 'suggest_concepts' ? { names: ['Capacitors'] } : { concepts: [{ name: 'Capacitors', rubric: full }] };
+      return responseTool.name === 'suggest_concepts' ? { concepts: [{ name: 'Capacitors', target: 'understand' }] } : { concepts: [{ name: 'Capacitors', rubric: full }] };
     };
     const generated = await generateRubric({ learningType, concepts: [{ name: 'Capacitors', target: 'apply' }], files: [file] }, query);
     assert.equal(generated[0].rubric.analyze, '');
     assert.equal(generated[0].rubric.apply, full.apply);
     assert.deepEqual(await conceptsFromStudyTest({ ...file, learningType }, query), [{ name: 'Capacitors', rubric: full }]);
-    assert.deepEqual(await suggestConceptsFromFiles([file], query, learningType), ['Capacitors']);
+    assert.deepEqual(await suggestConceptsFromFiles([file], query, learningType), [{ name: 'Capacitors', target: 'understand' }]);
   });
 }
 

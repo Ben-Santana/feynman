@@ -10,6 +10,34 @@ const judgment = (criterionId, overrides = {}) => ({ criterionId, status: 'suppo
 const output = () => ({ reason: 'Evidence checked.', nextEvidenceObjective: '', judgments: [judgment('criterion_1'), judgment('level_task')] });
 const checked = (value, request) => { const { context, task } = setup(request); return normalizeAssessment(value, context, task); };
 
+test('optional transfer still requires independently supplied rubric and task evidence', () => {
+  for (const level of ['apply', 'analyze']) {
+    const request = { ...input(), level, learningType: 'experimental' };
+    const context = createEvaluationContext(request, { requireIndependent: true });
+    const task = taskDefinition(context, 'Explain the result.');
+    const value = output();
+    for (const item of value.judgments) item.independentCheck = 'demonstrated';
+    assert.equal(normalizeAssessment(value, context, task).completion.eligible, true);
+
+    for (const item of value.judgments) {
+      item.observations = [observation({ assistance: 'explanation_or_answer', assistanceMessageIds: ['question'] })];
+    }
+    const copied = normalizeAssessment(value, context, task);
+    assert.equal(copied.completion.eligible, false);
+    for (const item of copied.judgments) assert.ok(item.blockers.includes('independent_check_needed'));
+    assert.ok(!copied.completion.blockers.some(({ code }) => code.includes('transfer')));
+
+    request.evaluatorCriteria = [{ ...context.criteria[0], requiresTransfer: true }];
+    const explicit = createEvaluationContext(request, { requireIndependent: true });
+    const explicitTask = taskDefinition(explicit, 'Explain the result.');
+    for (const item of value.judgments) item.observations = [observation()];
+    assert.ok(normalizeAssessment(value, explicit, explicitTask).judgments[0].blockers.includes('transfer_check_needed'));
+    value.judgments[0].transferCheck = 'demonstrated';
+    value.judgments[0].observations = [observation({ demonstratesTransfer: true })];
+    assert.equal(normalizeAssessment(value, explicit, explicitTask).completion.eligible, true);
+  }
+});
+
 test('contracts preserve supplied IDs, generate repeatable append-stable IDs, and reject duplicates', () => {
   const a = input(); delete a.messages[0].id; delete a.messages[1].id;
   const first = createEvaluationContext(a);

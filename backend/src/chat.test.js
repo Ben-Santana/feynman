@@ -28,13 +28,13 @@ test('multiple files suggest names and generate only targeted criteria', async (
     { name: 'first.txt', type: 'text/plain', data: Buffer.from('Capacitors store energy.').toString('base64') },
     { name: 'second.txt', type: 'text/plain', data: Buffer.from('Resistors oppose current.').toString('base64') },
   ];
-  const names = await suggestConceptsFromFiles(files, async (_, messages, responseTool) => {
+  const suggestions = await suggestConceptsFromFiles(files, async (_, messages, responseTool) => {
     assert.equal(responseTool.name, 'suggest_concepts');
     assert.match(JSON.stringify(messages), /Capacitors store energy/);
     assert.match(JSON.stringify(messages), /Resistors oppose current/);
-    return { names: ['Capacitors', 'Resistors'] };
+    return { concepts: [{ name: 'Capacitors', target: 'apply' }, { name: 'Resistors', target: 'invalid' }, { name: 'Inductors' }] };
   });
-  assert.deepEqual(names, ['Capacitors', 'Resistors']);
+  assert.deepEqual(suggestions, [{ name: 'Capacitors', target: 'apply' }, { name: 'Resistors', target: 'remember' }, { name: 'Inductors', target: 'remember' }]);
   const result = await generateRubric({ concepts: [{ name: 'Capacitors', target: 'understand' }], files }, async (system, messages, responseTool) => {
     assert.equal(responseTool.name, 'generate_rubric');
     assert.match(JSON.stringify(messages), /Capacitors store energy/);
@@ -215,7 +215,7 @@ test('a repeated Remember question is retried with the learner’s specific gap'
     if (responseTool.name === 'evaluate_learning') return { ...verdict('needs_clarification'), criteria: [{ aspect: 'Ohms Law', ...judgment('needs_clarification', 'Voltage equals resistance times current.', 3) }], nextQuestionFocus: 'what the symbols V, I, and R stand for' };
     responses++;
     if (responses === 1) return { message: 'Could you tell me more of what you remember about Ohms Law?', expression: 'attentive' };
-    assert.match(system, /Your last response repeated a previous question/);
+    assert.match(system, /The model repeated its previous question/);
     return { message: 'You said voltage equals resistance times current. What do V, I, and R stand for?', expression: 'attentive' };
   });
   assert.equal(responses, 2);

@@ -63,7 +63,7 @@ try {
             if (response.name === 'evaluate_refined') evaluatorMs += call.durationMs;
           }
         };
-        const result = await chat(input, traced);
+        const result = await chat(input, traced, undefined, { strategyCatalog: 'full' });
         record.question = result.message;
         record.assessmentComplete = result.assessment?.complete;
         record.strategy = branch === 'inline' ? result.learnerModel : null;

@@ -1,6 +1,6 @@
 import { loadPrompts } from './promptStore.js';
 import { learningTypes } from '../../frontend/src/learningTypes.js';
-import { retryStructuredOutput, repairQuery } from './structuredOutput.js';
+import { InvalidOutputError, retryStructuredOutput, repairQuery } from './structuredOutput.js';
 import { createEvaluationContext, taskDefinition, completionDecision } from './evaluatorContracts.js';
 import { primaryInstructions, primaryAssessmentTool, normalizePrimaryAssessment } from './evaluatorPrimary.js';
 import { latestBackgroundProbe, backgroundAssessmentInstructions } from './backgroundQuestions.js';
@@ -20,18 +20,24 @@ export function evaluatorMaterial(context, prompts) {
   const profile = { ...learningTypes[context.learningType], ...prompts.profile(context.learningType) };
   const levelRubric = ['remember', 'understand'].includes(context.level) || context.learningType === 'quantitative' ? prompts.text(`chat.rubric.${context.level}`) : profile.tasks[context.level];
   const task = taskDefinition(context, `${levelRubric}${context.level === 'apply' && context.learningType === 'quantitative' ? `\n${profile.tasks.apply}` : ''}${context.criterion ? `\nThe full user-defined passing requirement must also be demonstrated; it cannot be waived: ${context.criterion}` : ''}`);
-  const transcript = context.messages.map(m => ({ messageId: m.id, messageIndex: m.messageIndex, role: m.role, content: m.content, ...(m.background?.taskLevel === context.level ? { background: m.background, originalTaskQuestion: context.messages[m.background.originalMessageIndex]?.content } : {}), ...(m.assistance ? { assistance: 'prerequisite explanation, not learner evidence' } : {}), ...(m.independentCheck ? { independentCheck: true } : {}), ...(m.paper ? { paper: m.paper } : {}), ...(m.review ? { review: m.review } : {}), ...(m.boardImage ? { imageReference: '[Whiteboard image]' } : {}) }));
+  const transcript = context.messages.map(m => ({ messageId: m.id, messageIndex: m.messageIndex, role: m.role, content: m.content, ...(m.skipRubricItem ? { learningAction: 'skip', skippedGoal: m.skipRubricItem } : {}), ...(m.background?.taskLevel === context.level ? { background: m.background, originalTaskQuestion: context.messages[m.background.originalMessageIndex]?.content } : {}), ...(m.assistance ? { assistance: 'prerequisite explanation, not learner evidence' } : {}), ...(m.independentCheck ? { independentCheck: true } : {}), ...(m.paper ? { paper: m.paper } : {}), ...(m.review ? { review: m.review } : {}), ...(m.boardImage ? { imageReference: '[Whiteboard image]' } : {}) }));
   const content = [{ type: 'text', text: JSON.stringify({ schemaVersion: 1, stageId: context.stageId, topic: context.topic, level: context.level, learningType: context.learningType, learningTypeGuidance: profile.help[context.level], definitions: [...context.criteria, task], transcript, references: [], scoringExamples: [], evidenceScope: context.learningType === 'quantitative' && context.level === 'analyze' ? 'Supplied full concept conversation and review; level_task needs a learner explanation after the latest paper review.' : 'Only the supplied current-stage transcript may be credited.' }) }];
   for (const m of context.messages) if (m.boardImage) content.push({ type: 'text', text: `Image for messageId ${m.id}` }, { type: 'image', mimeType: 'image/png', data: m.boardImage.slice('data:image/png;base64,'.length) });
   return { task, messages: [{ role: 'user', content }] };
 }
 
 
-export async function evaluateRefined(input, query, prompts = loadPrompts(), options = {}) {
+export function prepareRefinedEvaluation(input, prompts = loadPrompts(), options = {}) {
   const context = createEvaluationContext(input, options);
   if (context.eligibility) return null;
   const material = evaluatorMaterial(context, prompts);
   const detailedPolicies = [...context.criteria, material.task].some(c => c.components.length > 1 || c.requiresIndependent || c.requiresTransfer);
+  const wordingInstructions = ['remember', 'understand'].includes(context.level)
+    ? '\nGrade the scientific meaning. Accept equivalent everyday language, symbols, equations, and concrete statements when they demonstrate the required idea in context. Exact citations must match the learner’s words, while those words may differ from the rubric. At Remember, accept correct recall in any equivalent form without asking for a derivation. At Understand, accept the required explanation in the learner’s own words. For example, “if the resistance stays the same, doubling the voltage doubles the current” demonstrates direct proportionality without using that term. “More voltage means more current” alone shows direction, so ask about the missing relationship if proportionality is required. Ask only for missing substance or an explicitly required term or notation.'
+    : '';
+  const independenceInstructions = context.requireIndependent
+    ? '\nThe original task can establish mastery independently. Require reasoning across contexts or changed conditions only where the rubric explicitly asks for it, including when it is stated in plain language. Assess that requirement as written. Check whether the learner supplied the reasoning or repeated a decisive step from any earlier assistant message, including unmarked hints. A learner can demonstrate independence by using a previously explained method to draw a new inference the assistant has not supplied. If the assistant supplied the inference, ask for a fresh focused inference. Preserve independent evidence for other requirements.'
+    : '';
   const probe = latestBackgroundProbe(input);
   const response = primaryAssessmentTool(context, material.task);
   if (probe) {
@@ -39,9 +45,10 @@ export async function evaluateRefined(input, query, prompts = loadPrompts(), opt
     response.schema.required.push('backgroundResponseScope');
   }
   const hasBackground = input.messages.some(m => m.background?.taskLevel === input.level);
-  return retryStructuredOutput(async (attempt, signal, previousError) => {
-    const scoringInstructions = context.researchScoring ? '\nFor each judgment explicitly assess partialCredit: awarded=true only for a correct but incomplete substantive demonstration with valid reasoning, a fair opportunity, verified learner citations, and no unresolved error or contradiction. State exactly which required part remains missing in partialCredit.reason. Missing, ambiguous, unreadable, assisted repetition, or uncertain evidence does not earn partial credit. Otherwise awarded=false and reason may be empty. Partial credit never makes a criterion supported or permits advancement. Classify assistance on every observation, including ordinary rubric items; cite preceding assistant help IDs for hints or explanations. Give each judgment a short reason describing the demonstrated knowledge or missing requirement.' : '';
-    const raw = await repairQuery(query, attempt, signal, previousError)(`${detailedPolicies ? leanInstructions : primaryInstructions}\nEmit each exact learner quote only once in the shared evidence array, with a short ID. Observations reference evidenceId and retain their own component, assistance, and transfer policies. Reuse IDs across judgments; do not repeat quotes or emit unused evidence. Use the shortest exact excerpts sufficient to assess every requirement and contradiction. Keep the overall reason and next objective concise.${scoringInstructions}\n${hasBackground ? backgroundAssessmentInstructions : ''}`, material.messages, response);
+  const scoringInstructions = context.researchScoring ? '\nFor each judgment explicitly assess partialCredit: awarded=true only for a correct but incomplete substantive demonstration with valid reasoning, a fair opportunity, verified learner citations, and no unresolved error or contradiction. State exactly which required part remains missing in partialCredit.reason. Missing, ambiguous, unreadable, assisted repetition, or uncertain evidence does not earn partial credit. Otherwise awarded=false and reason may be empty. Partial credit never makes a criterion supported or permits advancement. Classify assistance on every observation, including ordinary rubric items; cite preceding assistant help IDs for hints or explanations. Give each judgment a short reason describing the demonstrated knowledge or missing requirement.' : '';
+  const sufficiencyInstructions = '\nCredit concise scientific meaning across ALL supplied learner turns and ALL rubric items, even when not the latest question. One explanation may satisfy several goals. At Understand, a correct condition linked to its consequence counts as explanation. A general rule plus a correctly explained instance demonstrates constructing other instances; require more rows, row order, deeper mechanism, analogy or narrated procedure only when explicitly required. Behavioral analogies describe the required relationship, not mandatory wording. Do not use the character claiming confusion as evidence of learner uncertainty. Identify a specific missing substantive relationship before using unclear; never demand detail for its own sake. Preserve earlier valid evidence after a short reply, refusal to repeat, or obvious contextual typo; do not dismiss a changed factual claim as a typo. Skip actions and their rubric quotes are not knowledge evidence. Keep false claims, unresolved contradictions, unreadable evidence and genuinely missing relationships unresolved.';
+  const instructions = `${detailedPolicies ? leanInstructions : primaryInstructions}${wordingInstructions}${sufficiencyInstructions}${independenceInstructions}\nEmit each exact learner quote only once in the shared evidence array, with a short ID. Observations reference evidenceId and retain their own component, assistance, and transfer policies. Reuse IDs across judgments; do not repeat quotes or emit unused evidence. Use the shortest exact excerpts sufficient to assess every requirement and contradiction. Keep the overall reason and next objective concise.${scoringInstructions}\n${hasBackground ? backgroundAssessmentInstructions : ''}`;
+  const normalize = raw => {
     const result = normalizePrimaryAssessment(raw, context, material.task);
     if (probe) {
       const scope = raw.backgroundResponseScope;
@@ -56,7 +63,70 @@ export async function evaluateRefined(input, query, prompts = loadPrompts(), opt
       }
     }
     return result;
-  }, 60_000, 3);
+  };
+  return { instructions, messages: material.messages, response, normalize };
+}
+
+export async function evaluateRefined(input, query, prompts = loadPrompts(), options = {}) {
+  const prepared = prepareRefinedEvaluation(input, prompts, options);
+  if (!prepared) return null;
+  const { instructions, messages, response, normalize } = prepared;
+  return retryStructuredOutput(async (attempt, signal, previousError) =>
+    normalize(await repairQuery(query, attempt, signal, previousError)(instructions, messages, response)), 60_000, 3);
+}
+
+export async function evaluateWithRecovery(input, recoveryInputs, query, prompts, options) {
+  const active = prepareRefinedEvaluation(input, prompts, options);
+  if (!active) return { active: null, recovery: [] };
+  const recovery = recoveryInputs.map(request => prepareRefinedEvaluation(request, prompts));
+  const [shared] = active.messages;
+  const sections = recovery.flatMap((section, index) => {
+    if (!section) return [];
+    const { transcript, ...material } = JSON.parse(section.messages[0].content[0].text);
+    return [{
+      key: `recovery_${index + 1}`,
+      material,
+      messageIds: transcript.map(message => message.messageId),
+      ...(transcript.some(message => message.background) ? { background: transcript.flatMap(message => message.background ? [{
+        messageIndex: message.messageIndex, ...message.background, originalTaskQuestion: message.originalTaskQuestion,
+      }] : []) } : {}),
+      instructions: section.instructions,
+      section,
+    }];
+  });
+  if (!sections.length) return { active: await evaluateRefined(input, query, prompts, options), recovery: [] };
+  const response = {
+    name: 'evaluate_with_recovery',
+    description: 'Grade the active rubric and separately check earlier skipped items.',
+    schema: {
+      type: 'object',
+      properties: {
+        active: active.response.schema,
+        ...Object.fromEntries(sections.map(({ key, section }) => [key, section.response.schema])),
+      },
+      required: ['active'],
+      additionalProperties: false,
+    },
+  };
+  const instructions = `${active.instructions}\nReturn the active assessment in active. Independently assess each recovery section at its original level, using its instructions, definitions and message IDs. Recovery sections never affect active completion or its next evidence objective. Reuse the active transcript's content and indices. For each recovery section use messageIds[index] as the source ID and only that section's background entries. Keep evidence IDs local to each section.`;
+  const messages = [{ ...shared, content: [...shared.content, { type: 'text', text: JSON.stringify(sections.map(({ section, ...data }) => data)) }] }];
+  let raw, checked;
+  try {
+    raw = await query(instructions, messages, response, { signal: AbortSignal.timeout(60_000) });
+    checked = active.normalize(raw?.active);
+  } catch (error) {
+    if (!(error instanceof InvalidOutputError)) throw error;
+    return { active: await evaluateRefined(input, query, prompts, options), recovery: [] };
+  }
+  const results = recovery.map((section, index) => {
+    if (!section || !raw[`recovery_${index + 1}`]) return null;
+    try { return section.normalize(raw[`recovery_${index + 1}`]); }
+    catch (error) {
+      if (!(error instanceof InvalidOutputError)) throw error;
+      return null;
+    }
+  });
+  return { active: checked, recovery: results };
 }
 
 // Keep the normal conversation's checklist/report contract, retaining validated
