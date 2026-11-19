@@ -51,11 +51,11 @@ test('hosted comparison routes require admin login and Anthropic without making 
 });
 
 test('only admins can save a Claude model and hosted requests ignore browser selections', async t => {
-  const env = { VERCEL_URL: 'preview.vercel.app', ANTHROPIC_API_KEY: 'test-only', ANTHROPIC_MODEL: 'claude-default' };
+  const env = { VERCEL_URL: 'preview.vercel.app', ANTHROPIC_API_KEY: 'test-only', ANTHROPIC_MODEL: 'claude-opus-default' };
   let model = '';
   const calls = [];
   const providers = createProviderRegistry({ env, fetcher: async (url, init) => {
-    if (url.startsWith('https://api.anthropic.com/v1/models')) return Response.json({ data: [{ id: 'claude-available', display_name: 'Claude Available' }] });
+    if (url.startsWith('https://api.anthropic.com/v1/models')) return Response.json({ data: [{ id: 'claude-opus-available', display_name: 'Claude Opus Available' }, { id: 'claude-sonnet-5-5', display_name: 'Claude Sonnet 5.5' }, { id: 'claude-fable-5-2', display_name: 'Claude Fable 5.2' }] });
     const input = JSON.parse(init.body);
     calls.push(input.model);
     return Response.json({ content: [{ type: 'tool_use', name: 'reply_to_teacher', input: { message: 'How would you explain energy?', expression: 'attentive' } }] });
@@ -72,19 +72,21 @@ test('only admins can save a Claude model and hosted requests ignore browser sel
   const save = (server, model) => invoke(server, path, undefined, undefined, { method: 'PATCH', body: { model } });
   assert.equal((await invoke(student, path)).status, 403);
   assert.equal((await invoke(student, '/api/ai/models')).status, 403);
-  assert.equal((await save(student, 'claude-available')).status, 403);
-  assert.equal((await save(admin, 'claude-unavailable')).status, 400);
-  assert.equal((await invoke(admin, path)).data.defaultModel, 'claude-default');
-  assert.equal((await save(admin, 'claude-available')).status, 200);
-  assert.equal((await invoke(admin, path)).data.model, 'claude-available');
+  assert.equal((await save(student, 'claude-opus-available')).status, 403);
+  assert.equal((await save(admin, 'claude-opus-unavailable')).status, 400);
+  for (const other of ['claude-sonnet-5-5', 'claude-fable-5-2']) assert.equal((await save(admin, other)).status, 400, 'Only Opus models can be chosen.');
+  assert.deepEqual((await invoke(admin, path)).data.models.map(item => item.slug), ['claude-opus-available']);
+  assert.equal((await invoke(admin, path)).data.defaultModel, 'claude-opus-default');
+  assert.equal((await save(admin, 'claude-opus-available')).status, 200);
+  assert.equal((await invoke(admin, path)).data.model, 'claude-opus-available');
   const chat = await invoke(student, '/api/chat', undefined, 'chatgpt', {
     method: 'POST', headers: { 'x-feynman-model': 'claude-browser', 'x-feynman-account': 'saved-account' },
     body: { topic: 'Energy', level: 'apply', learningType: 'theoretical', aspects: ['Explains conservation of energy.'], messages: [] },
   });
   assert.equal(chat.status, 200);
-  assert.deepEqual(calls, ['claude-available']);
+  assert.deepEqual(calls, ['claude-opus-available']);
   assert.equal((await save(admin, '')).status, 200);
-  assert.equal((await invoke(student, '/api/health')).data.model, 'claude-default');
+  assert.equal((await invoke(student, '/api/health')).data.model, 'claude-opus-default');
 });
 
 test('hosted function includes runtime comparison catalogs alongside prompts and consent assets', () => {

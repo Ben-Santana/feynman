@@ -833,3 +833,83 @@ test('subject tags support multiple selections and stars are available only on p
   await as(student);
   assert.equal((await counts())[course.id], 1);
 });
+
+test('co-teachers join by accepted invitation or admin assignment and share teaching access', async t => {
+  const { db, as, one } = await courseFixture(t);
+  const email = id => `${id}@example.com`;
+  const rejects = (sql, args, code) => assert.rejects(one(sql, args), error => error.code === code);
+  await as(instructor);
+  const course = await one("select * from public.create_course('Physics','open')");
+  await rejects('select public.invite_course_teacher($1,$2)', [course.id, email(student)], 'FA011');
+  await rejects('select public.invite_course_teacher($1,$2)', [course.id, 'nobody@example.com'], 'FA011');
+  await rejects('select public.invite_course_teacher($1,$2)', [course.id, email(instructor)], 'FA012');
+  await one('select public.invite_course_teacher($1,$2)', [course.id, ` ${email(other).toUpperCase()} `]);
+  await one('select public.invite_course_teacher($1,$2)', [course.id, email(other)]);
+
+  // An invitation grants nothing until it is accepted.
+  await as(other);
+  assert.equal((await db.query('select id from public.courses')).rows.length, 0);
+  await rejects('select public.save_course_module($1,$2,$3,$4,0)', [course.id, moduleId, 'Energy', doc()], '42501');
+  await rejects('select public.invite_course_teacher($1,$2)', [course.id, email(other)], '42501');
+  assert.deepEqual((await one('select public.course_invitations() as invitations')).invitations, [{ courseId: course.id, courseName: 'Physics', invitedBy: instructor }]);
+  await as(student);
+  await rejects('select public.respond_course_invitation($1,true)', [course.id], '42501');
+  assert.equal((await db.query('select * from public.course_teachers')).rows.length, 0);
+
+  await as(other);
+  await one('select public.respond_course_invitation($1,true)', [course.id]);
+  await rejects('select public.respond_course_invitation($1,true)', [course.id], 'P0002');
+  assert.deepEqual((await one('select public.course_invitations() as invitations')).invitations, []);
+  assert.equal((await db.query('select id from public.courses')).rows[0].id, course.id);
+  await one('select public.save_course_module($1,$2,$3,$4,0)', [course.id, moduleId, 'Energy', doc()]);
+  assert.deepEqual((await one('select public.course_progress($1) as progress', [course.id])).progress, []);
+  await rejects('select public.delete_course($1)', [course.id], '42501');
+  await rejects('select public.remove_course_teacher($1,$2)', [course.id, instructor], 'P0002');
+
+  await as(student);
+  await one('select public.join_course($1)', [course.code]);
+  assert.deepEqual((await one('select public.course_people($1) as people', [course.id])).people.map(person => [person.id, person.role, person.owner, person.email]),
+    [[instructor, 'instructor', undefined, undefined], [other, 'instructor', undefined, undefined], [student, 'student', undefined, undefined]]);
+  await rejects('select public.remove_course_teacher($1,$2)', [course.id, other], 'P0002');
+
+  // A demoted co-teacher loses access without the owner removing them.
+  await db.exec('reset role');
+  await db.query("update public.user_roles set role='student' where user_id=$1", [other]);
+  await as(other);
+  await rejects('select public.course_progress($1)', [course.id], '42501');
+  await db.exec('reset role');
+  await db.query("update public.user_roles set role='instructor' where user_id=$1", [other]);
+
+  await as(other);
+  await one('select public.remove_course_teacher($1,$2)', [course.id, other]);
+  await rejects('select public.course_progress($1)', [course.id], '42501');
+
+  // Admin assignments skip the invitation, and the backend calls them with the service role.
+  await db.exec('reset role');
+  await db.query("update public.user_roles set role='admin' where user_id=$1", [outsider]);
+  await as(instructor);
+  await one('select public.invite_course_teacher($1,$2)', [course.id, email(other)]);
+  await rejects('select public.admin_assign_course_teacher($1,$2,$3)', [outsider, course.id, email(other)], '42501');
+  await as('', 'service_role');
+  await rejects('select public.admin_assign_course_teacher($1,$2,$3)', [instructor, course.id, email(other)], '42501');
+  const assigned = (await one('select public.admin_assign_course_teacher($1,$2,$3) as teachers', [outsider, course.id, email(other)])).teachers;
+  assert.deepEqual(assigned.map(teacher => [teacher.id, teacher.status]), [[instructor, 'owner'], [other, 'active']]);
+  await rejects('select public.admin_assign_course_teacher($1,$2,$3)', [outsider, course.id, email(other)], 'FA012');
+  await as(other);
+  assert.equal((await one('select public.course_people($1) as people', [course.id])).people.find(person => person.id === other).email, email(other));
+  await as('', 'service_role');
+  const removed = (await one('select public.admin_remove_course_teacher($1,$2,$3) as teachers', [outsider, course.id, other])).teachers;
+  assert.deepEqual(removed.map(teacher => teacher.id), [instructor]);
+
+  // Pending invitations show to teachers only, and the owner can withdraw them and delete the course.
+  await as(instructor);
+  await one('select public.invite_course_teacher($1,$2)', [course.id, email(other)]);
+  const team = (await one('select public.course_people($1) as people', [course.id])).people.filter(person => person.role === 'instructor');
+  assert.deepEqual(team.map(person => [person.id, person.invited]), [[instructor, false], [other, true]]);
+  await as(student);
+  assert.deepEqual((await one('select public.course_people($1) as people', [course.id])).people.map(person => person.id), [instructor, student]);
+  await as(instructor);
+  await one('select public.remove_course_teacher($1,$2)', [course.id, other]);
+  await one('select public.delete_course($1)', [course.id]);
+  assert.equal((await db.query('select id from public.courses')).rows.length, 0);
+});

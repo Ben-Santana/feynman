@@ -9,6 +9,7 @@ import { learningTypes, resolveLearningType, needsScenarioOpening } from '../../
 import { evaluateRefined, conversationAssessment } from './refinedEvaluator.js';
 import { generateStrategyQuestion } from './strategyLearner.js';
 import { inlineQuestionStrategies } from './inlineQuestionStrategies.js';
+import { PROMPT_CACHE_BOUNDARY } from './providers/LanguageModelProvider.js';
 import { learnerStateFromAssessment } from './strategyLearnerState.js';
 import { validateBackgroundHistory } from './backgroundQuestions.js';
 import { scoreJudgment, statedMistake } from './topicReports.js';
@@ -323,9 +324,14 @@ export async function chat(input, query, prompts = loadPrompts(), { evaluator = 
   if (messages.length && !freshCheck && (!paperAnalysis || review)) {
     const cacheKey = evaluationCache?.key(cacheScope, `${prompts.version}:shared-evidence-v1:background-v1`, input, evaluator);
     const latest = messages.at(-1);
-    const recovering = openSkips.length && !persistedAssessment && !latest.skipRubricItem && !latest.helpRequest && !latest.finishAssessment
-      ? recoverOpenSkips({ topic, learningType, messages }, openSkips, query, prompts).catch(error => { console.error('Skipped item check failed', { error }); return []; })
-      : null;
+    const recoverable = openSkips.length && !persistedAssessment && !latest.skipRubricItem && !latest.helpRequest && !latest.finishAssessment;
+    // Same turn, same skips: reuse the earlier recovery instead of re-grading every earlier level.
+    const recoveryKey = recoverable ? evaluationCache?.key(cacheScope, `${prompts.version}:skip-recovery-v1`, { topic, learningType, messages, openSkips }, 'refined') : undefined;
+    const recoveredBefore = recoveryKey ? evaluationCache.get(recoveryKey) : undefined;
+    const recovering = !recoverable ? null : recoveredBefore ? Promise.resolve(recoveredBefore)
+      : recoverOpenSkips({ topic, learningType, messages }, openSkips, query, prompts)
+        .then(recovered => { if (recoveryKey) evaluationCache.set(recoveryKey, recovered); return recovered; })
+        .catch(error => { console.error('Skipped item check failed', { error }); return []; });
     checked = persistedAssessment || (cacheKey ? evaluationCache.get(cacheKey) : undefined);
     evaluationReused = Boolean(checked);
     if (!checked) {
@@ -388,7 +394,9 @@ export async function chat(input, query, prompts = loadPrompts(), { evaluator = 
   for (let attempt = 0; attempt < (needsPaper ? 3 : 2); attempt++) {
     const retryInstruction = needsPaper ? prompts.text('chat.retryPaper') : prompts.text('chat.retryQuestion', { previousQuestion: JSON.stringify(previousQuestion) });
     try {
-      result = await repairQuery(query, attempt, responseDeadline)(`${responseSystem}\n${input.practiceGoal ? `The learner selected this rubric goal for practice: ${JSON.stringify(input.practiceGoal)}. Open with one small question targeting that goal in a fresh situation. Do not supply its answer or copy factual answers out of the rubric. Keep the assigned concept, level, and any required paper task.` : ''}\n${inlineStrategies?.instructions || ''}\n${inlineStrategies?.backgroundInstructions || ''}\n${targetedQuestionInstructions}\n${needsPaper ? '' : `${questionIntegrityInstructions}\n${prompts.text('chat.studentVoice')}${openingInstruction}`}${attempt ? `\n${retryInstruction}\nThe previous response failed validation: ${questionRejection}. Ask neutrally about the unresolved claim without supplying its solution.` : ''}`, transcript, responseTool);
+      // Rules and the strategy catalog repeat every turn, so they go first and are cached;
+      // everything after the boundary changes with the conversation.
+      result = await repairQuery(query, attempt, responseDeadline)(`${inlineStrategies ? `${inlineStrategies.catalog}\n` : ''}${targetedQuestionInstructions}\n${needsPaper ? '' : `${questionIntegrityInstructions}\n${prompts.text('chat.studentVoice')}`}${PROMPT_CACHE_BOUNDARY}${responseSystem}\n${input.practiceGoal ? `The learner selected this rubric goal for practice: ${JSON.stringify(input.practiceGoal)}. Open with one small question targeting that goal in a fresh situation. Do not supply its answer or copy factual answers out of the rubric. Keep the assigned concept, level, and any required paper task.` : ''}\n${inlineStrategies?.instructions || ''}\n${inlineStrategies?.backgroundInstructions || ''}${needsPaper ? '' : openingInstruction}${attempt ? `\n${retryInstruction}\nThe previous response failed validation: ${questionRejection}. Ask neutrally about the unresolved claim without supplying its solution.` : ''}`, transcript, responseTool);
       if (typeof result?.message !== 'string' || !result.message.trim() || result.message.length > 12000) throw new InvalidOutputError('The model returned an empty or oversized message. Please retry.');
       if (!needsPaper) { assertTargetedQuestion(result.message); assertQuestionIntegrity(result.message); }
       if (inlineStrategies) {

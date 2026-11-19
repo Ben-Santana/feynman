@@ -50,7 +50,7 @@ export function AdminAIModelPage() {
   return <section className="admin-page admin-model-page" aria-labelledby="ai-model-title"><div className="admin-shell">
     <h1 id="ai-model-title">AI model</h1>
     {settings ? <form className="ai-connection admin-model-form" onSubmit={event => { event.preventDefault(); void save() }}>
-      <label className="ai-settings-field">Claude model
+      <label className="ai-settings-field">Claude Opus model
         <select value={model} disabled={saving} aria-describedby="ai-model-help" onChange={event => { setModel(event.target.value); setSaved(false) }}>
           <option value="">Deployment default</option>
           {settings.model && !settings.models.some(item => item.slug === settings.model) && <option value={settings.model} disabled>{settings.model} (unavailable)</option>}
@@ -58,7 +58,7 @@ export function AdminAIModelPage() {
         </select>
       </label>
       {!model && <p className="ai-settings-note">The deployment default is {settings.defaultModel}.</p>}
-      <p id="ai-model-help" className="ai-settings-note">Applies to new AI requests for all users.</p>
+      <p id="ai-model-help" className="ai-settings-note">Used for grading, replies, rubrics, and puzzles for all users. Short tasks use Claude Haiku 5.5.</p>
       <div className="ai-settings-actions admin-model-actions">
         <button type="submit" disabled={saving || model === settings.model}>{saving ? 'Saving…' : 'Save model'}</button>
         {saved && <span role="status">Model saved.</span>}

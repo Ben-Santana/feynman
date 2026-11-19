@@ -2,7 +2,16 @@ import { useEffect, useState } from 'react'
 import { Bloub } from './Bloub'
 import './AccountLoading.css'
 
+export function LoadingSpinner({ label = 'Loading' }: { label?: string }) {
+  return <span className="loading-spinner" role="status" aria-label={label} aria-busy="true" />
+}
+
 export function LoadingAnimation({ label = 'Loading', compact = false, delayMs = 600 }: { label?: string; compact?: boolean; delayMs?: number }) {
+  if (compact) return <LoadingSpinner label={label} />
+  return <LoadingAvatar label={label} delayMs={delayMs} />
+}
+
+function LoadingAvatar({ label, delayMs }: { label: string; delayMs: number }) {
   const [ready, setReady] = useState(delayMs === 0)
   useEffect(() => {
     if (delayMs === 0) return
@@ -10,7 +19,7 @@ export function LoadingAnimation({ label = 'Loading', compact = false, delayMs =
     return () => window.clearTimeout(timer)
   }, [delayMs])
 
-  return <span className={`account-loading${compact ? ' account-loading-compact' : ''}`} role="status" aria-label={label} aria-busy="true">
+  return <span className="account-loading" role="status" aria-label={label} aria-busy="true">
     {(ready || delayMs === 0) && <span className="account-loading-stage" aria-hidden="true">
       <span className="account-loading-avatar">
         <Bloub mode="loading" expression="attentive" showControls={false} />

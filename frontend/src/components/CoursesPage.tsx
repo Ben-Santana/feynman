@@ -3,7 +3,7 @@ import type { Account } from '../accounts'
 import { accountSignal } from '../accounts'
 import { canTeachCourses } from '../coursePermissions'
 import { COMMUNITY_LIBRARY_ENABLED } from '../features'
-import { decideEnrollment, deleteCourse, deleteModule, leaveCourse, loadCourse, loadCourses, setCoursePin, setCourseStar, startModule, needsPreTopic, moduleConcepts, courseSubjects, COURSE_SUBJECTS, type CourseCollection, type Course, type Enrollment, type CourseModule, type ModuleSession, type ModuleProgress, type StudentProgress, type CoursePerson } from '../courseStore'
+import { decideEnrollment, inviteCourseTeacher, removeCourseTeacher, deleteCourse, deleteModule, leaveCourse, loadCourse, loadCourses, setCoursePin, setCourseStar, startModule, needsPreTopic, moduleConcepts, courseSubjects, COURSE_SUBJECTS, type CourseCollection, type Course, type Enrollment, type CourseModule, type ModuleSession, type ModuleProgress, type StudentProgress, type CoursePerson } from '../courseStore'
 import { createCourseStarUpdates } from '../courseStars'
 import { useConfirm } from './useConfirm'
 import { useToast } from './useToast'
@@ -18,6 +18,7 @@ import { DeleteMenu } from './DeleteMenu'
 import { LoadingScreen } from './AccountLoading'
 import { CourseProgressDialog, type CourseProgressSelection } from './CourseProgressDialog'
 import { JoinCourseDialog } from './JoinCourseDialog'
+import { CourseTeacherDialog } from './CourseTeacherDialog'
 import { LibraryEmptyState } from './LibraryEmptyState'
 import { CollectionAddButton, CollectionSearch } from './CollectionSearch'
 import { PreTopicDialog } from './PreTopicDialog'
@@ -37,6 +38,7 @@ export function CoursesPage({ account, courseId, collection = 'enrolled', sessio
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState('')
   const [showJoinDialog, setShowJoinDialog] = useState(false)
+  const [showTeacherDialog, setShowTeacherDialog] = useState(false)
   const [view, setView] = useState<'modules' | 'complete' | 'scores' | 'people'>('modules')
   const [progressSelection, setProgressSelection] = useState<CourseProgressSelection | null>(null)
   const [preTopic, setPreTopic] = useState<CourseModule | null>(null)
@@ -99,8 +101,21 @@ export function CoursesPage({ account, courseId, collection = 'enrolled', sessio
       if (courseId === course.id) { setDetail(null); onNavigate('/courses') }
     })
   }
+  const coTeaches = (course: Course) => instructor && Boolean(course.teaching) && course.instructor_id !== account.id
+  async function stopTeaching(course: Course) {
+    if (busy || !await confirm({ title: `Leave “${course.name}”?`, description: 'You will lose access to its topics, students, and scores. A teacher of the course can invite you again.', confirmLabel: 'Hold to leave' })) return
+    void act(async () => {
+      const signal = accountSignal()
+      await removeCourseTeacher(course.id, account.id)
+      signal.throwIfAborted()
+      setCourses(previous => previous.filter(value => value.id !== course.id))
+      if (courseId === course.id) { setDetail(null); onNavigate('/courses') }
+    })
+  }
   const statusLabel = (status?: string) => status === 'pending' ? 'Pending approval' : status === 'rejected' ? 'Request rejected' : 'Enrolled'
-  const ownCourse = detail?.course.instructor_id === account.id && instructor
+  const ownCourse = Boolean(detail?.course.teaching) && instructor
+  const courseOwner = ownCourse && detail?.course.instructor_id === account.id
+  const teachers = detail?.people.filter(person => person.role === 'instructor') ?? []
   const pendingCount = detail?.progress.filter(student => student.status === 'pending').length ?? 0
   const member = Boolean(ownCourse || detail?.enrollment?.status === 'enrolled')
   const publicCourse = COMMUNITY_LIBRARY_ENABLED && Boolean(detail?.course.is_public)
@@ -141,7 +156,7 @@ export function CoursesPage({ account, courseId, collection = 'enrolled', sessio
     </article>}
     </DeleteMenu>
   }
-  const visibleCourses = courses.filter(course => collection === 'community' ? course.is_public : course.instructor_id === account.id || enrollments.some(enrollment => enrollment.course_id === course.id))
+  const visibleCourses = courses.filter(course => collection === 'community' ? course.is_public : (instructor && course.teaching) || enrollments.some(enrollment => enrollment.course_id === course.id))
     .filter(course => (!subjects.length || subjects.some(subject => courseSubjects(course).includes(subject))) && course.name.toLowerCase().includes(search.trim().toLowerCase()))
   visibleCourses.sort((a, b) => {
     if (collection === 'community' && Boolean(a.starred) !== Boolean(b.starred)) {
@@ -151,7 +166,7 @@ export function CoursesPage({ account, courseId, collection = 'enrolled', sessio
   })
   if (loading && (courseId ? !detail : courses.length === 0)) return <LoadingScreen label="Loading courses" />
   return <section className={`courses-page${courseId ? ' course-detail-page' : ' course-library-page'}`} aria-labelledby="courses-title">
-    {courseId && <nav className="course-breadcrumb" aria-label="Course navigation"><button type="button" onClick={() => onNavigate('/courses')}><svg viewBox="0 0 20 20" aria-hidden="true" fill="none" stroke="currentColor" strokeWidth="1.5"><path d="m12 5-5 5 5 5" /></svg>Courses</button>{detail && canLeave(detail.enrollment) && <button type="button" className="course-leave-button" disabled={busy} onClick={() => leave(detail.course, detail.enrollment)}>{leaveLabel(detail.enrollment)}</button>}</nav>}
+    {courseId && <nav className="course-breadcrumb" aria-label="Course navigation"><button type="button" onClick={() => onNavigate('/courses')}><svg viewBox="0 0 20 20" aria-hidden="true" fill="none" stroke="currentColor" strokeWidth="1.5"><path d="m12 5-5 5 5 5" /></svg>Courses</button>{detail && (coTeaches(detail.course) || canLeave(detail.enrollment)) && <button type="button" className="course-leave-button" disabled={busy} onClick={() => coTeaches(detail.course) ? void stopTeaching(detail.course) : leave(detail.course, detail.enrollment)}>{coTeaches(detail.course) ? 'Leave course' : leaveLabel(detail.enrollment)}</button>}</nav>}
     {!courseId ? <h1 id="courses-title" className="sr-only">{collection === 'community' ? 'Community' : 'My Courses'}</h1> : detail ? <CourseHeader course={detail.course} canEdit={Boolean(ownCourse)} disabled={busy} onUpdated={courseUpdated} onStar={() => starUpdates.toggle(detail.course)} /> : <h1 id="courses-title">Course</h1>}
     {error && <div className="course-error" role="alert"><p>{error}</p><button onClick={() => setVersion(value => value + 1)}>Retry loading</button></div>}
     {!courseId ? <>
@@ -165,11 +180,11 @@ export function CoursesPage({ account, courseId, collection = 'enrolled', sessio
         <CollectionAddButton label={instructor ? 'Create course' : 'Join course'} text={instructor ? 'Create' : 'Join'} onClick={() => instructor ? onNavigate('/courses/new') : setShowJoinDialog(true)} />
       </div>
       <div className="course-card-grid">{visibleCourses.map(course => <CourseCard key={course.id} course={course}
-        status={course.instructor_id === account.id ? 'Teaching' : enrollments.some(value => value.course_id === course.id) ? statusLabel(enrollments.find(value => value.course_id === course.id)?.status) : 'Public course'}
+        status={instructor && course.teaching ? 'Teaching' : enrollments.some(value => value.course_id === course.id) ? statusLabel(enrollments.find(value => value.course_id === course.id)?.status) : 'Public course'}
         onStar={collection === 'enrolled' ? undefined : () => starUpdates.toggle(course)}
-        onSharingUpdated={COMMUNITY_LIBRARY_ENABLED && instructor && course.instructor_id === account.id ? courseUpdated : undefined}
+        onSharingUpdated={COMMUNITY_LIBRARY_ENABLED && instructor && course.teaching ? courseUpdated : undefined}
         canDelete={instructor && course.instructor_id === account.id} busy={busy} onOpen={() => onNavigate(`/courses/${course.id}`)}
-        onLeave={canLeave(enrollments.find(value => value.course_id === course.id)) ? () => void leave(course, enrollments.find(value => value.course_id === course.id)) : undefined}
+        onLeave={coTeaches(course) ? () => void stopTeaching(course) : canLeave(enrollments.find(value => value.course_id === course.id)) ? () => void leave(course, enrollments.find(value => value.course_id === course.id)) : undefined}
         leaveLabel={leaveLabel(enrollments.find(value => value.course_id === course.id))}
         onPin={() => void act(async () => { await setCoursePin(course.id, !course.pinned); setCourses(previous => previous.map(value => value.id === course.id ? { ...value, pinned: !course.pinned } : value)) })}
         onDelete={async () => {
@@ -195,14 +210,30 @@ export function CoursesPage({ account, courseId, collection = 'enrolled', sessio
             <span className="course-student-avatar" aria-hidden="true"><Bloub static facingForward appearance={person.appearance} /></span>
             <span className="course-student-identity"><span className="course-row-title">{person.name}</span><span className="course-row-meta">{person.role === 'instructor' ? 'Teacher' : 'Student'}{person.id === account.id ? ' · You' : ''}</span></span>
           </li>)}</ul>
-        </section> : <section aria-labelledby="course-students-title"><h2 id="course-students-title" className="sr-only">People</h2>
+        </section> : <><section aria-labelledby="course-teachers-title">
+          <div className="course-people-heading"><h2 id="course-teachers-title">Teachers</h2><button type="button" disabled={busy} onClick={() => setShowTeacherDialog(true)}>Invite teacher</button></div>
+          <ul className="course-list course-people-list">{teachers.map(person => <li className="course-student course-person" key={person.id}>
+            <span className="course-student-avatar" aria-hidden="true"><Bloub static facingForward appearance={person.appearance} /></span>
+            <span className="course-student-identity"><span className="course-row-title">{person.name}</span><span className="course-row-meta">{[person.email, person.owner ? 'Owner' : person.invited ? 'Invited' : '', person.id === account.id ? 'You' : ''].filter(Boolean).join(' · ')}</span></span>
+            {!person.owner && person.id !== account.id && (person.invited || courseOwner) && <div className="course-actions"><button type="button" disabled={busy} onClick={async () => {
+              if (!person.invited && !await confirm({ title: `Remove ${person.name}?`, description: `They will lose access to “${detail.course.name}”. Topics they created stay in the course.`, confirmLabel: 'Hold to remove' })) return
+              void act(async () => { await removeCourseTeacher(courseId!, person.id); toast(person.invited ? 'Invitation canceled.' : `Removed ${person.name}.`) })
+            }}>{person.invited ? 'Cancel invitation' : 'Remove'}</button></div>}
+          </li>)}</ul>
+        </section><section aria-labelledby="course-students-title"><div className="course-people-heading"><h2 id="course-students-title">Students</h2></div>
           {!detail.progress.length && <p className="course-empty">No enrollment requests yet.</p>}
           <div className="course-list">{detail.progress.map(student => <article className="course-student" key={student.studentId}>
             <div className="course-student-heading"><button type="button" className="course-student-open" onClick={() => setProgressSelection({ courseId: courseId!, kind: 'student', id: student.studentId })}><span className="course-student-avatar" aria-hidden="true"><Bloub static facingForward appearance={detail.people.find(person => person.id === student.studentId)?.appearance ?? defaultAppearance} /></span><span className="course-student-identity"><span className="course-row-title">{student.name}</span><span className="course-row-meta">{student.email} · {statusLabel(student.status)}</span></span><span className="course-row-arrow" aria-hidden="true">›</span></button>{student.status !== 'enrolled' && <div className="course-actions"><button disabled={busy} onClick={() => void act(async () => { await decideEnrollment(courseId!, student.studentId, 'enrolled') })}>Approve</button>{student.status === 'pending' && <button disabled={busy} onClick={() => void act(async () => { await decideEnrollment(courseId!, student.studentId, 'rejected') })}>Reject</button>}</div>}</div>
           </article>)}</div>
-        </section>}
+        </section></>}
       </>}
     </>}
+    {ownCourse && detail && showTeacherDialog && <CourseTeacherDialog title="Invite teacher" note="They accept the invitation in their inbox." submitLabel="Send invitation" busyLabel="Sending…" onClose={() => setShowTeacherDialog(false)} onSubmit={async email => {
+      const signal = accountSignal()
+      await inviteCourseTeacher(detail.course.id, email)
+      signal.throwIfAborted()
+      setShowTeacherDialog(false); setVersion(value => value + 1); toast(`Invitation sent to ${email}.`)
+    }} />}
     {ownCourse && detail && progressSelection && progressSelection.courseId === courseId && <CourseProgressDialog key={`${progressSelection.kind}:${progressSelection.id}`} selection={progressSelection} modules={detail.modules} students={detail.progress} onClose={() => setProgressSelection(null)} />}
   </section>
 }

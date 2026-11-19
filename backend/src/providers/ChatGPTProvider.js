@@ -1,5 +1,5 @@
 import { InvalidOutputError } from '../structuredOutput.js';
-import { AIError, LanguageModelProvider } from './LanguageModelProvider.js';
+import { AIError, LanguageModelProvider, withoutCacheBoundary } from './LanguageModelProvider.js';
 
 function responseError(status, code) {
   if (code === 'subscription_sharing_usage_limit_exceeded' || status === 429) return new AIError('Your ChatGPT plan usage limit was reached. Manage usage in ChatGPT settings, wait for it to reset, or choose Anthropic in AI settings.', 429);
@@ -78,7 +78,7 @@ export class ChatGPTProvider extends LanguageModelProvider {
     signal?.throwIfAborted();
     const response = await this.fetcher('https://api.openai.com/v1/responses', {
       method: 'POST', signal, headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
-      body: JSON.stringify({ model, instructions, input: responseInput(messages), store: false, stream: true,
+      body: JSON.stringify({ model, instructions: withoutCacheBoundary(instructions), input: responseInput(messages), store: false, stream: true,
         tools: [{ type: 'namespace', name: 'feynman', description: 'Return structured learning responses.', tools: [{ type: 'function', name: output.name, description: output.description, parameters: output.schema, strict: false }] }],
         tool_choice: 'required', parallel_tool_calls: false }),
     });

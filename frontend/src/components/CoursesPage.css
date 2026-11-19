@@ -111,6 +111,15 @@
 .course-person { display: flex; align-items: center; gap: 16px; }
 .course-student-heading p { font-size: 0.75rem; overflow-wrap: anywhere; }
 .course-actions { display: flex; gap: 8px; }
+.course-people-heading { display: flex; align-items: center; justify-content: space-between; gap: 16px; min-height: 36px; margin: 0 0 12px; }
+section + section > .course-people-heading { margin-top: 32px; }
+.courses-page .course-people-heading h2 { margin: 0; color: var(--muted-foreground); font-size: 0.8125rem; font-weight: 500; }
+.course-people-heading button, .course-person .course-actions button { flex: none; font-size: 0.75rem; }
+.course-edit-dialog.course-teacher-dialog { width: min(440px, calc(100vw - 32px)); }
+.course-teacher-field { display: grid; gap: 8px; font-size: 0.8125rem; }
+.course-teacher-field input { width: 100%; box-sizing: border-box; min-height: 44px; padding: 8px 12px; border: 1px solid var(--border); border-radius: 8px; background: var(--background); color: var(--foreground); font: inherit; font-size: 1rem; }
+.course-teacher-field input:focus-visible { outline: 2px solid var(--primary); outline-offset: 2px; }
+.course-edit-dialog .course-teacher-note { margin: 10px 0 0; color: var(--muted-foreground); font-size: 0.75rem; }
 .courses-page button.course-row-button { width: 100%; padding: 20px; border-radius: 10px; text-align: left; }
 .courses-page button.course-student-open { display: flex; align-items: center; gap: 16px; flex: 1; min-width: 0; padding: 20px; margin: -20px; border: 0; border-radius: 10px; background: transparent; text-align: left; }
 .course-student:has(.course-actions) .course-student-open { margin-right: 0; }
@@ -208,6 +217,8 @@
   .courses-page button.course-student-open { padding: 16px; margin: -16px; }
   .course-student-heading { flex-wrap: wrap; gap: 12px; }
   .course-student-heading .course-actions { margin-left: 52px; }
+  .course-person { flex-wrap: wrap; gap: 12px; }
+  .course-person .course-actions { margin-left: 76px; }
   .course-edit-dialog { padding: 20px; }
   .course-progress-dialog .course-edit-heading { top: -20px; margin: -20px -20px 16px; padding: 20px; }
   .course-progress-card-heading { flex-wrap: wrap; gap: 8px; }

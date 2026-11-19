@@ -14,14 +14,14 @@ function invoke(server, { method = 'GET', url = '/api/account', body, authorizat
 }
 const wpi = { id: '11111111-1111-4111-8111-111111111111', email: 'Learner@wpi.edu', email_confirmed_at: '2026-10-12T00:00:00Z', app_metadata: { provider: 'azure' }, identities: [{ provider: 'azure' }] };
 const env = { SUPABASE_URL: 'https://example.supabase.co', SUPABASE_PUBLISHABLE_KEY: 'public-key', SUPABASE_SECRET_KEY: 'private-key' };
-function clients({ user = wpi, authError = null, role = 'student', roleError = null, rpcError = null, rpcData = null, allowed = true, approved = true, eligibilityError = null } = {}) {
+function clients({ user = wpi, authError = null, role = 'student', roleError = null, rpcError = null, rpcData = null, allowed = true, approved = true, eligibilityError = null, invitations = [] } = {}) {
   const calls = [];
   return { calls, factory(url, key, options) {
     calls.push({ url, key, options });
     return {
       auth: { async getUser(token) { calls.push({ token }); return { data: { user }, error: authError }; } },
       from(table) { return { select() { return this; }, eq() { return this; }, async single() { return table === 'profiles' ? { data: { id: user?.id, email: user?.email, display_name: 'Learner', approved }, error: null } : { data: { role }, error: roleError }; } }; },
-      async rpc(name, args) { calls.push({ name, args }); return name === 'account_signed_in' ? { data: allowed, error: eligibilityError } : { data: rpcData ?? { users: [], role: args?.new_role }, error: rpcError }; },
+      async rpc(name, args) { calls.push({ name, args }); return name === 'account_signed_in' ? { data: allowed, error: eligibilityError } : name === 'course_invitations' ? { data: invitations, error: null } : { data: rpcData ?? { users: [], role: args?.new_role }, error: rpcError }; },
     };
   } };
 }
@@ -80,18 +80,21 @@ test('shared inbox exposes actionable applications to admins and keeps them priv
   const id = '22222222-2222-4222-8222-222222222222';
   const applicant = { id, email: 'applicant@wpi.edu', display_name: 'Applicant', role: 'instructor', approved: false };
   for (const [role, status] of [['admin', 200], ['instructor', 200], ['student', 403]]) {
-    const fixture = clients({ role, rpcData: { users: [applicant], total: 1, page: 1, pageSize: 25 } });
+    const invitation = { courseId: '33333333-3333-4333-8333-333333333333', courseName: 'Physics', invitedBy: 'Ada' };
+    const fixture = clients({ role, rpcData: { users: [applicant], total: 1, page: 1, pageSize: 25 }, invitations: [invitation] });
     const server = createApiServer({ accountService: createAccountService(env, fixture.factory) });
     t.after(() => server.close());
     const result = await invoke(server, { url: '/api/inbox' });
     assert.equal(result.status, status);
     if (role !== 'admin') {
-      if (role === 'instructor') assert.deepEqual(result.data.messages, []);
+      if (role === 'instructor') assert.deepEqual(result.data.messages.map(message => message.invitation), [{ courseId: invitation.courseId, courseName: 'Physics' }]);
       assert.ok(!fixture.calls.some(call => call.name === 'admin_instructor_inbox'));
       continue;
     }
-    assert.equal(result.data.total, 1);
-    assert.equal(result.data.messages[0].action.href, `/admin?account=${id}`);
+    assert.equal(result.data.total, 2);
+    assert.equal(result.data.pagedTotal, 1);
+    assert.equal(result.data.messages[0].invitation.courseId, invitation.courseId);
+    assert.equal(result.data.messages[1].action.href, `/admin?account=${id}`);
     const review = await invoke(server, { url: `/api/admin/users?account=${id}` });
     assert.equal(review.status, 200);
     assert.deepEqual(review.data.users, [applicant]);

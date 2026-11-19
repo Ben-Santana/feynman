@@ -1,5 +1,21 @@
 import { InvalidOutputError } from '../structuredOutput.js';
-import { AIError, LanguageModelProvider } from './LanguageModelProvider.js';
+import { AIError, LanguageModelProvider, PROMPT_CACHE_BOUNDARY } from './LanguageModelProvider.js';
+import { isLightOperation, modelFor } from '../modelTiers.js';
+
+// Operations sent on every learner message. Their tools and system prompt repeat
+// across a session, so caching them makes later turns read that prefix cheaply.
+const CACHED_OPERATIONS = new Set(['evaluate_refined', 'reply_to_teacher']);
+
+// Grading, replies, rubrics and puzzles run only on Opus; light tasks use modelTiers.js.
+export const DEFAULT_TOP_MODEL = 'claude-opus-5-5';
+export const isTopModel = model => /^claude-opus-[a-z0-9-]+$/.test(model || '');
+
+export function anthropicSystem(instructions, operation, suffix = '') {
+  const [stable, ...rest] = instructions.split(PROMPT_CACHE_BOUNDARY);
+  const tail = `${rest.join('\n')}${suffix}`;
+  if (!rest.length && !CACHED_OPERATIONS.has(operation)) return `${stable}${suffix}`;
+  return [{ type: 'text', text: stable, cache_control: { type: 'ephemeral' } }, ...(tail.trim() ? [{ type: 'text', text: tail }] : [])];
+}
 
 export function anthropicMessages(messages) {
   return messages.map(message => ({ ...message, content: typeof message.content === 'string' ? message.content : message.content.map(block => block.type === 'text'
@@ -17,7 +33,7 @@ export class AnthropicProvider extends LanguageModelProvider {
   constructor({ env = process.env, model = '', fetcher = (...args) => fetch(...args) } = {}) {
     super(); this.env = env; this.model = model; this.fetcher = fetcher;
   }
-  getStatus() { return { configured: Boolean(this.env.ANTHROPIC_API_KEY?.trim()), model: this.model || this.env.ANTHROPIC_MODEL || 'claude-sonnet-4-6' }; }
+  getStatus() { return { configured: Boolean(this.env.ANTHROPIC_API_KEY?.trim()), model: [this.model, this.env.ANTHROPIC_MODEL?.trim()].find(isTopModel) || DEFAULT_TOP_MODEL }; }
   headers() {
     return { 'x-api-key': this.env.ANTHROPIC_API_KEY, 'anthropic-version': '2023-06-01', ...(this.env.ANTHROPIC_WORKSPACE_ID?.trim() ? { 'anthropic-workspace-id': this.env.ANTHROPIC_WORKSPACE_ID.trim() } : {}) };
   }
@@ -34,24 +50,26 @@ export class AnthropicProvider extends LanguageModelProvider {
       if (!response.ok) throw new AIError(response.status === 401 ? 'Claude rejected the API key. Check backend/.env.' : response.status === 429 ? 'Claude is rate limited. Please retry shortly.' : `Could not list Claude models (${response.status}). Check your API key and workspace in backend/.env.`, [401, 403, 429].includes(response.status) ? response.status : 502);
       const data = await response.json();
       if (!Array.isArray(data.data) || data.data.some(model => typeof model.id !== 'string')) throw new AIError('Claude returned an invalid model list. Please retry.');
-      models.push(...data.data.map(model => ({ slug: model.id, name: model.display_name || model.id })));
+      models.push(...data.data.filter(model => isTopModel(model.id)).map(model => ({ slug: model.id, name: model.display_name || model.id })));
       if (!data.has_more) break;
       if (!data.last_id || data.last_id === cursor) throw new AIError('Claude returned an invalid model list. Please retry.');
       cursor = data.last_id;
     } while (true);
-    if (!models.length) throw new AIError('No Claude models are available for this API key. Check your workspace permissions.', 403);
+    if (!models.length) throw new AIError('No Claude Opus models are available for this API key. Check your workspace permissions.', 403);
     return models;
   }
   async generateStructured({ instructions, messages, response: output, signal, onUsage }) {
-    const model = this.getStatus().model;
+    const model = modelFor(output.name, this.getStatus().model, this.env);
     // These models reject forced tool_choice; require our tool in the prompt
     // and keep validating the returned tool call below.
-    const automaticTools = /^claude-(?:(?:sonnet|opus)-5-5|(?:fable|mythos)-5-1)(?:-|$)/.test(model);
+    const automaticTools = /^claude-(?:sonnet|opus)-5-5(?:-|$)/.test(model);
+    // Light tasks are short and validated; low effort keeps thinking spend small.
+    const effort = isLightOperation(output.name) && /^claude-(?:haiku|sonnet|opus)-5-5(?:-|$)/.test(model) ? { output_config: { effort: 'low' } } : {};
     const response = await this.fetcher('https://api.anthropic.com/v1/messages', {
       method: 'POST', signal,
       headers: { 'content-type': 'application/json', ...this.headers() },
       body: JSON.stringify({ model, max_tokens: output.name === 'generate_apply_puzzle' ? 16384 : ['evaluate_learning', 'evaluate_refined', 'review_refined_shadow', 'extract_concepts', 'generate_rubric'].includes(output.name) ? 8192 : 4096,
-        system: automaticTools ? `${instructions}\n\nReturn your final result by calling ${output.name} exactly once with arguments matching its schema. A plain text response cannot be processed by this application.` : instructions,
+        system: anthropicSystem(instructions, output.name, automaticTools ? `\n\nReturn your final result by calling ${output.name} exactly once with arguments matching its schema. A plain text response cannot be processed by this application.` : ''), ...effort,
         messages: anthropicMessages(messages), tools: [{ name: output.name, description: output.description, input_schema: output.schema }], tool_choice: automaticTools ? { type: 'auto' } : { type: 'tool', name: output.name } }),
     });
     if (!response.ok) {

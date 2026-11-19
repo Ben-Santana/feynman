@@ -5,15 +5,18 @@ export function usageCost(model, usage) {
   const rates = [
     [/^claude-sonnet-5-5(?:-|$)/, 2, 10, .05],
     [/^claude-opus-5-5(?:-|$)/, 4, 20, .05],
-    [/^claude-(?:fable|mythos)-5-1(?:-|$)/, 10, 50, .025],
+    // Haiku 5.5 has a second rate card ($0.50 / $2.50) for prompts over 100K tokens.
+    [/^claude-haiku-5-5(?:-|$)/, .1, .5, .1, { above: 100_000, input: .5, output: 2.5 }],
     [/^claude-sonnet-4-(?:5|6)(?:-|$)/, 3, 15, .1],
     [/^claude-opus-4-(?:5|6|7|8)(?:-|$)/, 5, 25, .1],
     [/^claude-haiku-4-5(?:-|$)/, 1, 5, .1],
   ];
   const rate = rates.find(([pattern]) => pattern.test(model));
   if (!rate) return null;
-  const [, input, output, read] = rate;
   const count = value => Number.isSafeInteger(value) && value >= 0 ? value : 0;
+  const [, baseInput, baseOutput, read, long] = rate;
+  const prompt = count(usage.input_tokens) + count(usage.cache_read_input_tokens) + count(usage.cache_creation_input_tokens);
+  const [input, output] = long && prompt > long.above ? [long.input, long.output] : [baseInput, baseOutput];
   const writes = count(usage.cache_creation_input_tokens);
   const hourWrites = count(usage.cache_creation?.ephemeral_1h_input_tokens);
   return (count(usage.input_tokens) * input + count(usage.output_tokens) * output

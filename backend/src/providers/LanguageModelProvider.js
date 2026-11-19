@@ -9,6 +9,11 @@ import { InvalidOutputError } from '../structuredOutput.js';
  * @typedef {{id: string, label: string, description: string, configurationKind: 'api-key' | 'chatgpt', configurationHelp: string, configuredMessage: string, supportsModelSelection: boolean, capabilities: {images: boolean, pdfs: boolean}}} ProviderMetadata
  */
 
+// Instructions before this marker are identical across a session's turns, so
+// providers that support prompt caching may cache them. Others drop the marker.
+export const PROMPT_CACHE_BOUNDARY = '\n[[feynman:cache-boundary]]\n';
+export const withoutCacheBoundary = instructions => instructions.split(PROMPT_CACHE_BOUNDARY).join('\n');
+
 export class AIError extends Error {
   constructor(message, status = 502) { super(message); this.name = 'AIError'; this.status = status; }
 }

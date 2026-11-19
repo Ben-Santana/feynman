@@ -14,9 +14,16 @@
 .inbox-message-copy { display: grid; gap: 4px; min-width: 0; overflow-wrap: anywhere; font-size: 0.875rem; }
 .inbox-message-copy > span, .inbox-message-action { font-size: 0.8125rem; color: var(--muted-foreground); }
 .inbox-message-action { flex: none; }
+.admin-users.inbox-messages li.inbox-invitation { display: flex; align-items: center; justify-content: space-between; gap: 16px; min-height: 64px; padding: 14px 24px; }
+.inbox-invitation-actions { display: flex; flex: none; gap: 8px; }
+.inbox-invitation-actions button { border-color: var(--border); background: transparent; color: var(--foreground); }
+.inbox-invitation-actions button:hover:not(:disabled) { background: var(--muted); border-color: var(--neutral-400); }
+.inbox-invitation-actions button.inbox-accept { border-color: transparent; background: var(--primary); color: var(--primary-foreground); }
+.inbox-invitation-actions button.inbox-accept:hover:not(:disabled) { background: var(--primary-hover); border-color: transparent; }
 .dashboard-inbox-count { margin-inline-start: auto; font-size: 0.75rem; font-variant-numeric: tabular-nums; }
 @media (max-width: 600px) {
   .inbox-messages a { align-items: flex-start; flex-direction: column; gap: 8px; padding-inline: 16px; }
+  .admin-users.inbox-messages li.inbox-invitation { align-items: flex-start; flex-direction: column; gap: 12px; padding-inline: 16px; }
 }
 @media (max-width: 760px) {
   .dashboard-nav-link:has(.dashboard-inbox-count) { position: relative; }

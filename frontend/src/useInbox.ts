@@ -1,12 +1,12 @@
 import { useEffect, useState } from 'react'
 import { accountFetch } from './accounts'
-type InboxMessage = {
+export type InboxMessage = {
   id: string
   title: string
   description: string
-  action: { label: string; href: string }
-}
-type InboxResult = { messages: InboxMessage[]; total: number; page: number; pageSize: number }
+} & ({ action: { label: string; href: string }; invitation?: never } | { invitation: { courseId: string; courseName: string }; action?: never })
+/** `total` counts every message; `pagedTotal` counts only the ones split across pages. */
+type InboxResult = { messages: InboxMessage[]; total: number; pagedTotal?: number; page: number; pageSize: number }
 
 export function useInbox(accountId: string | undefined, activePage: string) {
   const [page, setPage] = useState(1)
@@ -26,7 +26,7 @@ export function useInbox(accountId: string | undefined, activePage: string) {
         if (!response.ok) throw new Error((await response.json()).error)
         const data: InboxResult = await response.json()
         if (controller.signal.aborted) return
-        const lastPage = Math.max(1, Math.ceil(data.total / data.pageSize))
+        const lastPage = Math.max(1, Math.ceil((data.pagedTotal ?? data.total) / data.pageSize))
         if (page > lastPage) {
           setPage(lastPage)
           return

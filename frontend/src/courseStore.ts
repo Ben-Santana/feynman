@@ -12,13 +12,14 @@ export type CourseCollection = 'enrolled' | 'community'
 
 export type EnrollmentMode = 'open' | 'approval'
 export type EnrollmentStatus = 'pending' | 'enrolled' | 'rejected'
-export type Course = { id: string; instructor_id: string; name: string; code: string; enrollment_mode: EnrollmentMode; created_at: string; banner?: CourseBanner; appearance_revision?: number; bannerUrl?: string | null; pinned?: boolean; is_public?: boolean; subject?: string; subjects?: string[]; starred?: boolean; star_count?: number }
+export type Course = { id: string; instructor_id: string; name: string; code: string; enrollment_mode: EnrollmentMode; created_at: string; banner?: CourseBanner; appearance_revision?: number; bannerUrl?: string | null; pinned?: boolean; is_public?: boolean; subject?: string; subjects?: string[]; starred?: boolean; star_count?: number; /** The account owns or co-teaches the course. */ teaching?: boolean }
 export const courseSubjects = (course: Course): string[] => course.subjects ?? [course.subject ?? 'General STEM']
 export type Enrollment = { course_id: string; student_id: string; status: EnrollmentStatus }
 export type CourseModule = { id: string; course_id: string; title: string; document: CloudSession['document']; revision: number; published_at: string | null; created_at: string }
 export type StudentProgress = { studentId: string; name: string; email: string; status: EnrollmentStatus; modules: { moduleId: string; started: boolean; score: number | null; concepts: { id: string; name: string; target: Level; passed: number; finalSummary: boolean }[] }[] }
 export type ModuleProgress = { moduleId: string; sessionId: string; complete: boolean; score: number | null }
-export type CoursePerson = { id: string; name: string; role: 'instructor' | 'student'; appearance: CharacterAppearance }
+/** `owner`, `invited`, and `email` describe teachers and are sent only to the course's teachers. */
+export type CoursePerson = { id: string; name: string; role: 'instructor' | 'student'; appearance: CharacterAppearance; owner?: boolean; invited?: boolean; email?: string }
 export type ModuleSession = SavedSession<Concept, Session>
 
 async function rpc<T>(name: string, args: Record<string, unknown>): Promise<T> {
@@ -34,42 +35,51 @@ async function rpc<T>(name: string, args: Record<string, unknown>): Promise<T> {
 // The first start of an assigned topic waits for the pre-topic questions.
 export const needsPreTopic = (reason: unknown) => (reason as { code?: string } | null)?.code === 'FA010'
 export const moduleConcepts = (module: CourseModule) => ((module.document.session.concepts as { id: string; name: string }[] | undefined) ?? []).map(({ id, name }) => ({ id, name }))
+const coTeaching = (signal: AbortSignal) => supabase().from('course_teachers').select('course_id').eq('teacher_id', requireAccount().id).eq('status', 'active').abortSignal(signal)
+function markTeaching<T extends Course>(courses: T[], rows: { course_id: string }[]): T[] {
+  const ids = new Set(rows.map(row => row.course_id))
+  const account = requireAccount().id
+  return courses.map(course => ({ ...course, teaching: course.instructor_id === account || ids.has(course.id) }))
+}
 export async function loadCourses() {
   const signal = accountSignal()
-  const [courses, enrollments, pins, community, stars, counts] = await Promise.all([
+  const [courses, enrollments, pins, community, stars, counts, teaching] = await Promise.all([
     supabase().from('courses').select('*').order('created_at', { ascending: false }).abortSignal(signal),
     supabase().from('course_enrollments').select('*').eq('student_id', requireAccount().id).abortSignal(signal),
     supabase().from('course_pins').select('course_id').eq('user_id', requireAccount().id).abortSignal(signal),
     COMMUNITY_LIBRARY_ENABLED ? rpc<Course[]>('community_courses', {}) : [] as Course[],
     COMMUNITY_LIBRARY_ENABLED ? supabase().from('course_stars').select('course_id').eq('user_id', requireAccount().id).abortSignal(signal) : { data: [] as { course_id: string }[], error: null },
     COMMUNITY_LIBRARY_ENABLED ? rpc<Record<string, number>>('course_star_counts', {}) : {} as Record<string, number>,
+    coTeaching(signal),
   ])
   signal.throwIfAborted()
   if (courses.error || enrollments.error) throw new Error('Could not load courses. Apply the courses migration if this is a new setup, then retry.')
   if (pins.error) throw new Error('Could not load pinned courses. Apply the latest course migrations, then retry.')
   if (stars.error) throw new Error('Could not load starred courses. Please retry.')
+  if (teaching.error) throw new Error('Could not load course teachers. Apply the latest course migrations, then retry.')
   const starredIds = new Set(stars.data.map(star => star.course_id))
   const allCourses = new Map(community.map(course => [course.id, course]))
   for (const course of courses.data as Course[]) allCourses.set(course.id, course)
   const pinnedIds = new Set(pins.data.map(pin => pin.course_id))
-  const resolved = await Promise.all([...allCourses.values()].sort((a, b) => Date.parse(b.created_at) - Date.parse(a.created_at)).map(course => resolveCourseBanner({ ...course, pinned: pinnedIds.has(course.id), starred: starredIds.has(course.id), star_count: counts[course.id] ?? 0 })))
+  const resolved = await Promise.all(markTeaching([...allCourses.values()], teaching.data).sort((a, b) => Date.parse(b.created_at) - Date.parse(a.created_at)).map(course => resolveCourseBanner({ ...course, pinned: pinnedIds.has(course.id), starred: starredIds.has(course.id), star_count: counts[course.id] ?? 0 })))
   signal.throwIfAborted()
   return { courses: resolved, enrollments: enrollments.data as Enrollment[] }
 }
 export async function loadDashboardCourses() {
   const signal = accountSignal()
-  const [courses, enrollments] = await Promise.all([
+  const [courses, enrollments, teaching] = await Promise.all([
     supabase().from('courses').select('id,instructor_id,name,code,enrollment_mode,created_at,banner').order('created_at', { ascending: false }).abortSignal(signal),
     supabase().from('course_enrollments').select('course_id,student_id,status').eq('student_id', requireAccount().id).abortSignal(signal),
+    coTeaching(signal),
   ])
   signal.throwIfAborted()
-  if (courses.error || enrollments.error) throw new Error('Could not load classes. Please retry.')
+  if (courses.error || enrollments.error || teaching.error) throw new Error('Could not load classes. Please retry.')
   const modules = courses.data.length
     ? await supabase().from('course_modules').select('id,course_id,title,published_at,created_at').in('course_id', courses.data.map(course => course.id)).order('created_at', { ascending: false }).abortSignal(signal)
     : { data: [], error: null }
   signal.throwIfAborted()
   if (modules.error) throw new Error('Could not load class tasks. Please retry.')
-  const resolved = await Promise.all((courses.data as Course[]).map(resolveCourseBanner))
+  const resolved = await Promise.all(markTeaching(courses.data as Course[], teaching.data).map(resolveCourseBanner))
   signal.throwIfAborted()
   return { courses: resolved, enrollments: enrollments.data as Enrollment[], modules: modules.data as DashboardModule[] }
 }
@@ -80,7 +90,7 @@ export async function loadCourse(id: string) {
   const course = courses.find(value => value.id === id)
   if (!course) throw new Error('Course not found.')
   const account = requireAccount()
-  const instructor = course.instructor_id === account.id && canTeachCourses(account.role)
+  const instructor = Boolean(course.teaching) && canTeachCourses(account.role)
   const enrollment = enrollments.find(value => value.course_id === id)
   if (!instructor && enrollment?.status !== 'enrolled' && !(COMMUNITY_LIBRARY_ENABLED && course.is_public)) return { course, enrollment, modules: [] as CourseModule[], progress: [] as StudentProgress[], ownProgress: [] as ModuleProgress[], people: [] as CoursePerson[] }
   const [modules, progress, people] = await Promise.all([
@@ -125,6 +135,9 @@ export async function leaveCourse(id: string) {
   if (getSaveStatus().state !== 'saved') throw new Error('Save your work and resolve any save conflicts before leaving a course.')
   await rpc<void>('leave_course', { target_course: id })
 }
+export const inviteCourseTeacher = (id: string, email: string) => rpc<void>('invite_course_teacher', { target_course: id, teacher_email: email })
+export const removeCourseTeacher = (id: string, teacher: string) => rpc<void>('remove_course_teacher', { target_course: id, target_teacher: teacher })
+export const respondCourseInvitation = (id: string, accept: boolean) => rpc<void>('respond_course_invitation', { target_course: id, accept })
 export const setEnrollmentMode = (id: string, mode: EnrollmentMode) => rpc<Course>('set_course_enrollment', { target_course: id, enrollment: mode })
 export const decideEnrollment = (id: string, student: string, decision: 'enrolled' | 'rejected') => rpc<void>('decide_course_enrollment', { target_course: id, target_student: student, decision })
 export async function saveModule(courseId: string, record: ModuleSession, revision: number) {

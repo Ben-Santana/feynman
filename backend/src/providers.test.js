@@ -3,8 +3,8 @@ import { testAccountService, testAuthorization } from './accessTestHelper.js';
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { Readable } from 'node:stream';
-import { LanguageModelProvider, AIError, createProviderQuery, invokeProvider } from './providers/LanguageModelProvider.js';
-import { AnthropicProvider } from './providers/AnthropicProvider.js';
+import { LanguageModelProvider, AIError, createProviderQuery, invokeProvider, PROMPT_CACHE_BOUNDARY, withoutCacheBoundary } from './providers/LanguageModelProvider.js';
+import { AnthropicProvider, anthropicSystem } from './providers/AnthropicProvider.js';
 import { ChatGPTProvider } from './providers/ChatGPTProvider.js';
 import { ProviderRegistry, createProviderRegistry } from './providers/registry.js';
 import { createApiServer } from './server.js';
@@ -52,7 +52,7 @@ test('both adapters translate neutral attachments and response schemas without e
   const providers = [
     new AnthropicProvider({ env: { ANTHROPIC_API_KEY: 'test-key' }, fetcher: async (_url, options) => {
       const body = JSON.parse(options.body);
-      assert.equal(body.system, 'Instructions'); assert.deepEqual(body.tools[0].input_schema, output.schema);
+      assert.deepEqual(body.system[0], { type: 'text', text: 'Instructions', cache_control: { type: 'ephemeral' } }); assert.deepEqual(body.tools[0].input_schema, output.schema);
       assert.deepEqual(body.messages[0].content[1], { type: 'image', source: { type: 'base64', media_type: 'image/png', data: 'aGVsbG8=' } });
       assert.equal(body.messages[0].content[2].source.media_type, 'application/pdf');
       assert.ok(options.signal instanceof AbortSignal);
@@ -155,8 +155,8 @@ test('browser preferences preserve existing and third-party provider IDs and nev
 const callClaude = (...args) => createProviderQuery(new AnthropicProvider())(...args);
 
 test('new Claude models use automatic tool choice and still reject missing structured results', async () => {
-  for (const model of ['claude-sonnet-5-5', 'claude-opus-5-5', 'claude-fable-5-1', 'claude-mythos-5-1', 'claude-sonnet-4-6']) {
-    const automatic = model !== 'claude-sonnet-4-6';
+  for (const model of ['claude-opus-5-5', 'claude-opus-4-8']) {
+    const automatic = model === 'claude-opus-5-5';
     const provider = new AnthropicProvider({ model, fetcher: async (_url, options) => {
       const body = JSON.parse(options.body);
       assert.deepEqual(body.tool_choice, automatic ? { type: 'auto' } : { type: 'tool', name: 'test' });
@@ -211,22 +211,24 @@ test('workspace header is sent only when configured; missing scope gets actionab
 
 
 test('Claude discovers models across pages with workspace credentials and uses the selected model', async () => {
-  const env = { ANTHROPIC_API_KEY: 'test-key', ANTHROPIC_WORKSPACE_ID: ' workspace ', ANTHROPIC_MODEL: 'configured-default' };
-  const catalog = [{ slug: 'claude-one', name: 'Claude One' }, { slug: 'claude-two', name: 'Claude Two' }];
+  const env = { ANTHROPIC_API_KEY: 'test-key', ANTHROPIC_WORKSPACE_ID: ' workspace ', ANTHROPIC_MODEL: 'claude-opus-configured' };
+  const catalog = [{ slug: 'claude-opus-one', name: 'Claude One' }, { slug: 'claude-opus-two', name: 'Claude Two' }];
   const fetcher = async (url, options) => {
     assert.equal(options.headers['x-api-key'], 'test-key');
     assert.equal(options.headers['anthropic-workspace-id'], 'workspace');
     if (url.includes('/models')) {
-      const second = new URL(url).searchParams.get('after_id') === 'claude-one';
-      return Response.json({ data: [{ id: second ? 'claude-two' : 'claude-one', display_name: second ? 'Claude Two' : 'Claude One' }], has_more: !second, last_id: second ? 'claude-two' : 'claude-one' });
+      const second = new URL(url).searchParams.get('after_id') === 'claude-opus-one';
+      // Only Opus models are offered for the main model; others are filtered out.
+      return Response.json({ data: [{ id: second ? 'claude-opus-two' : 'claude-opus-one', display_name: second ? 'Claude Two' : 'Claude One' }, { id: second ? 'claude-fable-5-2' : 'claude-sonnet-5-5', display_name: 'Other' }], has_more: !second, last_id: second ? 'claude-fable-5-2' : 'claude-opus-one' });
     }
-    assert.equal(JSON.parse(options.body).model, 'claude-two');
+    assert.equal(JSON.parse(options.body).model, 'claude-opus-two');
     return Response.json({ stop_reason: 'tool_use', content: [{ type: 'tool_use', name: output.name, input: { message: 'Selected Claude' } }] });
   };
   const registry = createProviderRegistry({ chatgpt, env, fetcher });
   assert.equal(registry.describe().find(item => item.id === 'anthropic').supportsModelSelection, true);
-  assert.equal(registry.resolve('anthropic').getStatus().model, 'configured-default');
-  const provider = registry.resolve('anthropic', { model: 'claude-two' });
+  assert.equal(registry.resolve('anthropic').getStatus().model, 'claude-opus-configured');
+  assert.equal(registry.resolve('anthropic', { model: 'claude-fable-5-2' }).getStatus().model, 'claude-opus-configured', 'A saved non-Opus model never runs the main tasks.');
+  const provider = registry.resolve('anthropic', { model: 'claude-opus-two' });
   assert.deepEqual(await provider.listModels(), catalog);
   assert.deepEqual(await createProviderQuery(provider)('Instructions', messages, output), { message: 'Selected Claude' });
 });
@@ -278,4 +280,57 @@ test('generation failures are upstream errors and malformed request bodies are i
     assert.equal(invalid.data.error, 'Enter a valid request object.');
   }
   assert.equal(calls, 2);
+});
+
+test('light operations route to the light model at low effort while grading and replies keep the main model', async () => {
+  const sent = [];
+  const fetcher = async (_url, options) => {
+    const body = JSON.parse(options.body); sent.push(body);
+    return new Response(JSON.stringify({ model: body.model, stop_reason: 'tool_use', content: [{ type: 'tool_use', name: body.tools[0].name, input: { message: 'ok' } }] }));
+  };
+  const provider = new AnthropicProvider({ env: { ANTHROPIC_API_KEY: 'test-key' }, model: 'claude-opus-5-5', fetcher });
+  for (const name of ['summarize_student_results', 'select_puzzle_skills', 'suggest_concepts', 'evaluate_refined', 'reply_to_teacher']) {
+    await createProviderQuery(provider)('Instructions', [{ role: 'user', content: 'Hi' }], { ...output, name });
+  }
+  const [summary, skills, concepts, grading, reply] = sent;
+  for (const body of [summary, skills, concepts]) {
+    assert.equal(body.model, 'claude-haiku-5-5');
+    assert.deepEqual(body.output_config, { effort: 'low' });
+    assert.deepEqual(body.tool_choice, { type: 'tool', name: body.tools[0].name }, 'Haiku 5.5 accepts a forced tool call, which also skips thinking.');
+    assert.equal(body.system, 'Instructions', 'One-off calls are not cached.');
+  }
+  for (const body of [grading, reply]) {
+    assert.equal(body.model, 'claude-opus-5-5');
+    assert.equal(body.output_config, undefined);
+    assert.deepEqual(body.tool_choice, { type: 'auto' });
+    assert.equal(body.system[0].cache_control.type, 'ephemeral');
+  }
+});
+
+test('an empty light model setting turns routing off', async () => {
+  let model;
+  const provider = new AnthropicProvider({ env: { ANTHROPIC_API_KEY: 'test-key', ANTHROPIC_LIGHT_MODEL: '' }, model: 'claude-opus-4-8', fetcher: async (_url, options) => {
+    model = JSON.parse(options.body).model;
+    return new Response(JSON.stringify({ stop_reason: 'tool_use', content: [{ type: 'tool_use', name: 'summarize_student_results', input: { message: 'ok' } }] }));
+  } });
+  await createProviderQuery(provider)('Instructions', [{ role: 'user', content: 'Hi' }], { ...output, name: 'summarize_student_results' });
+  assert.equal(model, 'claude-opus-4-8');
+});
+
+test('the cache boundary splits Anthropic system blocks and disappears for ChatGPT', async () => {
+  const instructions = `Stable rules${PROMPT_CACHE_BOUNDARY}Turn focus`;
+  assert.deepEqual(anthropicSystem(instructions, 'reply_to_teacher', '\nCall the tool.'), [
+    { type: 'text', text: 'Stable rules', cache_control: { type: 'ephemeral' } },
+    { type: 'text', text: 'Turn focus\nCall the tool.' },
+  ]);
+  assert.equal(withoutCacheBoundary(instructions), 'Stable rules\nTurn focus');
+  let sentInstructions;
+  const chatgptProvider = new ChatGPTProvider({ runtime: { listModels: async () => [{ slug: 'test-model' }], accessToken: async () => 'test-token' }, fetcher: async (_url, options) => {
+    sentInstructions = JSON.parse(options.body).instructions;
+    const item = { type: 'function_call', name: output.name, namespace: 'feynman', status: 'completed', arguments: JSON.stringify({ message: 'Hello' }) };
+    const events = [{ type: 'response.output_item.done', output_index: 0, item }, { type: 'response.completed', response: { status: 'completed', output: [] } }];
+    return new Response(events.map(event => `data: ${JSON.stringify(event)}\n\n`).join(''));
+  } });
+  await createProviderQuery(chatgptProvider)(instructions, [{ role: 'user', content: 'Hi' }], output);
+  assert.equal(sentInstructions, 'Stable rules\nTurn focus');
 });

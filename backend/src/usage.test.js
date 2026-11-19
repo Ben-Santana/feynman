@@ -79,3 +79,10 @@ test('HTTP reporting is admin-only and model calls retain authenticated attribut
     try { assert.equal((await request(denied, '/api/admin/usage')).status, 403); } finally { denied.close(); }
   } finally { server.close(); }
 });
+
+test('light models are priced, including the long-prompt Haiku 5.5 rate card', () => {
+  const close = (actual, expected) => assert.ok(Math.abs(actual - expected) < 1e-9, `${actual} ≠ ${expected}`);
+  close(usageCost('claude-haiku-5-5', { input_tokens: 1_000_000 / 10, output_tokens: 1_000_000 / 10 }), (0.1 + 0.5) / 10);
+  close(usageCost('claude-haiku-5-5', { input_tokens: 50_000, cache_read_input_tokens: 60_000 }), (50_000 * 0.5 + 60_000 * 0.5 * 0.1) / 1e6);
+  assert.equal(usageCost('claude-fable-5-2', { input_tokens: 1_000_000 }), null, 'Fable is not used, so it is not priced.');
+});
