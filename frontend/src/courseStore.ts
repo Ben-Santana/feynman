@@ -204,3 +204,8 @@ export async function removeUnusedCourseBanner(path: string) {
   await supabase().storage.from('course-banners').remove([path])
   signal.throwIfAborted()
 }
+
+export type StudentTopicSession = { sessionId: string; updatedAt: string; concepts: Concept[] }
+/** A student's chat and rubric judgments for one published topic. Null until they start it. */
+export const loadStudentTopicSession = (courseId: string, moduleId: string, studentId: string) =>
+  rpc<StudentTopicSession | null>('course_student_session', { target_course: courseId, target_module: moduleId, target_student: studentId })
