@@ -16,7 +16,7 @@ const hash = value => createHash('sha256').update(value).digest('hex').slice(0, 
 export class EvaluatorInputError extends Error {}
 
 // Transport validation is shared with regular chats; definition metadata is local/dev only.
-export function createEvaluationContext(input, { requireTransfer = false, requireIndependent = false } = {}) {
+export function createEvaluationContext(input, { requireTransfer = false, requireIndependent = false, tolerantQuotes = false } = {}) {
   try { validate(input); } catch (error) { throw new EvaluatorInputError(error.message); }
   const aspects = input.criterion && /^\s*1[.)]\s/m.test(input.criterion) ? checklistItems(input.criterion) : input.aspects;
   if (!aspects.length || aspects.length > 20) throw new EvaluatorInputError('Provide 1–20 checklist items.');
@@ -40,7 +40,7 @@ export function createEvaluationContext(input, { requireTransfer = false, requir
   const latestPaper = messages.findLast(m => m.paper)?.paper;
   const reviewIndex = latestPaper ? messages.findLastIndex(m => m.review?.paperId === latestPaper.id) : -1;
   const eligibility = !messages.length ? 'no_learner_evidence' : paperAnalysis && (reviewIndex < 0 || !messages.slice(reviewIndex + 1).some(m => m.role === 'user' && !m.review)) ? 'awaiting_paper_review_explanation' : null;
-  return { schemaVersion: contractVersion, researchScoring: input.researchScoring === true, stageId, topic: input.topic, criterion: input.criterion ?? null, level: input.level, learningType: input.learningType ?? 'quantitative', criteria, messages, reviewIndex, eligibility, requireIndependent, requireTransfer: requireTransfer && ['apply', 'analyze'].includes(input.level) };
+  return { tolerantQuotes, schemaVersion: contractVersion, researchScoring: input.researchScoring === true, stageId, topic: input.topic, criterion: input.criterion ?? null, level: input.level, learningType: input.learningType ?? 'quantitative', criteria, messages, reviewIndex, eligibility, requireIndependent, requireTransfer: requireTransfer && ['apply', 'analyze'].includes(input.level) };
 }
 
 export function taskDefinition(context, taskText) {
@@ -65,13 +65,15 @@ function assertShape(result, definitions) {
     for (const c of j.contradictions) if (!c || typeof c.messageId !== 'string' || typeof c.quote !== 'string' || c.quote.length > 2000 || !text(c.reason)) fail();
   }
 }
+// Graders collapse table spacing and retype typographic characters when quoting.
+const loose = value => value.normalize('NFKC').replace(/[\u2010-\u2015\u2212]/g, '-').replace(/[‘’]/g, "'").replace(/[“”]/g, '"').replace(/\s+/g, ' ').trim();
 function cite(context, citation) {
   const message = context.messages.find(m => m.id === citation.messageId);
   if (!message || message.role !== 'user' || message.skipRubricItem || message.helpRequest || message.finishAssessment || !citation.quote.trim()) return null;
   // Each excerpt must occur in a single original learner field, never joined fields.
   const fields = [message.content, message.review?.explanation].filter(v => typeof v === 'string');
   const image = citation.quote === '[Whiteboard image]' && Boolean(message.boardImage);
-  if (!image && !fields.some(value => value.includes(citation.quote))) return null;
+  if (!image && !fields.some(value => value.includes(citation.quote) || (context.tolerantQuotes && loose(value).includes(loose(citation.quote))))) return null;
   return { message, image };
 }
 

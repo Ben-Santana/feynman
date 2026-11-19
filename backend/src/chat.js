@@ -13,6 +13,7 @@ import { inlineQuestionStrategies } from './inlineQuestionStrategies.js';
 import { PROMPT_CACHE_BOUNDARY } from './providers/LanguageModelProvider.js';
 import { learnerStateFromAssessment } from './strategyLearnerState.js';
 import { validateBackgroundHistory } from './backgroundQuestions.js';
+import { keepEarnedCredit, needsPlainAsk, oneItemInstruction, plainAskInstruction } from './loopFixes.js';
 import { scoreJudgment, statedMistake } from './topicReports.js';
 const initialPrompts = loadPrompts();
 export const rubrics = Object.fromEntries(['remember', 'understand', 'apply', 'analyze'].map(level => [level, initialPrompts.text('chat.rubric.' + level)]));
@@ -332,7 +333,7 @@ async function recoverOpenSkips(groups, query, prompts) {
     recoveredGoals(group, await evaluateRefined(group.input, query, prompts))));
   return results.flat();
 }
-export async function chat(input, query, prompts = loadPrompts(), { evaluator = 'refined', learner = 'focused', strategyCatalog = 'shortlist', skipRecoveryMode = 'split', evaluationCache, cacheScope, persistedAssessment, onAssessment, openSkips = [] } = {}) {
+export async function chat(input, query, prompts = loadPrompts(), { evaluator = 'refined', learner = 'focused', strategyCatalog = 'shortlist', skipRecoveryMode = 'split', evaluationCache, cacheScope, persistedAssessment, onAssessment, openSkips = [], fixes = {} } = {}) {
   const { level, topic, messages, criterion } = validate(input);
   const learningType = resolveLearningType(input.learningType);
   const profile = { ...learningTypes[learningType], ...prompts.profile(learningType) };
@@ -383,7 +384,7 @@ export async function chat(input, query, prompts = loadPrompts(), { evaluator = 
       : null;
     let skipRecovery;
     if (!checked) {
-      const options = { requireIndependent: ['apply', 'analyze'].includes(level) };
+      const options = { requireIndependent: ['apply', 'analyze'].includes(level), ...(fixes.tolerantQuotes ? { tolerantQuotes: true } : {}) };
       if (combined) {
         const result = await evaluateWithRecovery(input, recoveryGroups.map(group => group.input), query, prompts, options);
         checked = conversationAssessment(result.active, input);
@@ -395,6 +396,7 @@ export async function chat(input, query, prompts = loadPrompts(), { evaluator = 
     }
     if (recovering) skipRecovery = await recovering;
     if (skipRecovery && checked) checked = { ...checked, skipRecovery };
+    if (fixes.keepCredit) checked = keepEarnedCredit(checked, fixes.earned);
     // A skip lasts until the learner's own later teaching demonstrates the item.
     for (const aspect of [...skipped]) {
       const skipIndex = messages.findIndex(m => m.skipRubricItem === aspect);
@@ -424,16 +426,19 @@ export async function chat(input, query, prompts = loadPrompts(), { evaluator = 
     if (checked.complete || checked.readyToAdvance) return { message: skipped.size ? 'This level is finished. Skipped items still count if you teach them later.' : 'Thank you for teaching me!', assessment: checked, expression: 'excited' };
   }
   const contradictionIndex = checked?.refined?.judgments.filter(j => j.criterionId !== 'level_task').findIndex(j => j.status !== 'supported' && j.contradictions.length);
-  const frustrationTarget = expressesFrustration(messages.at(-1)?.content || '')
+  const frustrated = expressesFrustration(messages.at(-1)?.content || '', { broad: Boolean(fixes.hearFrustration) });
+  const previousFocus = fixes.stayOnItem && checked?.criteria.find(item => item.aspect === messages.at(-2)?.rubricFocus && !item.skipped && item.status !== 'supported');
+  const frustrationTarget = frustrated
     && checked?.criteria.find(item => item.aspect === messages.at(-2)?.rubricFocus && !item.skipped && item.status !== 'supported');
-  const target = (input.practiceGoal ? { aspect: input.practiceGoal } : null) || frustrationTarget || (contradictionIndex >= 0 && !checked.criteria[contradictionIndex].skipped ? checked.criteria[contradictionIndex] : null) || checked?.criteria.find(item => !item.skipped && item.status === 'flawed') || checked?.criteria.find(item => !item.skipped && item.status !== 'supported');
+  const target = (input.practiceGoal ? { aspect: input.practiceGoal } : null) || frustrationTarget || previousFocus || (contradictionIndex >= 0 && !checked.criteria[contradictionIndex].skipped ? checked.criteria[contradictionIndex] : null) || checked?.criteria.find(item => !item.skipped && item.status === 'flawed') || checked?.criteria.find(item => !item.skipped && item.status !== 'supported');
+  const plainAsk = Boolean(checked && target && !input.practiceGoal && needsPlainAsk(fixes, messages, target.aspect));
   const followUpJudgment = checked?.refined?.judgments[target ? checked.criteria.findIndex(item => item.aspect === target.aspect) : checked.criteria.length];
   const transferNeeded = followUpJudgment?.blockers.includes('transfer_check_needed');
   const independenceNeeded = followUpJudgment?.blockers.includes('independent_check_needed');
-  const focus = checked ? `Ask ONE small question about this unresolved requirement: ${JSON.stringify(target?.aspect || 'the overall task')}. Use the evaluator's next evidence objective to choose the actual probe: ${JSON.stringify(checked.nextQuestionFocus || '')}. Probe the learner's latest claim, not every part of this requirement at once. Do not request a full solution, multiple metrics, or all requirements together. Use at most 55 words for the question, with enough context to make it answerable. If an earlier probe did not help, use a concrete single-entity example or one controlled comparison instead of repeating it. For paper review prioritize a specifically contradicted claim or incorrectly accepted step; do not restart with a correctly justified paper. Supply any missing simulated readings needed by the objective before asking for their interpretation; do not re-ask an already supported prediction. Never teach or supply its answer.${transferNeeded ? ' This requirement needs independent transfer. Introduce ONE materially changed condition, not merely new numbers or a renamed setting, with all necessary givens. Ask for the consequence and its reason. Keep the same concept and level; do not repeat every rubric item. For design use a near-boundary constraint or supplied uncertainty; for experiments supply a changed setup and any needed simulated readings. Do not reveal the reasoning or answer.' : independenceNeeded ? ' Check the missing reasoning independently. If the assistant already supplied it, ask for one focused inference with fresh givens so the teacher can reason without repeating the supplied answer. Otherwise ask for the missing reasoning in the current task. Provide givens only and leave the reasoning to the teacher.' : ''}` : '';
+  const focus = checked ? `Ask ONE small question about this unresolved requirement: ${JSON.stringify(target?.aspect || 'the overall task')}. Use the evaluator's next evidence objective to choose the actual probe: ${JSON.stringify(checked.nextQuestionFocus || '')}. Probe the learner's latest claim, not every part of this requirement at once. Do not request a full solution, multiple metrics, or all requirements together. Use at most 55 words for the question, with enough context to make it answerable. If an earlier probe did not help, use a concrete single-entity example or one controlled comparison instead of repeating it. For paper review prioritize a specifically contradicted claim or incorrectly accepted step; do not restart with a correctly justified paper. Supply any missing simulated readings needed by the objective before asking for their interpretation; do not re-ask an already supported prediction. Never teach or supply its answer.${fixes.stayOnItem ? oneItemInstruction : ''}${plainAsk ? plainAskInstruction(frustrated) : ''}${transferNeeded ? ' This requirement needs independent transfer. Introduce ONE materially changed condition, not merely new numbers or a renamed setting, with all necessary givens. Ask for the consequence and its reason. Keep the same concept and level; do not repeat every rubric item. For design use a near-boundary constraint or supplied uncertainty; for experiments supply a changed setup and any needed simulated readings. Do not reveal the reasoning or answer.' : independenceNeeded ? ' Check the missing reasoning independently. If the assistant already supplied it, ask for one focused inference with fresh givens so the teacher can reason without repeating the supplied answer. Otherwise ask for the missing reasoning in the current task. Provide givens only and leave the reasoning to the teacher.' : ''}` : '';
   const responseSystem = prompts.text('chat.response', { context: context, classroomRole: prompts.text('chat.classroomRole'), paperInstructions: needsPaper ? prompts.text('chat.submitPapers') : paperAnalysis ? prompts.text('chat.discussPapers') : '', scenarioInstructions: needsScenarioOpening(level, learningType) ? openingScenario ? prompts.text('chat.openScenario', { scenario: profile.scenarios[level] }) : prompts.text('chat.continueScenario', { task: profile.tasks[level] }) : '', followUp: checked ? learner === 'focused' || skipped.size ? focus : followUpFocus(checked, prompts) : prompts.text('chat.levelOpening') }) + (skipped.size ? `\nThe learner chose to skip these requirements: ${JSON.stringify([...skipped])}. Do not ask about or require them again. Focus only on the unresolved requirement specified above.` : '') + (openingScenario ? '\nKeep the opening compact: include only conditions needed to answer the initial question and interpret the supplied data. Retain units, measurement nodes, and uncertainty needed for a fair inference. Introduce additional instrumentation details and changed constraints only when the dialogue needs them. Check simulated numbers against the stated setup before returning them; label them simulated. Do not imply aggregate data uniquely establishes a mechanism. Later ask for a discriminating measurement when several causes fit.' : '') + (freshCheck ? '\nThe preceding prerequisite review is assistance, not evidence. Introduce a DIFFERENT self-contained situation to check the helped prerequisite independently. Ask one question without repeating the example, formula or answer supplied in the review. For quantitative Analyze keep the existing paper review and use an additional changed-condition check; do not replace the papers.' : '');
   const continuity = dialogueContinuity(messages, checked, target?.aspect, skipped);
-  const inlineStrategies = learner === 'focused' && checked && !paperAnalysis && !skipped.size && !frustrationTarget && (target || messages.some(message => message.background)) ? inlineQuestionStrategies({ ...input, aspects, learningType }, strategyCatalog === 'full' ? undefined : {
+  const inlineStrategies = learner === 'focused' && checked && !paperAnalysis && !skipped.size && !frustrationTarget && !plainAsk && (target || messages.some(message => message.background)) ? inlineQuestionStrategies({ ...input, aspects, learningType }, strategyCatalog === 'full' ? undefined : {
     objective: checked.nextQuestionFocus,
     aspect: target?.aspect,
     blockers: followUpJudgment?.blockers,

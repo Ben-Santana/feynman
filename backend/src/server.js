@@ -19,6 +19,8 @@ import { createEvaluationContext, EvaluatorInputError, evaluatorVersion } from '
 import { evaluatorComparisonCases, evaluatorTestCases } from './evaluatorTestCases.js';
 import { screenEvaluatorComparison } from './evaluatorBenchmark.js';
 import { EvaluationCache } from './turnCache.js';
+import { readFixes } from './loopFixes.js';
+import { checklistItems } from '../../frontend/src/rubricChecklist.js';
 import { generatePuzzle, puzzlePrompt, validatePuzzleDescription } from './puzzleGeneration.js';
 
 const evaluatorCases = evaluatorComparisonCases;
@@ -256,6 +258,9 @@ export function createApiServer({ query, hosted = false, env = process.env, prom
       // The flag and evaluator metadata are internal, never client policy.
       delete input.researchScoring;
       delete input.evaluatorCriteria;
+      // Experimental fixes are a developer tools option, never learner policy.
+      const experiment = input.experiment;
+      delete input.experiment;
       let prepared;
       if (accountService.topicReports && (input.assignmentSessionId || input.sessionId)) {
         prepared = await accountService.topicReports.prepare(account, input);
@@ -276,7 +281,8 @@ export function createApiServer({ query, hosted = false, env = process.env, prom
       } : selectedQuery;
       let assessmentRecord;
       const prompts = loadPrompts(promptsPath);
-      const result = await chat(input, tracedQuery, prompts, { evaluationCache, cacheScope: [account.id, provider, model],
+      const fixes = calls && account.role === 'admin' ? readFixes(experiment, input.criterion && /^\s*1[.)]\s/m.test(input.criterion) ? checklistItems(input.criterion) : input.aspects) : {};
+      const result = await chat(input, tracedQuery, prompts, { fixes, evaluationCache: Object.keys(fixes).length ? undefined : evaluationCache, cacheScope: [account.id, provider, model],
         persistedAssessment: prepared?.previous?.payload.assessment,
         openSkips: prepared?.openSkips,
         onAssessment: prepared ? async assessment => {
