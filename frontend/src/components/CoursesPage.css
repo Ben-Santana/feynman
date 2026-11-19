@@ -289,3 +289,7 @@ section + section > .course-people-heading { margin-top: 32px; }
 .topic-detail-bubble p { margin: 0; color: inherit; }
 .topic-detail-board { max-width: 100%; border: 1px solid var(--border); border-radius: 10px; }
 @media (max-width: 600px) { .topic-detail-level li { grid-template-columns: 22px 1fr; } .topic-detail-item-status { grid-column: 2; justify-items: start; } .topic-detail-chat li { max-width: 100%; } }
+.topic-detail-toolbar { display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap; }
+.course-progress-dialog button.topic-detail-download { display: inline-flex; align-items: center; gap: 6px; padding: 7px 12px; border: 1px solid var(--border); border-radius: 8px; background: var(--background); color: var(--foreground); font: inherit; font-size: .8125rem; cursor: pointer; }
+.course-progress-dialog button.topic-detail-download:hover { border-color: var(--muted-foreground); }
+.topic-detail-download svg { width: 16px; height: 16px; }

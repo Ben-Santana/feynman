@@ -3,6 +3,24 @@ import { loadStudentTopicSession, type StudentTopicSession } from '../courseStor
 import { levelIds, targetCount, type Concept, type Level } from '../learningFlow'
 import { checklistItems } from '../rubricChecklist.js'
 import { ChatText } from './ChatText'
+import { saveFile } from '../research'
+
+const slug = (text: string) => text.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '') || 'chat'
+
+function chatMarkdown(concepts: Concept[], studentName: string, topicTitle: string) {
+  const lines = [`# ${topicTitle}`, '', `Student: ${studentName}`, `Downloaded: ${new Date().toLocaleString()}`]
+  for (const concept of concepts) {
+    const target = targetCount(concept.target)
+    lines.push('', `## ${concept.name}`, '', `${Math.min(concept.passed, target)} / ${target} levels passed`)
+    for (const message of concept.messages) {
+      const text = message.content?.trim()
+      if (!text && !message.boardImage) continue
+      const notes = [message.passedLevel && `passed ${levelName(message.passedLevel)}`, message.helpRequest && 'asked for help'].filter(Boolean).join(', ')
+      lines.push('', `**${message.role === 'user' ? studentName : 'Classmate'}**${notes ? ` (${notes})` : ''}`, '', text || '[Whiteboard image]')
+    }
+  }
+  return lines.join('\n') + '\n'
+}
 
 type ItemStatus = 'demonstrated' | 'revision' | 'clarification' | 'skipped' | 'pending'
 const statusLabels: Record<ItemStatus, string> = { demonstrated: 'Demonstrated', revision: 'Needs revision', clarification: 'Needs clarification', skipped: 'Skipped', pending: 'Not yet assessed' }
@@ -48,7 +66,7 @@ function ConceptChat({ concept, studentName }: { concept: Concept; studentName: 
   </li>)}</ol>
 }
 
-export function StudentTopicDetail({ courseId, moduleId, studentId, studentName }: { courseId: string; moduleId: string; studentId: string; studentName: string }) {
+export function StudentTopicDetail({ courseId, moduleId, studentId, studentName, topicTitle }: { courseId: string; moduleId: string; studentId: string; studentName: string; topicTitle: string }) {
   const [state, setState] = useState<{ data?: StudentTopicSession | null; error?: string }>({})
   const [conceptId, setConceptId] = useState<string | null>(null)
   const [tab, setTab] = useState<'rubric' | 'chat'>('rubric')
@@ -71,7 +89,8 @@ export function StudentTopicDetail({ courseId, moduleId, studentId, studentName 
         <span>{value.name}</span><small>{Math.min(value.passed, target)} / {target} levels</small>
       </button>
     })}</div>}
-    <div className="course-progress-tabs" role="group" aria-label="Concept details"><button type="button" aria-pressed={tab === 'rubric'} onClick={() => setTab('rubric')}>Rubric</button><button type="button" aria-pressed={tab === 'chat'} onClick={() => setTab('chat')}>Chat</button></div>
+    <div className="topic-detail-toolbar"><div className="course-progress-tabs" role="group" aria-label="Concept details"><button type="button" aria-pressed={tab === 'rubric'} onClick={() => setTab('rubric')}>Rubric</button><button type="button" aria-pressed={tab === 'chat'} onClick={() => setTab('chat')}>Chat</button></div>
+      <button type="button" className="topic-detail-download" onClick={() => saveFile(chatMarkdown(concepts, studentName, topicTitle), `${slug(studentName)}-${slug(topicTitle)}-chat.md`, 'text/markdown;charset=utf-8')}><svg viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="M10 3v10m-4-4 4 4 4-4M4 16h12" /></svg>Download chat</button></div>
     {tab === 'rubric' ? <ConceptRubric concept={concept} /> : <ConceptChat concept={concept} studentName={studentName} />}
   </div>
 }
