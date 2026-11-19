@@ -13,6 +13,15 @@ function adminCourseError(error) {
   if (error.code === 'PGRST202' || error.code === '42P01') return new AccountError('Course administration is not configured. Apply the latest Supabase migrations, then retry.', 503);
   return new AccountError('Could not load courses. Please retry.', 503);
 }
+function courseTeacherError(error) {
+  const known = {
+    42501: ['Admin access required.', 403], P0002: ['Course or teacher not found.', 404],
+    FA011: ['No teacher account uses that email.', 404], FA012: ['That teacher already teaches this course.', 409], FA013: ['A course can have up to 20 added teachers.', 409],
+    PGRST202: ['Course teachers are not configured. Apply the latest Supabase migrations, then retry.', 503],
+  }[error.code];
+  return new AccountError(...(known || ['Could not update the course teachers. Please retry.', 503]));
+}
+const uuidPattern = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 export function validAccountEmail(user) {
   return Boolean(user?.id && /^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(user.email || ''));
 }
@@ -137,9 +146,20 @@ export function createAccountService(env = process.env, clientFactory = createCl
       if (error) throw new AccountError(error.code === '42501' ? 'Admin access required.' : 'Could not load accounts.', error.code === '42501' ? 403 : 503);
       return data;
     },
-    async inbox(account, params) {
-      if (account.role === 'instructor') return { messages: [], total: 0, page: 1, pageSize: 25 };
-      if (account.role !== 'admin') throw new AccountError('Instructor access required.', 403);
+    async inbox(account, params, req) {
+      if (account.role !== 'instructor' && account.role !== 'admin') throw new AccountError('Instructor access required.', 403);
+      requireConfig();
+      // Invitations are read with the caller's JWT, so each teacher sees only their own.
+      const client = clientFactory(url, key, { ...options, global: { headers: { Authorization: req.headers.authorization } } });
+      const invited = await client.rpc('course_invitations');
+      if (invited.error) throw new AccountError('Could not load course invitations. Apply the latest Supabase migrations, then retry.', 503);
+      const invitations = invited.data.map(invitation => ({
+        id: `course-invitation:${invitation.courseId}`,
+        title: invitation.courseName,
+        description: `${invitation.invitedBy} invited you to teach this course.`,
+        invitation: { courseId: invitation.courseId, courseName: invitation.courseName },
+      }));
+      if (account.role === 'instructor') return { messages: invitations, total: invitations.length, pagedTotal: 0, page: 1, pageSize: 25 };
       const { users, ...pagination } = await instructorApplications(account, params);
       const messages = users.map(user => ({
         id: `instructor-application:${user.id}`,
@@ -147,7 +167,8 @@ export function createAccountService(env = process.env, clientFactory = createCl
         description: user.display_name ? `${user.display_name} · ${user.email}` : user.email,
         action: { label: 'Review application', href: `/admin?account=${encodeURIComponent(user.id)}` },
       }));
-      return { messages, ...pagination };
+      // Invitations sit above the first page of applications; only applications are paged.
+      return { ...pagination, messages: pagination.page === 1 ? [...invitations, ...messages] : messages, total: pagination.total + invitations.length, pagedTotal: pagination.total };
     },
     async listCourses(account, params) {
       if (account.role !== 'admin') throw new AccountError('Admin access required.', 403);
@@ -174,9 +195,28 @@ export function createAccountService(env = process.env, clientFactory = createCl
     async viewCourse(account, id) {
       if (account.role !== 'admin') throw new AccountError('Admin access required.', 403);
       if (!/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(id)) throw new AccountError('Choose a valid course.', 400);
-      const { data, error } = await adminClient().rpc('admin_view_course', { actor_id: account.id, target_course: id });
-      if (error) throw adminCourseError(error);
-      return data;
+      const client = adminClient();
+      const [course, teachers] = await Promise.all([
+        client.rpc('admin_view_course', { actor_id: account.id, target_course: id }),
+        client.rpc('admin_course_teachers', { actor_id: account.id, target_course: id }),
+      ]);
+      if (course.error || teachers.error) throw adminCourseError(course.error || teachers.error);
+      return { ...course.data, teachers: teachers.data };
+    },
+    async assignCourseTeacher(account, id, email) {
+      if (account.role !== 'admin') throw new AccountError('Admin access required.', 403);
+      if (!uuidPattern.test(id)) throw new AccountError('Choose a valid course.', 400);
+      if (typeof email !== 'string' || !email.trim() || email.length > 254) throw new AccountError('Enter the teacher\'s email.', 400);
+      const { data, error } = await adminClient().rpc('admin_assign_course_teacher', { actor_id: account.id, target_course: id, teacher_email: email });
+      if (error) throw courseTeacherError(error);
+      return { teachers: data };
+    },
+    async removeCourseTeacher(account, id, teacherId) {
+      if (account.role !== 'admin') throw new AccountError('Admin access required.', 403);
+      if (!uuidPattern.test(id) || !uuidPattern.test(teacherId)) throw new AccountError('Choose a valid course and teacher.', 400);
+      const { data, error } = await adminClient().rpc('admin_remove_course_teacher', { actor_id: account.id, target_course: id, target_teacher: teacherId });
+      if (error) throw courseTeacherError(error);
+      return { teachers: data };
     },
     async approveAccount(account, id) {
       if (account.role !== 'admin') throw new AccountError('Admin access required.', 403);

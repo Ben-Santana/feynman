@@ -39,3 +39,8 @@
   .admin-course-facts { grid-template-columns: 1fr; gap: 16px; }
 }
 @media (prefers-reduced-motion: reduce) { .admin-module summary::before { transition: none; } }
+.admin-users.admin-course-teachers li { grid-template-columns: minmax(0, 1fr) auto; }
+.admin-teacher-actions { display: flex; align-items: center; gap: 12px; }
+.admin-page :is(.admin-teacher-add, .admin-teacher-actions button) { min-height: 36px; padding: 7px 12px; border-color: var(--border); background: transparent; color: var(--foreground); font-size: .75rem; }
+.admin-page :is(.admin-teacher-add, .admin-teacher-actions button):hover:not(:disabled) { background: var(--muted); border-color: var(--neutral-400); }
+@media (max-width: 600px) { .admin-users.admin-course-teachers li { grid-template-columns: minmax(0, 1fr); } }

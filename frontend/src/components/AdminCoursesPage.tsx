@@ -6,6 +6,9 @@ import { learningTypes, type LearningType } from '../learningTypes.js'
 import { LoadingScreen } from './AccountLoading'
 import { CourseCard } from './CourseCard'
 import { LibraryEmptyState } from './LibraryEmptyState'
+import { CourseTeacherDialog } from './CourseTeacherDialog'
+import { useConfirm } from './useConfirm'
+import { useToast } from './useToast'
 import { COURSE_SUBJECTS, type Course } from '../courseStore'
 import { COMMUNITY_LIBRARY_ENABLED } from '../features'
 import './CoursesPage.css'
@@ -21,7 +24,8 @@ type AdminModule = {
   id: string; title: string; revision: number; created_at: string; published_at: string | null; learningType: LearningType | null
   concepts: { id: string | null; name: string | null; target: Level | null; rubric: Record<Level, string | null> }[]
 }
-type CourseDetail = { course: Omit<AdminCourse, 'module_count'>; modules: AdminModule[] }
+type CourseTeacher = { id: string; name: string; email: string; status: 'owner' | 'active' | 'invited' }
+type CourseDetail = { course: Omit<AdminCourse, 'module_count'>; modules: AdminModule[]; teachers: CourseTeacher[] }
 const levelLabels: Record<Level, string> = { remember: 'Remember', understand: 'Understand', apply: 'Apply', analyze: 'Analyze' }
 const dateLabel = (value: string) => new Date(value).toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' })
 
@@ -66,6 +70,49 @@ function ModulePreview({ module }: { module: AdminModule }) {
   </details>
 }
 
+function CourseTeachers({ courseId, initial }: { courseId: string; initial: CourseTeacher[] }) {
+  const [teachers, setTeachers] = useState(initial)
+  const [adding, setAdding] = useState(false)
+  const [busy, setBusy] = useState('')
+  const [error, setError] = useState('')
+  const confirm = useConfirm()
+  const toast = useToast()
+  const path = `/api/admin/courses/${encodeURIComponent(courseId)}/teachers`
+  async function request(url: string, init: RequestInit) {
+    const response = await accountFetch(url, init)
+    const data = await response.json()
+    if (!response.ok) throw new Error(data.error || 'Could not update the course teachers. Please retry.')
+    setTeachers(data.teachers)
+  }
+  async function remove(teacher: CourseTeacher) {
+    const name = teacher.name || teacher.email
+    if (busy || !await confirm(teacher.status === 'invited'
+      ? { title: `Cancel ${name}'s invitation?`, description: 'The invitation leaves their inbox.', confirmLabel: 'Hold to cancel invitation' }
+      : { title: `Remove ${name}?`, description: 'They will lose access to this course. Topics they created stay in the course.', confirmLabel: 'Hold to remove' })) return
+    setBusy(teacher.id); setError('')
+    try {
+      await request(`${path}/${encodeURIComponent(teacher.id)}`, { method: 'DELETE' })
+      toast(teacher.status === 'invited' ? 'Invitation canceled.' : `Removed ${name}.`)
+    } catch (reason) { setError(reason instanceof Error ? reason.message : 'Could not update the course teachers. Please retry.') }
+    finally { setBusy('') }
+  }
+  return <section aria-labelledby="admin-course-teachers-title">
+    <div className="admin-modules-heading"><h2 id="admin-course-teachers-title">Teachers <span>{teachers.filter(teacher => teacher.status !== 'invited').length}</span></h2><button type="button" className="admin-teacher-add" disabled={Boolean(busy)} onClick={() => setAdding(true)}>Add teacher</button></div>
+    {error && <p className="account-error admin-error" role="alert">{error}</p>}
+    <div className="admin-directory"><ul className="admin-users admin-course-teachers">{teachers.map(teacher => <li key={teacher.id} aria-busy={busy === teacher.id}>
+      <div className="admin-user-identity"><strong>{teacher.name || teacher.email.split('@')[0]}</strong><span>{teacher.email}</span></div>
+      <div className="admin-teacher-actions">
+        {teacher.status !== 'active' && <span className="admin-module-status">{teacher.status === 'owner' ? 'Owner' : 'Invited'}</span>}
+        {teacher.status !== 'owner' && <button type="button" disabled={Boolean(busy)} onClick={() => void remove(teacher)}>{teacher.status === 'invited' ? 'Cancel invitation' : 'Remove'}</button>}
+      </div>
+    </li>)}</ul></div>
+    {adding && <CourseTeacherDialog title="Add teacher" note="They get access right away, without an invitation." submitLabel="Add teacher" busyLabel="Adding…" onClose={() => setAdding(false)} onSubmit={async email => {
+      await request(path, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ email }) })
+      setAdding(false); toast(`Added ${email}.`)
+    }} />}
+  </section>
+}
+
 function CourseView({ courseId, onBack }: { courseId: string; onBack: () => void }) {
   const { data, error, retry } = useAdminData<CourseDetail>(`/api/admin/courses/${encodeURIComponent(courseId)}`)
   return <>
@@ -75,11 +122,11 @@ function CourseView({ courseId, onBack }: { courseId: string; onBack: () => void
     {data && <>
       <h1 id="admin-courses-title">{data.course.name}</h1>
       <dl className="admin-course-facts admin-course-overview">
-        <div><dt>Instructor</dt><dd>{data.course.instructor.name || data.course.instructor.email}<span>{data.course.instructor.email}</span></dd></div>
         <div><dt>Course code</dt><dd>{data.course.code}</dd></div>
         <div><dt>Enrollment</dt><dd>{data.course.enrollment_mode === 'open' ? 'Open' : 'Approval required'}</dd></div>
         <div><dt>Created</dt><dd><time dateTime={data.course.created_at}>{dateLabel(data.course.created_at)}</time></dd></div>
       </dl>
+      <CourseTeachers courseId={courseId} initial={data.teachers} />
       <div className="admin-modules-heading"><h2>Topics <span>{data.modules.length}</span></h2><span>View only</span></div>
       <div className="admin-modules">{data.modules.map(module => <ModulePreview key={module.id} module={module} />)}</div>
       {!data.modules.length && <p className="admin-empty">No topics yet.</p>}

@@ -26,7 +26,7 @@ export function dashboardData(account: Account, sessions: ModuleSession[], data:
   const incomplete = sessions.filter(session => !session.started || !sessionComplete(session.concepts)).sort((a, b) => b.updatedAt - a.updatedAt)
   const instructor = canTeachCourses(account.role)
   const courses = data.courses.filter(course => instructor
-    ? course.instructor_id === account.id
+    ? course.teaching ?? course.instructor_id === account.id
     : account.role === 'student' && data.enrollments.some(enrollment => enrollment.course_id === course.id))
   const enrolled = new Set(data.enrollments.filter(enrollment => enrollment.status === 'enrolled').map(enrollment => enrollment.course_id))
   const todos: DashboardTodo[] = incomplete.filter(session => !session.started).map(session => ({

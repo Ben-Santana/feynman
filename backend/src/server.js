@@ -100,7 +100,7 @@ export function createApiServer({ query, hosted = false, env = process.env, prom
         try { input = JSON.parse(body); } catch { return send(400, { error: 'Invalid JSON request.' }); }
         return send(200, await accountService.signConsent(account, input));
       }
-      if (req.method === 'GET' && url.pathname === '/api/inbox') return send(200, await accountService.inbox(account, url.searchParams));
+      if (req.method === 'GET' && url.pathname === '/api/inbox') return send(200, await accountService.inbox(account, url.searchParams, req));
       if (url.pathname.startsWith('/api/admin/')) {
         if (account.role !== 'admin') throw new AccountError('Admin access required.', 403);
         if (url.pathname === '/api/admin/ai-model') {
@@ -134,6 +134,15 @@ export function createApiServer({ query, hosted = false, env = process.env, prom
         if (url.pathname === '/api/admin/courses' && req.method === 'GET') return send(200, await accountService.listCourses(account, url.searchParams));
         const courseTarget = /^\/api\/admin\/courses\/([^/]+)$/.exec(url.pathname);
         if (courseTarget && req.method === 'GET') return send(200, await accountService.viewCourse(account, courseTarget[1]));
+        const courseTeachers = /^\/api\/admin\/courses\/([^/]+)\/teachers(?:\/([^/]+))?$/.exec(url.pathname);
+        if (courseTeachers && req.method === 'DELETE' && courseTeachers[2]) return send(200, await accountService.removeCourseTeacher(account, courseTeachers[1], courseTeachers[2]));
+        if (courseTeachers && req.method === 'POST' && !courseTeachers[2]) {
+          let body = '';
+          for await (const chunk of req) { body += chunk; if (Buffer.byteLength(body) > 1000) return send(413, { error: 'Request is too large.' }); }
+          let input;
+          try { input = JSON.parse(body); } catch { return send(400, { error: 'Invalid JSON request.' }); }
+          return send(200, await accountService.assignCourseTeacher(account, courseTeachers[1], input?.email));
+        }
         if (url.pathname === '/api/admin/users' && req.method === 'GET') return send(200, await accountService.listUsers(account, url.searchParams));
         const deleteTarget = /^\/api\/admin\/users\/([^/]+)$/.exec(url.pathname);
         if (deleteTarget && req.method === 'DELETE') return send(200, await accountService.deleteAccount(account, deleteTarget[1]));

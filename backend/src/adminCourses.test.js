@@ -37,6 +37,17 @@ test('course administration validates inputs before using backend-only RPCs', as
   assert.deepEqual(calls, [
     { key: 'private' }, { name: 'admin_list_courses', args: { actor_id: id, page_number: 2, search_text: 'Physics' } },
     { key: 'private' }, { name: 'admin_view_course', args: { actor_id: id, target_course: id } },
+    { name: 'admin_course_teachers', args: { actor_id: id, target_course: id } },
+  ]);
+  for (const email of [undefined, '', '   ', 'x'.repeat(255)]) await assert.rejects(service.assignCourseTeacher(admin, id, email), error => error.status === 400);
+  await assert.rejects(service.removeCourseTeacher(admin, id, 'invalid'), error => error.status === 400);
+  await assert.rejects(service.assignCourseTeacher({ ...admin, role: 'instructor' }, id, 'ada@example.com'), error => error.status === 403);
+  calls.length = 0;
+  await service.assignCourseTeacher(admin, id, 'ada@example.com');
+  await service.removeCourseTeacher(admin, id, id);
+  assert.deepEqual(calls.filter(call => call.name), [
+    { name: 'admin_assign_course_teacher', args: { actor_id: id, target_course: id, teacher_email: 'ada@example.com' } },
+    { name: 'admin_remove_course_teacher', args: { actor_id: id, target_course: id, target_teacher: id } },
   ]);
 });
 
