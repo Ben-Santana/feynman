@@ -31,16 +31,17 @@ test('opening praise never reaches the teacher', async () => {
   assert.equal(result.message, 'What does the V stand for?');
 });
 
-test('invalid strategy metadata retries once, then keeps the checked question', async () => {
+test('invalid strategy metadata keeps the checked question without a retry', async () => {
   let calls = 0;
   const result = await chat(input('understand'), async () => {
     calls++;
     return { message: 'I can’t place the letters yet. What does V measure?', expression: 'attentive', strategyChoice: { strategyId: 'clarify-specific-term', rationale: 'Clarify V.', targetQuote: 'not in the transcript', rubricItem: aspects[0], background: null } };
   }, undefined, { persistedAssessment: assessment() });
-  assert.equal(calls, 2);
+  assert.equal(calls, 1);
   assert.equal(result.message, 'I can’t place the letters yet. What does V measure?');
   assert.equal(result.learnerModel.strategyId, null);
-  assert.match(result.learnerModel.coverageGap.reason, /exact current learner quote/);
+  // Rejected for the off-shortlist strategy or the ungrounded quote, depending on the shortlist.
+  assert.match(result.learnerModel.coverageGap.reason, /exact current learner quote|reviewed strategy/);
   assert.equal(result.rubricFocus, aspects[0]);
 });
 

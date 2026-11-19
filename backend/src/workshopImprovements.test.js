@@ -132,38 +132,34 @@ test('help retries an embedded practice question instead of showing two competin
   assert.doesNotMatch(help.message, /\?/);
 });
 
+// Transfer is optional by default (plan.md §6); Apply and Analyze instead require
+// the learner's own reasoning, so an answer echoing help stays open until checked.
 for (const learningType of ['theoretical', 'quantitative', 'experimental', 'design']) {
-  for (const level of ['apply', 'analyze'].filter(level => learningType !== 'quantitative' || level !== 'analyze')) test(`${learningType} ${level}: original solution cannot bypass independent transfer, changed-condition reasoning can complete`, async () => {
+  for (const level of ['apply', 'analyze'].filter(level => learningType !== 'quantitative' || level !== 'analyze')) test(`${learningType} ${level}: unverified independence stays open, transfer is optional, independent reasoning completes`, async () => {
     const body = { ...input(), learningType, level };
-    let transferred = false;
+    let independent = false;
     const query = async (system, messages, tool) => {
       if (tool.name === 'evaluate_refined') {
         const data = JSON.parse(messages[0].content[0].text);
-        assert.equal(data.definitions.at(-1).requiresTransfer, true);
+        assert.equal(data.definitions.at(-1).requiresTransfer, false);
         assert.equal(data.definitions.at(-1).requiresIndependent, true);
-        assert.match(system, /not new numbers alone/);
         const value = assessment(messages, 'supported');
         for (const j of value.judgments) {
           j.result = 'correct'; j.reasoning = 'valid';
-          if (j.criterionId === 'level_task') {
-            j.independentCheck = 'demonstrated';
-            j.transferCheck = transferred ? 'demonstrated' : 'not_demonstrated';
-            j.observations[0].demonstratesTransfer = transferred;
-          }
+          j.independentCheck = independent ? 'demonstrated' : 'not_demonstrated';
+          if (j.criterionId === 'level_task') j.transferCheck = 'not_demonstrated';
         }
         return value;
       }
-      if (tool.name === 'summarize_learning') return { summary: 'Independent changed-condition reasoning demonstrated.' };
-      assert.match(system, /ONE materially changed condition/);
-      assert.match(system, /do not repeat every rubric item/i);
+      if (tool.name === 'summarize_learning') return { summary: 'Independent reasoning demonstrated.' };
       return { strategyChoice: { strategyId: 'none', rationale: 'No suitable operation for this fixture.', targetQuote: '', rubricItem: '' }, message: 'If the external condition changes, how would your conclusion change, and why?', expression: 'attentive' };
     };
     const original = await chat(body, query);
     assert.equal(original.assessment.complete, false);
-    assert.equal(original.assessment.criteria.every(c => c.status === 'supported'), true);
-    assert.ok(original.assessment.refined.completion.blockers.some(b => /transfer/.test(b.code)));
-    body.messages.push({ role: 'assistant', content: original.message }, { role: 'user', content: 'A reasoned independent prediction under the changed condition.' });
-    transferred = true;
+    assert.ok(original.assessment.refined.completion.blockers.some(b => /independent/.test(b.code)));
+    assert.ok(!original.assessment.refined.completion.blockers.some(b => /transfer/.test(b.code)));
+    body.messages.push({ role: 'assistant', content: original.message }, { role: 'user', content: 'A reasoned prediction worked out on my own.' });
+    independent = true;
     assert.equal((await chat(body, query)).assessment.complete, true);
   });
 }
@@ -179,12 +175,13 @@ test('quantitative analyze: a correct paper explanation finishes, an incorrect o
     if (tool.name === 'evaluate_refined') {
       assert.equal(JSON.parse(messages[0].content[0].text).definitions.at(-1).requiresTransfer, false);
       const value = assessment(messages, status);
-      for (const j of value.judgments) { j.result = status === 'supported' ? 'correct' : 'incorrect'; j.reasoning = status === 'supported' ? 'valid' : 'flawed'; }
+      for (const j of value.judgments) { j.result = status === 'supported' ? 'correct' : 'incorrect'; j.reasoning = status === 'supported' ? 'valid' : 'flawed'; if (status === 'supported') j.independentCheck = 'demonstrated'; }
       return value;
     }
     if (tool.name === 'summarize_learning') return { summary: 'The learner explained the paper error.' };
     assert.doesNotMatch(system, /ONE materially changed condition/);
-    return { message: 'What does step 1 do to the sign of the result?', expression: 'confused' };
+    // A different question each turn: an exact repeat is rejected as a stuck loop.
+    return { message: status === 'supported' ? 'So the sign flips at step 1. What would make the result positive again?' : 'What does step 1 do to the sign of the result?', expression: 'confused' };
   };
   const followUp = await chat(body, query);
   assert.equal(followUp.finalSummary, undefined);

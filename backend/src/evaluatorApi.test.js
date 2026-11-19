@@ -26,7 +26,7 @@ test('evaluator endpoint lists authored cases without credentials and returns pa
   const listing = await invoke(server);
   assert.equal(listing.status, 200);
   assert.ok(listing.data.cases.length);
-  assert.equal(listing.data.cases.length, 70);
+  assert.equal(listing.data.cases.length, evaluatorComparisonCases.length);
   assert.deepEqual(listing.data.cases.map(c => c.id), evaluatorComparisonCases.map(c => c.id));
   assert.ok(listing.data.cases.every(c => !('expected' in c)));
   assert.equal(listing.data.cases.some(c => c.id === 'inertia'), false);
