@@ -148,6 +148,16 @@ export async function saveModule(courseId: string, record: ModuleSession, revisi
 }
 export const deleteModule = (id: string, revision: number) => rpc<void>('delete_course_module', { target_module: id, expected_revision: revision })
 export const publishModule = (id: string, revision: number) => rpc<CourseModule>('publish_course_module', { target_module: id, expected_revision: revision })
+/** Another teacher saved, published, or deleted the draft after this copy was loaded. */
+export const moduleChanged = (reason: unknown) => (reason as { code?: string } | null)?.code === '40001'
+/** The draft's saved revision, or null once it is published or deleted. */
+export async function loadModuleRevision(courseId: string, id: string) {
+  const signal = accountSignal()
+  const { data, error } = await supabase().from('course_modules').select('revision,published_at').eq('course_id', courseId).eq('id', id).abortSignal(signal).maybeSingle()
+  signal.throwIfAborted()
+  if (error) throw new Error('Could not check the topic. Please retry.')
+  return data && !data.published_at ? data.revision as number : null
+}
 export async function loadModuleDraft(courseId: string, id: string) {
   const signal = accountSignal()
   const { data, error } = await supabase().from('course_modules').select('*').eq('course_id', courseId).eq('id', id).abortSignal(signal).single()

@@ -40,7 +40,7 @@ import { DashboardPage } from './components/DashboardPage'
 import { SetupTitleForm } from './components/SetupTitleForm'
 import { CourseCreatePage } from './components/CourseCreatePage'
 import { CoursesPage } from './components/CoursesPage'
-import { loadModuleDraft, saveModule, publishModule, restartModule, type ModuleSession } from './courseStore'
+import { loadModuleDraft, loadModuleRevision, moduleChanged, saveModule, publishModule, restartModule, type ModuleSession } from './courseStore'
 import { loadTopicReport } from './topicReports'
 import { SessionsPage } from './components/SessionsPage'
 import { PaperReview, type Review } from './components/PaperReview'
@@ -70,6 +70,9 @@ const levels: { id: Level; name: string }[] = [
 ]
 const emptyRubric = (): ConceptRubric => ({ remember: '', understand: '', apply: '', analyze: '' })
 const newConcept = (name = '', rubric: ConceptRubric = emptyRubric()): Concept => ({ id: crypto.randomUUID(), name, rubric, target: 'analyze', passed: 0, stageStart: 0, messages: [], draft: '', assessment: null })
+
+// The setup step is where a teacher is looking, not an edit, so it never makes a draft unsaved.
+const moduleSignature = (record: ModuleSession) => JSON.stringify({ ...record, setupStep: undefined })
 
 function LevelSlider({ id, name, value, onChange }: { id: string; name: string; value: Level; onChange: (level: Level) => void }) {
   const index = levels.findIndex(level => level.id === value)
@@ -155,6 +158,11 @@ export default function App({ account, onProfileUpdated, authMode }: { account: 
   const [moduleReady, setModuleReady] = useState(false)
   const [moduleSaving, setModuleSaving] = useState(false)
   const [moduleNotice, setModuleNotice] = useState('')
+  // Another teacher's save that this copy of the draft does not include.
+  const [moduleConflict, setModuleConflict] = useState('')
+  const moduleRevisionRef = useRef(0)
+  const moduleSavingRef = useRef(false)
+  const moduleReloaded = useRef(false)
   const moduleSavedSignature = useRef('')
   const moduleDirty = useRef(false)
   const moduleSessionId = useRef('')
@@ -323,7 +331,7 @@ export default function App({ account, onProfileUpdated, authMode }: { account: 
   useEffect(() => {
     if (!moduleId || !moduleCourseId) return
     let disposed = false
-    queueMicrotask(() => { if (!disposed) { setModuleReady(false); setError(''); setModuleNotice('') } })
+    queueMicrotask(() => { if (!disposed) { setModuleReady(false); setError(''); setModuleNotice(''); setModuleConflict('') } })
     const signal = accountSignal()
     const fresh = new URLSearchParams(window.location.search).get('new') === '1'
     const empty: ModuleSession = { id: moduleId, title: '', concepts: [newConcept()], started: false, activeId: null, updatedAt: Date.now(), learningType: null, setupStep: 'title', files: [], selectedTargets: {} }
@@ -337,12 +345,22 @@ export default function App({ account, onProfileUpdated, authMode }: { account: 
       const draft = restoreDraft(record)
       moduleSessionId.current = moduleId!
       setSessionId(moduleId!); setTitle(draft.title); setConcepts(record.concepts); setStarted(false); setActive(''); setLearningType(draft.learningType); setSetupStep(draft.step); setFiles(draft.files); setSelectedTargets(draft.selectedTargets); setAiByName(draft.aiByName); setRubricInstructions(draft.rubricInstructions)
-      setModuleRevision(recovery?.revision ?? saved.revision)
-      moduleSavedSignature.current = JSON.stringify({ id: moduleId, title: draft.title.trim(), concepts: saved.record.concepts, started: false, activeId: null, updatedAt: 0, learningType: draft.learningType, setupStep: draft.step, files: draft.files, selectedTargets: draft.selectedTargets, aiByName: draft.aiByName, rubricInstructions: draft.rubricInstructions })
+      moduleRevisionRef.current = recovery?.revision ?? saved.revision
+      setModuleRevision(moduleRevisionRef.current)
+      const savedDraft = restoreDraft(saved.record)
+      moduleSavedSignature.current = moduleSignature({ id: moduleId!, title: savedDraft.title.trim(), concepts: saved.record.concepts, started: false, activeId: null, updatedAt: 0, learningType: savedDraft.learningType, setupStep: savedDraft.step, files: savedDraft.files, selectedTargets: savedDraft.selectedTargets, aiByName: savedDraft.aiByName, rubricInstructions: savedDraft.rubricInstructions })
       moduleDirty.current = Boolean(recovery)
-      if (recovery) setModuleNotice('Unsaved topic changes restored. Save the draft to keep them.')
+      // Unsaved changes from this device stay on screen, so say when the saved draft has moved on.
+      if (recovery && recovery.revision !== saved.revision) setModuleConflict('Another teacher changed this draft after your unsaved changes. Reload to see their changes.')
+      else if (recovery) setModuleNotice('Unsaved topic changes restored. Save the draft to keep them.')
+      else if (moduleReloaded.current) setModuleNotice('Draft updated with another teacher’s changes.')
+      moduleReloaded.current = false
       setModuleReady(true)
-    })().catch(reason => { if (!disposed) reportError(reason) })
+    })().catch(reason => {
+      if (disposed || signal.aborted) return
+      console.error('Feynman topic load failed', reason)
+      setError(reason instanceof Error && reason.message ? reason.message : 'Could not load the topic. Please retry.')
+    })
     return () => { disposed = true; moduleDirty.current = false }
   }, [moduleId, moduleCourseId, account.role, moduleLoadVersion, reportError])
   const moduleRecord = useCallback((): ModuleSession => {
@@ -351,7 +369,7 @@ export default function App({ account, onProfileUpdated, authMode }: { account: 
   useEffect(() => {
     if (!isModuleEditor || !moduleReady || sessionId !== moduleId) return
     const record = moduleRecord()
-    moduleDirty.current = JSON.stringify(record) !== moduleSavedSignature.current
+    moduleDirty.current = moduleSignature(record) !== moduleSavedSignature.current
     if (!moduleDirty.current) return
     const id = moduleId!
     const draft = { record, revision: moduleRevision }
@@ -365,6 +383,28 @@ export default function App({ account, onProfileUpdated, authMode }: { account: 
     window.addEventListener('beforeunload', warn)
     return () => window.removeEventListener('beforeunload', warn)
   }, [isModuleEditor])
+  // Pick up another teacher's save when this teacher returns to the tab.
+  useEffect(() => {
+    if (!isModuleEditor || !moduleReady || !moduleCourseId || !moduleId) return
+    let disposed = false
+    const check = () => {
+      const known = moduleRevisionRef.current
+      if (document.visibilityState !== 'visible' || !known || moduleSavingRef.current) return
+      void loadModuleRevision(moduleCourseId, moduleId).then(revision => {
+        if (disposed || moduleSavingRef.current || known !== moduleRevisionRef.current || (revision !== null && revision <= known)) return
+        if (moduleDirty.current) setModuleConflict(revision === null ? 'Another teacher published or deleted this topic.' : 'Another teacher changed this draft. Reload to see their changes.')
+        // Nothing is unsaved here, so drop any leftover browser copy and show the saved draft.
+        else return moduleRecoveryQueue.current.catch(() => {}).then(() => saveModuleRecovery(moduleId, null)).then(() => {
+          if (disposed || moduleDirty.current) return
+          moduleReloaded.current = revision !== null
+          setModuleLoadVersion(value => value + 1)
+        })
+      }).catch(() => {})
+    }
+    window.addEventListener('focus', check)
+    document.addEventListener('visibilitychange', check)
+    return () => { disposed = true; window.removeEventListener('focus', check); document.removeEventListener('visibilitychange', check) }
+  }, [isModuleEditor, moduleReady, moduleCourseId, moduleId])
   async function reloadModule() {
     if (!moduleId || moduleSaving || !await confirm({ title: 'Reload the saved topic?', description: 'This device’s changes will be discarded.', confirmLabel: 'Hold to reload' })) return
     const signal = accountSignal()
@@ -387,12 +427,15 @@ export default function App({ account, onProfileUpdated, authMode }: { account: 
   async function commitModule(publish = false) {
     if (!moduleCourseId || !moduleId || moduleSaving || !moduleReady) return
     const signal = accountSignal()
+    moduleSavingRef.current = true
     setModuleSaving(true); setError(''); setModuleNotice('')
     try {
       const record = moduleRecord()
       const saved = await saveModule(moduleCourseId, record, moduleRevision)
+      moduleRevisionRef.current = saved.revision
       setModuleRevision(saved.revision)
-      moduleSavedSignature.current = JSON.stringify(record)
+      setModuleConflict('')
+      moduleSavedSignature.current = moduleSignature(record)
       moduleDirty.current = false
       await moduleRecoveryQueue.current.catch(() => {})
       signal.throwIfAborted()
@@ -404,8 +447,12 @@ export default function App({ account, onProfileUpdated, authMode }: { account: 
         setSessionId('')
         navigate(`/courses/${moduleCourseId}`)
       } else setModuleNotice('Draft saved.')
-    } catch (reason) { if (!signal.aborted) reportError(reason) }
-    finally { if (!signal.aborted) setModuleSaving(false) }
+    } catch (reason) {
+      if (signal.aborted) return
+      console.error('Feynman topic save failed', reason)
+      if (moduleChanged(reason)) setModuleConflict('Another teacher changed this draft, so it was not saved. Reload to see their changes.')
+      else setError((reason as { code?: string } | null)?.code && reason instanceof Error ? reason.message : 'Could not save the draft. Please retry.')
+    } finally { moduleSavingRef.current = false; if (!signal.aborted) setModuleSaving(false) }
   }
   useEffect(() => {
     if (hydrated && isChatPage && started && (sessionComplete(concepts) || savedSessions.find(record => record.id === sessionId)?.reportFinishedAt)) navigate(`/summary?session=${encodeURIComponent(sessionId)}`, true)
@@ -751,7 +798,7 @@ export default function App({ account, onProfileUpdated, authMode }: { account: 
           </>}
           {isModuleEditor && <div className="module-editor-toolbar"><button disabled={moduleSaving || uploading || setupStep === 'loading'} onClick={() => void commitModule()}>{moduleSaving ? 'Saving…' : 'Save draft'}</button></div>}
         </nav>
-        {isModuleEditor && <div className="module-editor-feedback"><span role="status">{moduleNotice}</span>{error && <><p role="alert">{error}</p><button disabled={moduleSaving} onClick={() => void reloadModule().catch(reason => reportError(reason))}>Reload saved draft</button></>}</div>}
+        {isModuleEditor && <div className="module-editor-feedback"><span role="status">{moduleNotice}</span>{moduleConflict && <><p role="alert">{moduleConflict}</p><button disabled={moduleSaving} onClick={() => void reloadModule().catch(reason => reportError(reason))}>Reload saved draft</button></>}{error && <p role="alert">{error}</p>}</div>}
         <section inert={(isModuleEditor && moduleSaving) || restartingSession} className={`chat-section ${started ? 'chat-section-started' : 'chat-section-setup'} ${boardOpen ? 'board-open' : 'board-closed'} ${started && !done && !awaitingGrades ? 'composer-open' : ''} ${concepts.length > 3 ? 'concept-rail' : ''} ${!started && setupStep === 'class-type' ? 'class-type-section' : ''}`} aria-label="Learning chat">
           {started && <ChatActions {...chatActionProps} />}
           <aside className="chat-avatar" aria-label="Your classroom student">{started && <div id="classroom-whiteboard" className="whiteboard-container" onPointerEnter={event => { if (event.pointerType === 'mouse') setBoardHovered(true) }} onPointerLeave={() => setBoardHovered(false)}><TooltipButton type="button" className="whiteboard-toggle" tooltip={boardOpen ? 'Close whiteboard' : 'Open whiteboard'} aria-label={boardOpen ? 'Close whiteboard' : 'Open whiteboard'} aria-expanded={boardOpen} aria-controls="whiteboard-drawing" onClick={() => setBoardOpen(open => !open)}><svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">{boardOpen ? <path d="m6 6 12 12M18 6 6 18" /> : <rect x="3" y="3" width="18" height="18" rx="4" />}</svg></TooltipButton><div id="whiteboard-drawing" className="whiteboard-drawing" aria-hidden={!boardOpen} inert={!boardOpen}><Whiteboard key={active} ref={whiteboard} open={boardOpen} /></div></div>}{started && <div ref={avatarCharacter} className="avatar-character"><Bloub key={active} appearance={appearance} showControls={false} followPointer={!busy && boardOpen && boardHovered} expression={busy ? 'confused' : boardOpen && boardHovered ? 'attentive' : done ? 'excited' : session.expression || 'attentive'} /><ThoughtCloud thinking={busy} transferring={Boolean(arrivingReply)} /></div>}</aside>
