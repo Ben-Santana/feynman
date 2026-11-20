@@ -100,3 +100,11 @@ test('the skip offer needs frustration or the learner saying they do not know, n
   assert.deepEqual([...skippedRubricItems([...turns(weights, ["I don't know"]), { role: 'assistant', content: 'Which?', rubricFocus: weights }, skip], [weights])], [weights]);
   assert.throws(() => skippedRubricItems([...turns(weights, ['2, 4, 2, 1']), { role: 'assistant', content: 'Which?', rubricFocus: weights }, skip], [weights]), /not available/);
 });
+
+test('learners get every fix with credit from their last saved assessment', async () => {
+  const { learnerFixes, fixNames } = await import('./loopFixes.js');
+  const fixes = learnerFixes({ criteria: [{ aspect: bcd, status: 'supported' }, { aspect: weights, status: 'missing' }, { aspect: 'Old item', status: 'supported' }] }, [bcd, weights]);
+  for (const name of fixNames) assert.equal(fixes[name], true);
+  assert.deepEqual(fixes.earned, [bcd]);
+  assert.deepEqual(learnerFixes(undefined, [bcd]).earned, []);
+});

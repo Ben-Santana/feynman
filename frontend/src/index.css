@@ -972,3 +972,4 @@ div.paper-grade-field .paper-grade-word { opacity: 1; }
 .rubric-item-formatted { cursor: text; border-radius: 4px; }
 .rubric-item-formatted:focus-visible { outline: 1px solid var(--primary); }
 .rubric-progress label > span { min-width: 0; }
+.chat-skip-offer { margin: 8px 0 0; font-size: 0.8125rem; color: var(--muted-foreground); }

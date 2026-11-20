@@ -1,5 +1,5 @@
-// Experimental fixes for the "asked again and again" loop. Every fix is off unless a
-// developer tools request turns it on, so learners see no change until one is promoted.
+// Fixes for the "asked again and again" loop. Learners get every fix; developer tools
+// can still send an experiment to compare subsets.
 import { asksForClarity, expressesFrustration, rubricAttempts } from '../../frontend/src/rubricFallback.js';
 
 export const fixNames = ['keepCredit', 'tolerantQuotes', 'stayOnItem', 'plainAsk', 'clearSkip'];
@@ -9,6 +9,12 @@ export function readFixes(experiment, aspects = []) {
   const fixes = Object.fromEntries(fixNames.flatMap(name => experiment[name] === true ? [[name, true]] : []));
   const earned = Array.isArray(experiment.earned) ? [...new Set(experiment.earned.filter(item => aspects.includes(item)))] : [];
   return Object.keys(fixes).length ? { ...fixes, earned } : {};
+}
+
+// Every fix on, with credit carried over from the learner's last saved assessment.
+export function learnerFixes(previous, aspects = []) {
+  const earned = (previous?.criteria || []).filter(item => item.status === 'supported' && aspects.includes(item.aspect)).map(item => item.aspect);
+  return { ...Object.fromEntries(fixNames.map(name => [name, true])), earned: [...new Set(earned)] };
 }
 
 // An item supported on an earlier turn stays supported; the level passes once every item has been.

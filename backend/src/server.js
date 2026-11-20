@@ -20,7 +20,7 @@ import { createEvaluationContext, EvaluatorInputError, evaluatorVersion } from '
 import { evaluatorComparisonCases, evaluatorTestCases } from './evaluatorTestCases.js';
 import { screenEvaluatorComparison } from './evaluatorBenchmark.js';
 import { EvaluationCache } from './turnCache.js';
-import { readFixes } from './loopFixes.js';
+import { learnerFixes, readFixes } from './loopFixes.js';
 import { checklistItems } from '../../frontend/src/rubricChecklist.js';
 import { generatePuzzle, puzzlePrompt, validatePuzzleDescription } from './puzzleGeneration.js';
 
@@ -280,8 +280,10 @@ export function createApiServer({ query, hosted = false, env = process.env, prom
       } : selectedQuery;
       let assessmentRecord;
       const prompts = loadPrompts(promptsPath);
-      const fixes = calls && account.role === 'admin' ? readFixes(experiment, input.criterion && /^\s*1[.)]\s/m.test(input.criterion) ? checklistItems(input.criterion) : input.aspects) : {};
-      const result = await chat(input, tracedQuery, prompts, { fixes, evaluationCache: Object.keys(fixes).length ? undefined : evaluationCache, cacheScope: [account.id, provider, model],
+      const fixAspects = input.criterion && /^\s*1[.)]\s/m.test(input.criterion) ? checklistItems(input.criterion) : input.aspects;
+      const devExperiment = Boolean(calls && account.role === 'admin' && experiment);
+      const fixes = devExperiment ? readFixes(experiment, fixAspects) : learnerFixes(prepared?.previous?.payload.assessment, fixAspects);
+      const result = await chat(input, tracedQuery, prompts, { fixes, evaluationCache: devExperiment ? undefined : evaluationCache, cacheScope: [account.id, provider, model],
         persistedAssessment: prepared?.previous?.payload.assessment,
         openSkips: prepared?.openSkips,
         onAssessment: prepared ? async assessment => {
