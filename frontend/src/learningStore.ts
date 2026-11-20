@@ -113,8 +113,10 @@ export function createLearningStore({ client = supabase, getAccount = requireAcc
     }
     return { version: 1, session: { ...record, concepts, files } }
   }
-  async function download(reference: AttachmentReference, userId: string, signal: AbortSignal): Promise<Blob> {
-    if (!reference?.path?.startsWith(`${userId}/`)) throw new Error('Invalid attachment reference.')
+  // A course topic draft can hold files another teacher of the course added; storage policies decide access.
+  async function download(reference: AttachmentReference, userId: string, signal: AbortSignal, sharedSession?: string): Promise<Blob> {
+    const owned = reference?.path?.startsWith(`${userId}/`)
+    if (!owned && !(sharedSession && reference?.path?.split('/')[1] === sharedSession)) throw new Error('Invalid attachment reference.')
     boundary(userId, signal)
     const { data, error } = await client().storage.from(bucket).download(reference.path)
     if (error || !data) throw new Error('Could not load a saved attachment. Please retry.')
@@ -131,7 +133,7 @@ export function createLearningStore({ client = supabase, getAccount = requireAcc
     if (row.document?.version !== 1) throw new Error('This session uses an unsupported format.')
     const source = row.document.session
     const files = []
-    for (const reference of (source.files as AttachmentReference[] || [])) files.push(new File([await download(reference, userId, signal)], reference.name, { type: reference.type, lastModified: reference.lastModified }))
+    for (const reference of (source.files as AttachmentReference[] || [])) files.push(new File([await download(reference, userId, signal, row.id)], reference.name, { type: reference.type, lastModified: reference.lastModified }))
     const concepts = []
     for (const value of (source.concepts as Record<string, unknown>[] || [])) {
       const messages = []

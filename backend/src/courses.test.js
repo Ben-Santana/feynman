@@ -913,3 +913,25 @@ test('co-teachers join by accepted invitation or admin assignment and share teac
   await one('select public.delete_course($1)', [course.id]);
   assert.equal((await db.query('select id from public.courses')).rows.length, 0);
 });
+
+test('co-teachers read the source files of a shared topic draft', async t => {
+  const { db, as, one } = await courseFixture(t);
+  const path = `${instructor}/${moduleId}/hash`, stray = `${instructor}/${moduleId}/unreferenced`;
+  await db.query("insert into storage.objects(bucket_id,name) values('learning-attachments',$1),('learning-attachments',$2)", [path, stray]);
+  const draft = { ...doc(), session: { ...doc().session, files: [{ path }] } };
+  await as(instructor);
+  const course = await one("select * from public.create_course('Physics','open')");
+  await one('select public.save_course_module($1,$2,$3,$4,0)', [course.id, moduleId, 'Energy', draft]);
+  const visible = async () => (await db.query("select name from storage.objects where bucket_id='learning-attachments' order by name")).rows.map(row => row.name);
+  await as(other);
+  assert.deepEqual(await visible(), []);
+  await as(instructor);
+  await one('select public.invite_course_teacher($1,$2)', [course.id, `${other}@example.com`]);
+  await as(other);
+  assert.deepEqual(await visible(), []);
+  await one('select public.respond_course_invitation($1,true)', [course.id]);
+  assert.deepEqual(await visible(), [path]);
+  const saved = await one('select * from public.publish_course_module($1,1)', [moduleId]);
+  assert.ok(saved.published_at);
+  assert.deepEqual(await visible(), []);
+});
