@@ -263,6 +263,7 @@ export default function App({ account, onProfileUpdated, authMode }: { account: 
     assigned: Boolean(assignment),
     restartDisabled: sessionBusy || saveStatus.state === 'conflict',
     onRestart: () => void restartSession().catch(reason => reportError(reason)),
+    onOpenSurvey: survey.status && !survey.status.submittedAt ? survey.show : undefined,
   }
   const nextQueued = !busy && !done && !awaitingGrades && !arrivingReply && !session.queuePaused && !editingQueuedId && !draggingQueued ? queue[0] : undefined
 

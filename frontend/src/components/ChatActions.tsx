@@ -11,6 +11,8 @@ export type ChatActionProps = {
   assigned: boolean
   restartDisabled: boolean
   onRestart: () => void
+  /** Set only while the student has a pending learning survey. */
+  onOpenSurvey?: () => void
 }
 
 function useChatActionRequests({ topicComplete, onFinishTopic, assigned, onRestart }: ChatActionProps) {
@@ -36,7 +38,7 @@ function BoardIcon({ size }: { size: number }) {
 }
 
 export function ChatActionItems({ onSelect, showBoard = true, ...props }: ChatActionProps & { onSelect: () => void; showBoard?: boolean }) {
-  const { boardOpen, onToggleBoard, reportDisabled, restartDisabled } = props
+  const { boardOpen, onToggleBoard, reportDisabled, restartDisabled, onOpenSurvey } = props
   const { reportLabel, requestFinish, requestRestart } = useChatActionRequests(props)
   return <>
     {showBoard && <button type="button" aria-expanded={boardOpen} aria-controls="whiteboard-drawing" onClick={() => { onSelect(); onToggleBoard() }}>
@@ -56,6 +58,13 @@ export function ChatActionItems({ onSelect, showBoard = true, ...props }: ChatAc
       </svg>
       Restart session
     </button>
+    {onOpenSurvey && <button type="button" onClick={() => { onSelect(); onOpenSurvey() }}>
+      <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+        <rect x="5" y="4" width="14" height="17" rx="2" />
+        <path d="M9 4V3h6v1M9 10h6M9 14h6" />
+      </svg>
+      Take learning survey
+    </button>}
   </>
 }
 
