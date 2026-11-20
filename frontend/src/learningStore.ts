@@ -268,16 +268,43 @@ export function createLearningStore({ client = supabase, getAccount = requireAcc
     if (trackRevision) revisions.set(row.id, row.revision)
     return record as SavedSession<T, S>
   }
-  async function saveModuleRecovery<T>(id: string, draft: T | null) {
+  // Safari can lose a File kept in IndexedDB, so a draft's source files are stored as bytes.
+  const fileBytes = new WeakMap<File, ArrayBuffer>()
+  type StoredFile = { name: string; type: string; lastModified?: number; bytes: ArrayBuffer }
+  async function saveModuleRecovery<T extends { record: { files?: File[] } }>(id: string, draft: T | null) {
     const userId = bindOwner(), signal = getSignal()
-    await localValue(`${userId}:module:${id}`, draft)
+    let stored: unknown = draft
+    if (draft) {
+      const files: StoredFile[] = []
+      for (const file of draft.record.files || []) {
+        const bytes = fileBytes.get(file) || await file.arrayBuffer()
+        fileBytes.set(file, bytes)
+        files.push({ name: file.name, type: file.type, lastModified: file.lastModified, bytes })
+      }
+      stored = { ...draft, record: { ...draft.record, files } }
+    }
+    boundary(userId, signal)
+    await localValue(`${userId}:module:${id}`, stored)
     boundary(userId, signal)
   }
-  async function loadModuleRecovery<T>(id: string): Promise<T | undefined> {
+  /** `lostFiles` names source files this browser could no longer read. */
+  async function loadModuleRecovery<T extends { record: { files?: File[] } }>(id: string): Promise<(T & { lostFiles: string[] }) | null | undefined> {
     const userId = bindOwner(), signal = getSignal()
-    const value = await localValue<T>(`${userId}:module:${id}`)
+    const value = await localValue<T | null>(`${userId}:module:${id}`)
     boundary(userId, signal)
-    return value
+    if (!value?.record) return value as null | undefined
+    const files: File[] = [], lostFiles: string[] = []
+    for (const item of (value.record.files || []) as (File | StoredFile)[]) {
+      try {
+        // Copies saved before files were stored as bytes hold File objects.
+        const bytes = item instanceof Blob ? await item.arrayBuffer() : item.bytes
+        const file = new File([bytes], item.name, { type: item.type, lastModified: item.lastModified })
+        fileBytes.set(file, bytes)
+        files.push(file)
+      } catch { lostFiles.push(item.name) }
+    }
+    boundary(userId, signal)
+    return { ...value, record: { ...value.record, files }, lostFiles }
   }
   return { saveModuleRecovery, loadModuleRecovery, encodeSession, decodeSession, loadSessions, queueSessionSave, flushSessionSaves, resolveSessionConflict, loadPlayground, savePlayground, subscribeSaveStatus, getSaveStatus }
 }

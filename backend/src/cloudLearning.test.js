@@ -151,7 +151,10 @@ test('module drafts and source files use separate account-scoped recovery withou
   const f = fixture(t), writer = f.store(); await writer.loadSessions();
   const draft = { record: { ...record(), started: false, files: [new File(['notes'],'source.txt',{type:'text/plain',lastModified:42})] }, revision: 3 };
   await writer.saveModuleRecovery('module',draft);
-  assert.equal((await f.store().loadModuleRecovery('module')).revision,3);
+  const restored = await f.store().loadModuleRecovery('module');
+  assert.equal(restored.revision,3);
+  assert.equal(await restored.record.files[0].text(),'notes');
+  assert.deepEqual([restored.record.files[0].name,restored.record.files[0].type,restored.record.files[0].lastModified,restored.lostFiles],['source.txt','text/plain',42,[]]);
   assert.equal(f.state.rows.size,0);
   const document = await writer.encodeSession(draft.record);
   assert.ok(document.session.files[0].path.startsWith(`${first}/${sessionId}/`));

@@ -339,8 +339,14 @@ export default function App({ account, onProfileUpdated, authMode }: { account: 
       if (!canTeachCourses(account.role)) throw new Error('Instructor access required.')
       const saved = fresh ? { record: empty, revision: 0 } : await loadModuleDraft(moduleCourseId, moduleId)
       signal.throwIfAborted()
-      const recovery = await loadModuleRecovery<{ record: ModuleSession; revision: number } | null>(moduleId)
+      const recovery = await loadModuleRecovery<{ record: ModuleSession; revision: number }>(moduleId)
       if (disposed) return
+      // A source file this browser lost is taken from the saved draft when it is still there.
+      const lostFiles = (recovery?.lostFiles ?? []).filter(name => {
+        const file = saved.record.files?.find(file => file.name === name)
+        if (file) recovery!.record.files!.push(file)
+        return !file
+      })
       const record = recovery?.record ?? saved.record
       const draft = restoreDraft(record)
       moduleSessionId.current = moduleId!
@@ -354,6 +360,7 @@ export default function App({ account, onProfileUpdated, authMode }: { account: 
       if (recovery && recovery.revision !== saved.revision) setModuleConflict('Another teacher changed this draft after your unsaved changes. Reload to see their changes.')
       else if (recovery) setModuleNotice('Unsaved topic changes restored. Save the draft to keep them.')
       else if (moduleReloaded.current) setModuleNotice('Draft updated with another teacher’s changes.')
+      if (lostFiles.length) setError(`This browser lost ${lostFiles.length === 1 ? `the source file “${lostFiles[0]}”` : `${lostFiles.length} source files`}. Add ${lostFiles.length === 1 ? 'it' : 'them'} again if the topic needs ${lostFiles.length === 1 ? 'it' : 'them'}.`)
       moduleReloaded.current = false
       setModuleReady(true)
     })().catch(reason => {
@@ -451,7 +458,8 @@ export default function App({ account, onProfileUpdated, authMode }: { account: 
       if (signal.aborted) return
       console.error('Feynman topic save failed', reason)
       if (moduleChanged(reason)) setModuleConflict('Another teacher changed this draft, so it was not saved. Reload to see their changes.')
-      else setError((reason as { code?: string } | null)?.code && reason instanceof Error ? reason.message : 'Could not save the draft. Please retry.')
+      // Only the database's own messages are written for teachers; browser and network errors are not.
+      else setError(typeof (reason as { code?: unknown } | null)?.code === 'string' && (reason as { code: string }).code && reason instanceof Error ? reason.message : 'Could not save the draft. Please retry.')
     } finally { moduleSavingRef.current = false; if (!signal.aborted) setModuleSaving(false) }
   }
   useEffect(() => {
@@ -798,7 +806,7 @@ export default function App({ account, onProfileUpdated, authMode }: { account: 
           </>}
           {isModuleEditor && <div className="module-editor-toolbar"><button disabled={moduleSaving || uploading || setupStep === 'loading'} onClick={() => void commitModule()}>{moduleSaving ? 'Saving…' : 'Save draft'}</button></div>}
         </nav>
-        {isModuleEditor && <div className="module-editor-feedback"><span role="status">{moduleNotice}</span>{moduleConflict && <><p role="alert">{moduleConflict}</p><button disabled={moduleSaving} onClick={() => void reloadModule().catch(reason => reportError(reason))}>Reload saved draft</button></>}{error && <p role="alert">{error}</p>}</div>}
+        {isModuleEditor && <div className="module-editor-feedback"><span role="status">{moduleNotice}</span>{moduleConflict && <><p role="alert">{moduleConflict}</p><button disabled={moduleSaving} onClick={() => void reloadModule().catch(reason => reportError(reason))}>Reload saved draft</button></>}</div>}
         <section inert={(isModuleEditor && moduleSaving) || restartingSession} className={`chat-section ${started ? 'chat-section-started' : 'chat-section-setup'} ${boardOpen ? 'board-open' : 'board-closed'} ${started && !done && !awaitingGrades ? 'composer-open' : ''} ${concepts.length > 3 ? 'concept-rail' : ''} ${!started && setupStep === 'class-type' ? 'class-type-section' : ''}`} aria-label="Learning chat">
           {started && <ChatActions {...chatActionProps} />}
           <aside className="chat-avatar" aria-label="Your classroom student">{started && <div id="classroom-whiteboard" className="whiteboard-container" onPointerEnter={event => { if (event.pointerType === 'mouse') setBoardHovered(true) }} onPointerLeave={() => setBoardHovered(false)}><TooltipButton type="button" className="whiteboard-toggle" tooltip={boardOpen ? 'Close whiteboard' : 'Open whiteboard'} aria-label={boardOpen ? 'Close whiteboard' : 'Open whiteboard'} aria-expanded={boardOpen} aria-controls="whiteboard-drawing" onClick={() => setBoardOpen(open => !open)}><svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">{boardOpen ? <path d="m6 6 12 12M18 6 6 18" /> : <rect x="3" y="3" width="18" height="18" rx="4" />}</svg></TooltipButton><div id="whiteboard-drawing" className="whiteboard-drawing" aria-hidden={!boardOpen} inert={!boardOpen}><Whiteboard key={active} ref={whiteboard} open={boardOpen} /></div></div>}{started && <div ref={avatarCharacter} className="avatar-character"><Bloub key={active} appearance={appearance} showControls={false} followPointer={!busy && boardOpen && boardHovered} expression={busy ? 'confused' : boardOpen && boardHovered ? 'attentive' : done ? 'excited' : session.expression || 'attentive'} /><ThoughtCloud thinking={busy} transferring={Boolean(arrivingReply)} /></div>}</aside>
