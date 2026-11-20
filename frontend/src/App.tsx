@@ -1,4 +1,5 @@
 import { useToast } from './components/useToast'
+import { requestBody, responseData } from './requestBody'
 import { ConfirmDialog } from './components/ConfirmDialog'
 import { useConfirm } from './components/useConfirm'
 import { rubricSkipReason } from './rubricFallback.js'
@@ -88,10 +89,9 @@ async function post<T>(path: string, body: unknown, signal: AbortSignal): Promis
   signal.throwIfAborted()
   const local = body && typeof body === 'object' && ('assignmentSessionId' in body || 'sessionId' in body) ? undefined : localAIResponse(path, body)
   if (local !== undefined) return local as T
-  const response = await accountFetch(path, { method: 'POST', signal, headers: { 'Content-Type': 'application/json', ...aiHeaders() }, body: JSON.stringify(body) })
-  const data = await response.json()
-  if (!response.ok) throw new Error(data.error || 'The request failed. Please retry.')
-  return data as T
+  const encoded = await requestBody(body)
+  const response = await accountFetch(path, { method: 'POST', signal, headers: { 'Content-Type': encoded.contentType, ...aiHeaders() }, body: encoded.body })
+  return await responseData(response) as T
 }
 
 // Whiteboard images and web fonts grow the list after mount. Follow that growth

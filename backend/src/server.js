@@ -1,4 +1,5 @@
 import { createStudyGuidanceGenerator } from './studyGuidance.js';
+import { readRequestBody } from './requestBody.js';
 import { usageFeatures, usageRecord } from './usage.js';
 import { InvalidOutputError } from './structuredOutput.js';
 import { createServer } from 'node:http';
@@ -180,12 +181,10 @@ export function createApiServer({ query, hosted = false, env = process.env, prom
       if (req.method === 'GET' && req.url === '/api/ai/models') return send(200, { models: await adapter.listModels() });
       if (aiControl && (!req.headers.origin || !/^application\/json(?:;|$)/i.test(req.headers['content-type'] || ''))) return send(403, { error: 'Open AI settings in the local Feynman app to manage accounts.' });
       if (req.method !== 'POST' || !['/api/chat', '/api/concepts', '/api/concept-suggestions', '/api/rubric', '/api/developer/rubric', '/api/developer/prompts', '/api/developer/question-comparison', '/api/developer/question-review', '/api/developer/evaluator-comparison', '/api/developer/puzzles', '/api/ai/sign-in', '/api/ai/sign-out', '/api/ai/remove-account'].includes(req.url)) return send(404, { error: 'Not found' });
-      let body = '';
-      for await (const chunk of req) {
-        body += chunk;
-        const limit = puzzleGeneration ? 40_000 : aiControl ? 10_000 : developer ? 200_000 : req.url === '/api/chat' || evaluatorComparison ? 12_000_000 : 7_000_000;
-        if (Buffer.byteLength(body) > limit) return send(413, { error: 'Request is too large.' });
-      }
+      let body;
+      const limit = puzzleGeneration ? 40_000 : aiControl ? 10_000 : developer ? 200_000 : req.url === '/api/chat' || evaluatorComparison ? 12_000_000 : 7_000_000;
+      try { body = await readRequestBody(req, limit); }
+      catch (error) { return send(error.status || 400, { error: error.message }); }
       let input;
       try { input = JSON.parse(body); } catch { return send(400, { error: 'Invalid JSON request.' }); }
       if (!input || typeof input !== 'object' || Array.isArray(input)) return send(400, { error: 'Enter a valid request object.' });
