@@ -929,12 +929,12 @@ div.paper-grade-field .paper-grade-word { opacity: 1; }
 @media (width > 700px) {
   .finish-topic { display: none; }
   .chat-section-started.board-closed .whiteboard-container { visibility: hidden; }
-  .chat-action-menu { display: block; position: absolute; z-index: 6; left: 24px; bottom: 24px; }
-  .chat-actions-toggle { display: grid; place-items: center; width: 44px; height: 44px; border-radius: 12px; background: var(--background); color: var(--foreground); box-shadow: 0 2px 8px #14141412; }
+  .chat-action-menu { display: flex; gap: 8px; position: absolute; z-index: 6; left: 24px; bottom: 24px; }
+  .chat-actions-toggle, .chat-board-toggle { display: grid; place-items: center; width: 44px; height: 44px; border-radius: 12px; background: var(--background); color: var(--foreground); box-shadow: 0 2px 8px #14141412; }
   .chat-actions-panel { position: absolute; left: 0; bottom: calc(100% + 8px); min-width: 168px; padding: 4px; border-radius: 12px; background: var(--background); box-shadow: 0 4px 18px #14141422; }
   .chat-actions-panel button { display: flex; align-items: center; gap: 10px; width: 100%; min-height: 40px; padding: 8px 12px; border-radius: 8px; color: var(--foreground); text-align: left; white-space: nowrap; font-size: 0.875rem; font-weight: 600; }
-  .chat-actions-toggle[aria-expanded="true"] { background: var(--muted); }
-  .chat-actions-toggle:hover, .chat-actions-panel button:hover:not(:disabled) { background: var(--surface); }
+  .chat-actions-toggle[aria-expanded="true"], .chat-board-toggle[aria-expanded="true"] { background: var(--muted); }
+  .chat-actions-toggle:hover, .chat-board-toggle:hover, .chat-actions-panel button:hover:not(:disabled) { background: var(--surface); }
   .chat-actions-panel button svg { flex: none; color: var(--muted-foreground); }
   .chat-actions-toggle path { transform-origin: 12px 12px; transition: transform 180ms ease, opacity 140ms ease; }
   .chat-actions-toggle[aria-expanded="true"] .chat-actions-line-top { transform: rotate(45deg) translateY(6px); }

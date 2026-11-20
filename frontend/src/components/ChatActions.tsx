@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from 'react'
+import { TooltipButton } from './TooltipButton'
 import { useConfirm } from './useConfirm'
 
 export type ChatActionProps = {
@@ -27,17 +28,21 @@ function useChatActionRequests({ topicComplete, onFinishTopic, assigned, onResta
   return { reportLabel, requestFinish, requestRestart }
 }
 
-export function ChatActionItems({ onSelect, ...props }: ChatActionProps & { onSelect: () => void }) {
+function BoardIcon({ size }: { size: number }) {
+  return <svg viewBox="0 0 24 24" width={size} height={size} fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+    <rect x="3" y="4" width="18" height="14" rx="2" />
+    <path d="M8 21h8m-4-3v3M7 14l4-4 3 2 3-4" />
+  </svg>
+}
+
+export function ChatActionItems({ onSelect, showBoard = true, ...props }: ChatActionProps & { onSelect: () => void; showBoard?: boolean }) {
   const { boardOpen, onToggleBoard, reportDisabled, restartDisabled } = props
   const { reportLabel, requestFinish, requestRestart } = useChatActionRequests(props)
   return <>
-    <button type="button" aria-expanded={boardOpen} aria-controls="whiteboard-drawing" onClick={() => { onSelect(); onToggleBoard() }}>
-      <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-        <rect x="3" y="4" width="18" height="14" rx="2" />
-        <path d="M8 21h8m-4-3v3M7 14l4-4 3 2 3-4" />
-      </svg>
+    {showBoard && <button type="button" aria-expanded={boardOpen} aria-controls="whiteboard-drawing" onClick={() => { onSelect(); onToggleBoard() }}>
+      <BoardIcon size={18} />
       {boardOpen ? 'Close whiteboard' : 'Open whiteboard'}
-    </button>
+    </button>}
     <button type="button" disabled={reportDisabled} onClick={() => { onSelect(); void requestFinish() }}>
       <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
         <path d="M5 21V4m0 1c5-4 9 4 14 0v10c-5 4-9-4-14 0" />
@@ -55,7 +60,7 @@ export function ChatActionItems({ onSelect, ...props }: ChatActionProps & { onSe
 }
 
 export function ChatActions(props: ChatActionProps) {
-  const { reportDisabled } = props
+  const { reportDisabled, boardOpen, onToggleBoard } = props
   const { reportLabel, requestFinish } = useChatActionRequests(props)
   const [open, setOpen] = useState(false)
   const actions = useRef<HTMLDivElement>(null)
@@ -90,8 +95,11 @@ export function ChatActions(props: ChatActionProps) {
         </svg>
       </button>
       <div id="chat-actions-panel" className="chat-actions-panel" hidden={!open}>
-        <ChatActionItems {...props} onSelect={close} />
+        <ChatActionItems {...props} showBoard={false} onSelect={close} />
       </div>
+      <TooltipButton type="button" className="chat-board-toggle" tooltip={boardOpen ? 'Close whiteboard' : 'Open whiteboard'} aria-label={boardOpen ? 'Close whiteboard' : 'Open whiteboard'} aria-expanded={boardOpen} aria-controls="whiteboard-drawing" onClick={() => { setOpen(false); onToggleBoard() }}>
+        <BoardIcon size={22} />
+      </TooltipButton>
     </div>
     <button type="button" className="finish-topic" disabled={reportDisabled} onClick={event => { event.currentTarget.focus(); void requestFinish() }}>{reportLabel}</button>
   </>
