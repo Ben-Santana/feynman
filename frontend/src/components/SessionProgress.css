@@ -1,0 +1,12 @@
+.chat-back-progress { display:flex; align-items:center; justify-self:start; gap:10px; min-width:0; }
+.session-progress-orb { position:relative; cursor:default; }
+.session-progress-number { position:absolute; inset:10px; display:grid; place-items:center; overflow:hidden; border-radius:50%; font:400 .5625rem "Fredoka",ui-rounded,system-ui,sans-serif; font-variant-numeric:tabular-nums; color:var(--foreground); }
+.session-progress-number > span { transform:translateY(160%); visibility:hidden; }
+.session-progress-orb:hover .session-progress-number > span,.session-progress-orb:focus-visible .session-progress-number > span { transform:translateY(0); visibility:visible; }
+.session-progress-orb:focus-visible { outline:2px solid var(--primary); outline-offset:3px; }
+@media(prefers-reduced-motion:no-preference) {
+  .session-progress-number > span { transition:transform 180ms cubic-bezier(.2,.8,.2,1),visibility 0s linear 180ms; }
+  .session-progress-orb:hover .session-progress-number > span,.session-progress-orb:focus-visible .session-progress-number > span { transition-delay:0s; }
+  .session-progress-orb .concept-orb-progress { transition:stroke-dasharray 240ms ease-out; }
+}
+@media(max-width:700px) { .chat-nav-started .chat-back-progress { position:absolute; left:14px; top:calc(env(safe-area-inset-top, 0px) + 16px); gap:6px; } }
