@@ -38,7 +38,8 @@ export const surveySections = [
   ] },
 ]
 export const surveyQuestions = surveySections.flatMap(section => [...section.questions, ...(section.open ? [section.open] : []), ...(section.written || [])])
-export type SurveyStatus = { sessionId: string; topicTitle: string; submittedAt: string | null } | null
+// sessionId and topicTitle are null when the survey was taken by choice, before any completed topic.
+export type SurveyStatus = { sessionId: string | null; topicTitle: string | null; submittedAt: string | null } | null
 export type SurveyResponse = { studentId: string; name: string; email: string; sessionId: string; topicTitle: string; requiredAt: string; submittedAt: string; version: string; answers: Record<string, string> }
 export type SurveyAnalytics = { pending: number; responses: SurveyResponse[] }
 export async function surveyRpc<T>(name: string, args = {}): Promise<T> {

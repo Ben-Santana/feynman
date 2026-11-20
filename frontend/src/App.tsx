@@ -263,7 +263,7 @@ export default function App({ account, onProfileUpdated, authMode }: { account: 
     assigned: Boolean(assignment),
     restartDisabled: sessionBusy || saveStatus.state === 'conflict',
     onRestart: () => void restartSession().catch(reason => reportError(reason)),
-    onOpenSurvey: survey.status && !survey.status.submittedAt ? survey.show : undefined,
+    onOpenSurvey: account.role === 'student' && survey.ready && !survey.status?.submittedAt ? survey.show : undefined,
   }
   const nextQueued = !busy && !done && !awaitingGrades && !arrivingReply && !session.queuePaused && !editingQueuedId && !draggingQueued ? queue[0] : undefined
 
@@ -848,7 +848,7 @@ export default function App({ account, onProfileUpdated, authMode }: { account: 
     </ConfirmDialog>}
     {survey.error && !isChatPage && <p className="account-error" role="alert">{survey.error}</p>}
     {renderPage()}
-    {survey.status && !survey.status.submittedAt && <LearningSurveyDialog open={survey.open} status={survey.status} onLater={() => { survey.close(); if (isChatPage && !(started && sessionComplete(concepts))) navigate('/sessions') }} onSubmitted={survey.submitted} />}
+    {account.role === 'student' && survey.ready && !survey.status?.submittedAt && <LearningSurveyDialog open={survey.open} status={survey.status} onLater={() => { survey.close(); if (survey.status && isChatPage && !(started && sessionComplete(concepts))) navigate('/sessions') }} onSubmitted={survey.submitted} />}
   </>
   return isAnalyticsPage || isAdminAIModelPage || isAdminCoursesPage || isCourseCreatePage || isCoursesPage || isModuleEditor || (isChatPage && !started) || isSummaryPage || isDashboardPage || isSessionsPage || page === '/profile' || page === '/settings' || page === '/character' || page === '/admin' || page === '/inbox' || isDeveloperPage ? <DashboardShell key={account.id} account={account} appearance={appearance} activePage={isDashboardPage ? '/dashboard' : isChatPage && !started ? '/sessions' : isSummaryPage ? sessionBackPath : page} onNavigate={navigateFromSidebar} onCustomizeAvatar={() => navigateFromSidebar('/character')}>{content}</DashboardShell> : content
 }

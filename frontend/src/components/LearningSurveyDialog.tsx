@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from 'react'
 import { gainsScale, helpfulnessScale, submitSurvey, surveySections, type SurveyStatus } from '../learningSurvey'
 import './LearningSurvey.css'
 
-export function LearningSurveyDialog({ status, open, onLater, onSubmitted }: { open: boolean; status: NonNullable<SurveyStatus>; onLater: () => void; onSubmitted: () => void }) {
+export function LearningSurveyDialog({ status, open, onLater, onSubmitted }: { open: boolean; status: SurveyStatus; onLater: () => void; onSubmitted: () => void }) {
   const dialog = useRef<HTMLDialogElement>(null)
   const lock = useRef(false)
   const [answers, setAnswers] = useState<Record<string, string>>({})
@@ -22,7 +22,7 @@ export function LearningSurveyDialog({ status, open, onLater, onSubmitted }: { o
   }
   return <dialog ref={dialog} className="learning-survey-dialog" aria-labelledby="survey-title" aria-describedby="survey-requirement" onCancel={event => { event.preventDefault(); if (!busy) onLater() }}>
     <form onSubmit={event => { event.preventDefault(); void submit() }}>
-      <header><div className="survey-dialog-heading"><h2 id="survey-title">Learning survey</h2><button type="button" aria-label="Complete survey later" disabled={busy} onClick={onLater}>Later</button></div><p>{status.topicTitle}</p><p id="survey-requirement">Complete this survey before your next topic. All questions require a response; you can write “None” where appropriate.</p></header>
+      <header><div className="survey-dialog-heading"><h2 id="survey-title">Learning survey</h2><button type="button" aria-label="Complete survey later" disabled={busy} onClick={onLater}>Later</button></div>{status && <p>{status.topicTitle}</p>}<p id="survey-requirement">{status && 'Complete this survey before your next topic. '}All questions require a response; you can write “None” where appropriate.</p></header>
       <fieldset disabled={busy} className="survey-fields">
         {surveySections.map((section, index) => <section key={section.title} aria-labelledby={`survey-section-${index}`}>
           <h3 id={`survey-section-${index}`}>{section.title}</h3>{section.prompt && <p>{section.prompt}</p>}

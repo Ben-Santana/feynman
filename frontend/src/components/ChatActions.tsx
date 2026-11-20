@@ -11,7 +11,7 @@ export type ChatActionProps = {
   assigned: boolean
   restartDisabled: boolean
   onRestart: () => void
-  /** Set only while the student has a pending learning survey. */
+  /** Set only for students who have not submitted the learning survey. */
   onOpenSurvey?: () => void
 }
 

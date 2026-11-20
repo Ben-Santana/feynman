@@ -50,7 +50,6 @@ test('survey requires a completed topic, survives a blocked deletion, validates 
   await as(student);
   const save = (id, doc, revision = 0) => one("select * from public.save_learning_session($1,'Energy',$2,$3)", [id, doc, revision]);
   assert.equal((await one('select public.learning_survey_status() as status')).status, null);
-  await assert.rejects(one('select public.submit_learning_survey($1)', [answers()]), /no pending survey/);
   await save(first, document(1));
   await save(second, document(0));
   assert.equal((await one('select public.learning_survey_status() as status')).status, null);
@@ -68,7 +67,7 @@ test('survey requires a completed topic, survives a blocked deletion, validates 
   const valid = { ...answers(), '2': 'Not Applicable', '19': 'Not Applicable' };
   await one('select public.submit_learning_survey($1)', [valid]);
   assert.ok((await one('select public.learning_survey_status() as status')).status.submittedAt);
-  await assert.rejects(one('select public.submit_learning_survey($1)', [answers()]), /no pending survey/);
+  await assert.rejects(one('select public.submit_learning_survey($1)', [answers()]), /already submitted/);
   await save(second, document(2), 1);
   await as(outsider);
   assert.equal((await one('select public.learning_survey_status() as status')).status, null);
@@ -83,6 +82,27 @@ test('survey requires a completed topic, survives a blocked deletion, validates 
   // Admin learning never creates a student survey.
   await save(first, document(4));
   assert.equal((await one('select public.learning_survey_status() as status')).status, null);
+});
+
+test('a student can take the survey by choice before completing a topic, once, and is never asked again', async t => {
+  const { as, one } = await fixture(t);
+  await as(admin);
+  await assert.rejects(one('select public.submit_learning_survey($1)', [answers()]), /no pending survey/);
+  await as(student);
+  await assert.rejects(one('select public.submit_learning_survey($1)', [{}]), error => error.code === '23514');
+  await one('select public.submit_learning_survey($1)', [answers()]);
+  const status = (await one('select public.learning_survey_status() as status')).status;
+  assert.equal(status.sessionId, null);
+  assert.ok(status.submittedAt);
+  await assert.rejects(one('select public.submit_learning_survey($1)', [answers()]), /already submitted/);
+  const save = (id, doc, revision = 0) => one("select * from public.save_learning_session($1,'Energy',$2,$3)", [id, doc, revision]);
+  await save(first, document(2));
+  await save(second, document(0));
+  assert.ok((await one('select public.learning_survey_status() as status')).status.submittedAt);
+  await as(admin);
+  const report = (await one('select public.admin_learning_survey_responses() as data')).data;
+  assert.equal(report.pending, 0);
+  assert.deepEqual([report.responses[0].sessionId, report.responses[0].topicTitle], ['', '']);
 });
 
 test('completion checks every concept against its target and ignores unstarted drafts', async t => {
