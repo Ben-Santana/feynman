@@ -92,5 +92,5 @@ export function needsScenarioOpening(level, learningType) {
 
 export function rubricGuidance(learningType) {
   const profile = learningTypes[resolveLearningType(learningType)];
-  return `Learning type: ${profile.label}. Goal: ${profile.description} Follow these learning-level requirements, adapting them to the named concept: ${JSON.stringify(profile.criteria)}. Replace {topic} with the actual topic. Preserve distinct requirements rather than merging them into compound checklist items. ${learningType === 'quantitative' || learningType === undefined ? 'Analyze uses classroom paper review and solution reasoning.' : 'Analyze is an interactive scenario discussion, never a paper-grading exercise.'}`;
+  return `Learning type: ${profile.label}. Goal: ${profile.description} Follow these learning-level requirements, adapting them to the named concept: ${JSON.stringify(profile.criteria)}. Replace {topic} with the actual topic. These lists show the kind of evidence each level asks for, not a quota. Choose the 2 or 3 requirements most central to the concept instead of covering every one, and do not merge several into a compound checklist item. ${learningType === 'quantitative' || learningType === undefined ? 'Analyze uses classroom paper review and solution reasoning.' : 'Analyze is an interactive scenario discussion, never a paper-grading exercise.'}`;
 }

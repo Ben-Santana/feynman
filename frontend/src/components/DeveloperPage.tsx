@@ -20,6 +20,7 @@ import { QuestionComparison } from './QuestionComparison'
 import { EvaluatorComparison } from './EvaluatorComparison'
 import { ApplySimulations } from './ApplySimulations'
 import { PuzzleGenerator } from './PuzzleGenerator'
+import { RubricWorkshop } from './RubricWorkshop'
 
 type Prompt = { id: string; title: string; group: string; subgroup: string; description: string; text: string; variables: string[] }
 type PromptFile = { file: string; version: string; prompts: Prompt[]; editable: boolean }
@@ -34,9 +35,9 @@ const fixOptions = [
   ['clearSkip', 'Skip only when they know they are stuck'],
 ] as const
 type FixName = typeof fixOptions[number][0]
-type TabId = 'prompts' | 'chat' | 'fixes' | 'comparison' | 'evaluator' | 'simulations' | 'puzzles'
-const tabLabels: Record<TabId, string> = { prompts: 'Prompts', chat: 'Chat workshop', fixes: 'Loop fixes', comparison: 'Question strategies', evaluator: 'Evaluator comparison', simulations: 'Apply simulations', puzzles: 'Puzzle generator' }
-const visibleTabs: TabId[] = showArchivedTools ? ['prompts', 'chat', 'fixes', 'comparison', 'evaluator', 'simulations', 'puzzles'] : ['prompts', 'chat', 'fixes']
+type TabId = 'prompts' | 'chat' | 'fixes' | 'rubric' | 'comparison' | 'evaluator' | 'simulations' | 'puzzles'
+const tabLabels: Record<TabId, string> = { prompts: 'Prompts', chat: 'Chat workshop', fixes: 'Loop fixes', rubric: 'Rubric creation', comparison: 'Question strategies', evaluator: 'Evaluator comparison', simulations: 'Apply simulations', puzzles: 'Puzzle generator' }
+const visibleTabs: TabId[] = showArchivedTools ? ['prompts', 'chat', 'fixes', 'rubric', 'comparison', 'evaluator', 'simulations', 'puzzles'] : ['prompts', 'chat', 'fixes', 'rubric']
 // Student messages of the first topic in a downloaded chat file.
 function studentMessages(markdown: string) {
   const topic = markdown.split(/^## .*$/m)[1] || ''
@@ -83,6 +84,7 @@ export function DeveloperPage({ onDirtyChange, characterName = 'Feynman' }: { on
       <div id="prompts-panel" role="tabpanel" aria-labelledby="prompts-tab" hidden={tab !== 'prompts'}><PromptEditor onDirtyChange={setDirty} /></div>
       <div id="chat-panel" role="tabpanel" aria-labelledby="chat-tab" hidden={tab !== 'chat'}><ChatPlayground characterName={characterName} dirtyPrompts={dirty} /></div>
       <div id="fixes-panel" role="tabpanel" aria-labelledby="fixes-tab" hidden={tab !== 'fixes'}><ChatPlayground characterName={characterName} dirtyPrompts={dirty} fixes /></div>
+      <div id="rubric-panel" role="tabpanel" aria-labelledby="rubric-tab" hidden={tab !== 'rubric'}><RubricWorkshop dirtyPrompts={dirty} /></div>
       {shown('comparison') && <div id="comparison-panel" role="tabpanel" aria-labelledby="comparison-tab" hidden={tab !== 'comparison'}><QuestionComparison dirtyPrompts={dirty} /></div>}
       {shown('evaluator') && <div id="evaluator-panel" role="tabpanel" aria-labelledby="evaluator-tab" hidden={tab !== 'evaluator'}><EvaluatorComparison dirtyPrompts={dirty} /></div>}
     </div>

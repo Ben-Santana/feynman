@@ -83,6 +83,19 @@
 .developer-test-config :is(.developer-error, .developer-notice) { margin: 0 0 12px; }
 .developer-test-config .developer-warning { margin: 18px 0 0; }
 .developer-test-workspace { min-width: 0; }
+.developer-rubric-input { width: 100%; padding: 11px 12px; font: inherit; font-size: 0.8125rem; line-height: 1.6; border: 1px solid var(--border); border-radius: 10px; color: var(--foreground); background: var(--background); resize: vertical; }
+.developer-rubric-error { margin: 0 0 12px; }
+.developer-rubric-scroll { margin-top: 12px; overflow-x: auto; border: 1px solid var(--border); border-radius: 18px; }
+.developer-rubric-table { width: 100%; min-width: 760px; border-collapse: collapse; table-layout: fixed; font-size: 0.8125rem; line-height: 1.6; }
+.developer-rubric-table :is(th, td) { padding: 14px 16px; vertical-align: top; text-align: left; overflow-wrap: anywhere; }
+.developer-rubric-table thead th { font-weight: 500; border-bottom: 1px solid var(--border); }
+.developer-rubric-table thead th:first-child, .developer-rubric-table tbody th { width: 16%; }
+.developer-rubric-table tbody th { font-weight: 500; }
+.developer-rubric-table tbody tr + tr :is(th, td) { border-top: 1px solid var(--border); }
+.developer-rubric-table td { border-left: 1px solid var(--border); }
+.developer-rubric-table ul { margin: 6px 0 0; padding-left: 16px; }
+.developer-rubric-table li + li { margin-top: 8px; }
+.developer-rubric-count { color: var(--muted-foreground); font-size: 0.6875rem; }
 .developer-conversation { overflow: hidden; border: 1px solid var(--border); border-radius: 18px; }
 .developer-conversation-heading { display: flex; gap: 16px; justify-content: space-between; align-items: center; padding: 20px 24px; border-bottom: 1px solid var(--border); }
 .developer-conversation-heading h2 { font-size: 1.125rem; font-weight: 500; overflow-wrap: anywhere; }
