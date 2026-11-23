@@ -7,6 +7,7 @@ import { ConfirmDialog } from './ConfirmDialog'
 import { useToast } from './useToast'
 import './AdminPage.css'
 import { downloadSignedConsent } from '../accounts'
+import { AccountPresets } from './AccountPresets'
 
 type UserPage = { users: Account[]; total: number; page: number; pageSize: number }
 export function AdminPage({ targetId, onNavigate }: { targetId: string | null; onNavigate: (path: string) => void }) {
@@ -122,6 +123,7 @@ export function AdminPage({ targetId, onNavigate }: { targetId: string | null; o
         </div>}
       </>}
     </div>}
+    {targetId === null && <AccountPresets />}
     <span className="sr-only" role="status">{busy ? 'Saving account…' : ''}</span>
     {grantTarget && <ConfirmDialog title={`Give points to ${grantTarget.display_name || grantTarget.email}`} confirmLabel={granting ? 'Giving…' : 'Hold to give points'} busy={granting} error={grantError} onConfirm={() => void grantPoints(grantTarget)} onCancel={() => setGrantTarget(null)}>
       <label className="admin-grant-field">Points<input type="number" inputMode="numeric" min={1} max={1000000} step={1} value={grantAmount} disabled={granting} onChange={event => setGrantAmount(event.target.value)} /></label>

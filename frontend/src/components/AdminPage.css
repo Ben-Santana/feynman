@@ -62,3 +62,25 @@
 .admin-grant-field { display: grid; gap: 8px; font-size: 0.875rem; }
 .admin-grant-field input { width: 100%; box-sizing: border-box; min-height: 44px; padding: 8px 12px; border: 1px solid var(--border); border-radius: 12px; background: var(--background); color: var(--foreground); font: inherit; font-size: 1rem; }
 .admin-grant-field input:focus-visible { outline: 2px solid var(--primary); outline-offset: 2px; }
+.admin-presets { margin-top: 40px; }
+.admin-presets h2 { margin: 0; font-size: 1.125rem; font-weight: 600; }
+.admin-presets-help { margin: 6px 0 16px; color: var(--muted-foreground); font-size: 0.8125rem; }
+.admin-preset-form { display: grid; grid-template-columns: minmax(0, 1.4fr) minmax(0, 1fr) 150px auto; align-items: end; gap: 12px; }
+.admin-preset-form label { display: grid; gap: 6px; min-width: 0; color: var(--muted-foreground); font-size: 0.75rem; }
+.admin-preset-form :is(input, select) { width: 100%; min-height: 44px; padding: 9px 12px; border: 1px solid var(--border); border-radius: 8px; background: var(--background); color: var(--foreground); font: inherit; font-size: 0.875rem; }
+.admin-preset-form :is(input, select):focus-visible { outline: 2px solid var(--primary); outline-offset: 1px; }
+.admin-preset-form button { min-height: 44px; padding: 9px 16px; border-radius: 8px; background: var(--primary); color: var(--primary-foreground); font-weight: 600; white-space: nowrap; }
+.admin-preset-form button:hover:not(:disabled) { background: var(--primary-hover); }
+.admin-preset-form button:disabled { opacity: .6; }
+.admin-preset-list { margin: 16px 0 0; padding: 0; overflow: hidden; border: 1px solid var(--dashboard-line, var(--border)); border-radius: 14px; background: var(--background); list-style: none; }
+.admin-preset-list li { display: grid; grid-template-columns: minmax(0, 1fr) auto auto; align-items: center; gap: 16px; padding: 16px 24px; }
+.admin-preset-list li + li { border-top: 1px solid var(--dashboard-line, var(--border)); }
+.admin-preset-role { color: var(--muted-foreground); font-size: 0.8125rem; }
+.admin-preset-list button { min-height: 40px; padding: 8px 12px; border: 1px solid var(--border); border-radius: 8px; background: transparent; color: var(--foreground); font-size: 0.75rem; }
+.admin-preset-list button:hover:not(:disabled) { border-color: var(--neutral-400); }
+@media (max-width: 700px) {
+  .admin-preset-form { grid-template-columns: minmax(0, 1fr); }
+  .admin-preset-form :is(input, select) { font-size: 1rem; }
+  .admin-preset-list li { grid-template-columns: minmax(0, 1fr) auto; padding: 16px; }
+  .admin-preset-list .admin-user-identity { grid-column: 1 / -1; }
+}

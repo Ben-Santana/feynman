@@ -218,3 +218,9 @@ draft and published topics, including learning type, concepts, target levels,
 and rubrics. Student sessions and source attachments stay private. The backend
 uses `SUPABASE_SECRET_KEY` to call service-only RPCs that recheck the actor's
 approved admin role.
+
+## Setting up accounts in advance
+
+In **Manage accounts**, an admin can enter an email, a role, and optionally a name before that person has an account. Migration `202611230001_account_presets.sql` stores this in `account_presets`. The first sign-in with that email creates the account as usual, then applies the role, marks it approved, skips the WPI role question, and removes the preset. A preset cannot be made for an email that already has an account; change that account's role in the list instead.
+
+Password sign-ups do not verify the email address, so a preset for the admin role needs a WPI email and is applied only to a WPI single sign-on. Student and instructor presets apply to either sign-in method.

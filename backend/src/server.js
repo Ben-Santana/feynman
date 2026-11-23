@@ -167,6 +167,20 @@ export function createApiServer({ query, hosted = false, env = process.env, prom
           try { input = JSON.parse(body); } catch { return send(400, { error: 'Invalid JSON request.' }); }
           return send(200, await accountService.assignCourseTeacher(account, courseTeachers[1], input?.email));
         }
+        if (url.pathname === '/api/admin/presets' && req.method === 'GET') return send(200, await accountService.listAccountPresets(account));
+        if (url.pathname === '/api/admin/presets' && req.method === 'POST') {
+          let body = '';
+          for await (const chunk of req) { body += chunk; if (Buffer.byteLength(body) > 1000) return send(413, { error: 'Request is too large.' }); }
+          let input;
+          try { input = JSON.parse(body); } catch { return send(400, { error: 'Invalid JSON request.' }); }
+          return send(200, await accountService.saveAccountPreset(account, input));
+        }
+        const presetTarget = /^\/api\/admin\/presets\/([^/]+)$/.exec(url.pathname);
+        if (presetTarget && req.method === 'DELETE') {
+          let email;
+          try { email = decodeURIComponent(presetTarget[1]); } catch { return send(400, { error: 'Choose a valid email address.' }); }
+          return send(200, await accountService.deleteAccountPreset(account, email));
+        }
         if (url.pathname === '/api/admin/users' && req.method === 'GET') return send(200, await accountService.listUsers(account, url.searchParams));
         const deleteTarget = /^\/api\/admin\/users\/([^/]+)$/.exec(url.pathname);
         if (deleteTarget && req.method === 'DELETE') return send(200, await accountService.deleteAccount(account, deleteTarget[1]));

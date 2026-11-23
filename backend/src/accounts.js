@@ -306,6 +306,35 @@ export function createAccountService(env = process.env, clientFactory = createCl
       if (error) throw failure(error);
       return data;
     },
+    // Accounts set up before their owner has signed in. See the account_presets migration.
+    async listAccountPresets(account) {
+      if (account.role !== 'admin') throw new AccountError('Admin access required.', 403);
+      const { data, error } = await adminClient().rpc('admin_list_account_presets', { actor_id: account.id });
+      if (error) throw new AccountError(error.code === '42501' ? 'Admin access required.' : 'Could not load the accounts set up in advance.', error.code === '42501' ? 403 : 503);
+      return { presets: data || [] };
+    },
+    async saveAccountPreset(account, input) {
+      if (account.role !== 'admin') throw new AccountError('Admin access required.', 403);
+      const email = typeof input?.email === 'string' ? input.email.trim().toLowerCase() : '';
+      const name = typeof input?.name === 'string' ? input.name.trim() : '';
+      if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email) || email.length > 254) throw new AccountError('Enter a valid email address.', 400);
+      if (!roles.includes(input?.role)) throw new AccountError('Choose a role.', 400);
+      if (name.length > 100) throw new AccountError('Enter a name of up to 100 characters.', 400);
+      if (input.role === 'admin' && !email.endsWith('@wpi.edu')) throw new AccountError('An admin set up in advance needs a WPI email.', 400);
+      const { data, error } = await adminClient().rpc('admin_save_account_preset', { actor_id: account.id, preset_email: email, preset_role: input.role, preset_name: name });
+      if (error) {
+        const status = error.code === '23505' ? 409 : error.code === '23514' ? 400 : error.code === '42501' ? 403 : 503;
+        throw new AccountError(status === 409 ? 'That person already has an account. Change their role in the list above.' : status === 400 ? 'Enter a valid email, role, and name.' : status === 403 ? 'Admin access required.' : 'Could not set up the account.', status);
+      }
+      return data;
+    },
+    async deleteAccountPreset(account, email) {
+      if (account.role !== 'admin') throw new AccountError('Admin access required.', 403);
+      if (typeof email !== 'string' || !email.trim() || email.length > 254) throw new AccountError('Choose a valid email address.', 400);
+      const { error } = await adminClient().rpc('admin_delete_account_preset', { actor_id: account.id, preset_email: email });
+      if (error) throw new AccountError(error.code === '42501' ? 'Admin access required.' : 'Could not remove the account setup.', error.code === '42501' ? 403 : 503);
+      return { deleted: true };
+    },
     async changeRole(account, id, role) {
       if (account.role !== 'admin') throw new AccountError('Admin access required.', 403);
       if (!/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(id) || !roles.includes(role)) throw new AccountError('Choose a valid account and role.', 400);
