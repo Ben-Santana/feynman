@@ -2,8 +2,8 @@ import { useEffect, useId, useLayoutEffect, useRef, useState, type ReactNode } f
 import { createPortal } from 'react-dom'
 import './DeleteMenu.css'
 
-export function DeleteMenu({ children, label, action, onDelete, disabled = false, className = '' }: {
-  children: ReactNode; label: string; action: string; onDelete?: () => void; disabled?: boolean; className?: string
+export function DeleteMenu({ children, label, action, onDelete, onDuplicate, disabled = false, className = '' }: {
+  children: ReactNode; label: string; action: string; onDelete?: () => void; onDuplicate?: () => void; disabled?: boolean; className?: string
 }) {
   const [position, setPosition] = useState<{ left: number; top: number } | null>(null)
   const trigger = useRef<HTMLButtonElement>(null)
@@ -67,7 +67,11 @@ export function DeleteMenu({ children, label, action, onDelete, disabled = false
       if (event.key === 'ArrowDown' || event.key === 'ArrowUp') { event.preventDefault(); openFromButton() }
     }}>⋯</button>}
     {open && position && createPortal(<div ref={menu} id={menuId} className="delete-context-menu" role="menu" aria-label={`Options for ${label}`} style={position} onContextMenu={event => event.preventDefault()} onKeyDown={event => {
-      if (['ArrowDown', 'ArrowUp', 'Home', 'End'].includes(event.key)) { event.preventDefault(); menu.current?.querySelector('button')?.focus() }
-    }}><button type="button" role="menuitem" onClick={() => { close(true); onDelete?.() }}><svg viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" aria-hidden="true"><path d="M3 5h14M8 2h4l1 3M5 5l1 12h8l1-12M8 8v6m4-6v6" /></svg>{action}</button></div>, document.body)}
+      if (!['ArrowDown', 'ArrowUp', 'Home', 'End'].includes(event.key)) return
+      event.preventDefault()
+      const items = Array.from(event.currentTarget.querySelectorAll('button'))
+      const index = items.indexOf(document.activeElement as HTMLButtonElement)
+      items[event.key === 'Home' ? 0 : event.key === 'End' ? items.length - 1 : (index + (event.key === 'ArrowDown' ? 1 : -1) + items.length) % items.length]?.focus()
+    }}>{onDuplicate && <button type="button" role="menuitem" className="delete-menu-neutral" onClick={() => { close(true); onDuplicate() }}><svg viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><rect x="7" y="7" width="10" height="10" rx="2" /><path d="M13 7V5a2 2 0 0 0-2-2H5a2 2 0 0 0-2 2v6a2 2 0 0 0 2 2h2" /></svg>Duplicate topic</button>}<button type="button" role="menuitem" onClick={() => { close(true); onDelete?.() }}><svg viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" aria-hidden="true"><path d="M3 5h14M8 2h4l1 3M5 5l1 12h8l1-12M8 8v6m4-6v6" /></svg>{action}</button></div>, document.body)}
   </div>
 }

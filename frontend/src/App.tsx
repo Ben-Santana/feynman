@@ -42,7 +42,7 @@ import { DashboardPage } from './components/DashboardPage'
 import { SetupTitleForm } from './components/SetupTitleForm'
 import { CourseCreatePage } from './components/CourseCreatePage'
 import { CoursesPage } from './components/CoursesPage'
-import { loadModuleDraft, loadModuleRevision, moduleChanged, saveModule, publishModule, restartModule, type ModuleSession } from './courseStore'
+import { copyModule, loadModuleDraft, loadModuleRevision, moduleChanged, saveModule, publishModule, restartModule, type ModuleSession } from './courseStore'
 import { loadTopicReport } from './topicReports'
 import { SessionsPage } from './components/SessionsPage'
 import { PaperReview, type Review } from './components/PaperReview'
@@ -353,11 +353,14 @@ export default function App({ account, onProfileUpdated, authMode }: { account: 
     let disposed = false
     queueMicrotask(() => { if (!disposed) { setModuleReady(false); setError(''); setModuleNotice(''); setModuleConflict('') } })
     const signal = accountSignal()
-    const fresh = new URLSearchParams(window.location.search).get('new') === '1'
+    const query = new URLSearchParams(window.location.search)
+    const fresh = query.get('new') === '1'
+    // A duplicated topic opens as a new, unsaved draft filled in from the topic it copies.
+    const copy = fresh && query.get('copyCourse') && query.get('copyTopic') ? { course: query.get('copyCourse')!, topic: query.get('copyTopic')! } : null
     const empty: ModuleSession = { id: moduleId, title: '', concepts: [newConcept()], started: false, activeId: null, updatedAt: Date.now(), learningType: null, setupStep: 'title', files: [], selectedTargets: {} }
     void (async () => {
       if (!canTeachCourses(account.role)) throw new Error('Instructor access required.')
-      const saved = fresh ? { record: empty, revision: 0 } : await loadModuleDraft(moduleCourseId, moduleId)
+      const saved = copy ? { record: await copyModule(copy.course, copy.topic, moduleId), revision: 0 } : fresh ? { record: empty, revision: 0 } : await loadModuleDraft(moduleCourseId, moduleId)
       signal.throwIfAborted()
       const recovery = await loadModuleRecovery<{ record: ModuleSession; revision: number }>(moduleId)
       if (disposed) return
@@ -373,8 +376,10 @@ export default function App({ account, onProfileUpdated, authMode }: { account: 
       setSessionId(moduleId!); setTitle(draft.title); setConcepts(record.concepts); setStarted(false); setActive(''); setLearningType(draft.learningType); setSetupStep(draft.step); setFiles(draft.files); setSelectedTargets(draft.selectedTargets); setAiByName(draft.aiByName); setRubricInstructions(draft.rubricInstructions)
       moduleRevisionRef.current = recovery?.revision ?? saved.revision
       setModuleRevision(moduleRevisionRef.current)
-      const savedDraft = restoreDraft(saved.record)
-      moduleSavedSignature.current = moduleSignature({ id: moduleId!, title: savedDraft.title.trim(), concepts: saved.record.concepts, started: false, activeId: null, updatedAt: 0, learningType: savedDraft.learningType, setupStep: savedDraft.step, files: savedDraft.files, selectedTargets: savedDraft.selectedTargets, aiByName: savedDraft.aiByName, rubricInstructions: savedDraft.rubricInstructions })
+      // Nothing of a copy is saved yet, so all of it counts as unsaved changes.
+      const baseline = copy ? empty : saved.record
+      const savedDraft = restoreDraft(baseline)
+      moduleSavedSignature.current = moduleSignature({ id: moduleId!, title: savedDraft.title.trim(), concepts: baseline.concepts, started: false, activeId: null, updatedAt: 0, learningType: savedDraft.learningType, setupStep: savedDraft.step, files: savedDraft.files, selectedTargets: savedDraft.selectedTargets, aiByName: savedDraft.aiByName, rubricInstructions: savedDraft.rubricInstructions })
       moduleDirty.current = Boolean(recovery)
       // Unsaved changes from this device stay on screen, so say when the saved draft has moved on.
       if (recovery && recovery.revision !== saved.revision) setModuleConflict('Another teacher changed this draft after your unsaved changes. Reload to see their changes.')

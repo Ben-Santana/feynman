@@ -15,6 +15,7 @@ import { CourseCard } from './CourseCard'
 import { CourseScores } from './CourseScores'
 import { formatScore } from '../courseScores'
 import { DeleteMenu } from './DeleteMenu'
+import { DuplicateTopicDialog } from './DuplicateTopicDialog'
 import { LoadingScreen } from './AccountLoading'
 import { CourseProgressDialog, type CourseProgressSelection } from './CourseProgressDialog'
 import { JoinCourseDialog } from './JoinCourseDialog'
@@ -42,6 +43,7 @@ export function CoursesPage({ account, courseId, collection = 'enrolled', sessio
   const [view, setView] = useState<'modules' | 'complete' | 'scores' | 'people'>('modules')
   const [progressSelection, setProgressSelection] = useState<CourseProgressSelection | null>(null)
   const [preTopic, setPreTopic] = useState<CourseModule | null>(null)
+  const [duplicating, setDuplicating] = useState<CourseModule | null>(null)
   const toast = useToast()
   const confirm = useConfirm()
   const [starUpdates] = useState(() => {
@@ -139,7 +141,7 @@ export function CoursesPage({ account, courseId, collection = 'enrolled', sessio
       <span className="course-module-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5"><rect x="5" y="3" width="14" height="18" rx="2" /><path d="M9 8h6M9 12h6M9 16h4" /></svg></span>
       <span className="course-module-copy"><span className="course-row-title">{module.title || 'Untitled topic'}</span><span className="course-row-meta">{module.published_at ? ownCourse ? 'Published' : complete ? score === null ? 'Complete' : `Score: ${formatScore(score)}` : started ? 'In progress' : 'Not started' : 'Draft'}</span></span>
     </>
-    return <DeleteMenu key={module.id} label={module.title || 'Untitled topic'} action="Delete topic" disabled={busy} onDelete={ownCourse ? async () => {
+    return <DeleteMenu key={module.id} label={module.title || 'Untitled topic'} action="Delete topic" disabled={busy} onDuplicate={ownCourse ? () => setDuplicating(module) : undefined} onDelete={ownCourse ? async () => {
       if (!await confirm({ title: `Delete “${module.title || 'Untitled topic'}”?`, description: 'This permanently deletes the topic and its student conversations and progress.', confirmLabel: 'Hold to delete' })) return
       void act(async () => {
         await deleteModule(module.id, module.revision)
@@ -234,6 +236,10 @@ export function CoursesPage({ account, courseId, collection = 'enrolled', sessio
       await inviteCourseTeacher(detail.course.id, email)
       signal.throwIfAborted()
       setShowTeacherDialog(false); setVersion(value => value + 1); toast(`Invitation sent to ${email}.`)
+    }} />}
+    {ownCourse && detail && duplicating && <DuplicateTopicDialog key={duplicating.id} currentCourse={detail.course} onClose={() => setDuplicating(null)} onChoose={target => {
+      setDuplicating(null)
+      onNavigate(`/courses/${target}/modules/${crypto.randomUUID()}/edit?new=1&copyCourse=${courseId}&copyTopic=${duplicating.id}`)
     }} />}
     {ownCourse && detail && progressSelection && progressSelection.courseId === courseId && <CourseProgressDialog key={`${progressSelection.kind}:${progressSelection.id}`} selection={progressSelection} modules={detail.modules} students={detail.progress} onClose={() => setProgressSelection(null)} />}
   </section>

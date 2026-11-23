@@ -293,3 +293,4 @@ section + section > .course-people-heading { margin-top: 32px; }
 .course-progress-dialog button.topic-detail-download { display: inline-flex; align-items: center; gap: 6px; padding: 7px 12px; border: 1px solid var(--border); border-radius: 8px; background: var(--background); color: var(--foreground); font: inherit; font-size: .8125rem; cursor: pointer; }
 .course-progress-dialog button.topic-detail-download:hover { border-color: var(--muted-foreground); }
 .topic-detail-download svg { width: 16px; height: 16px; }
+.course-edit-dialog.course-duplicate-dialog { width: min(440px, calc(100vw - 32px)); overflow: visible; }

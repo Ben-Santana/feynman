@@ -8,3 +8,5 @@
 .delete-context-menu button { display: flex; align-items: center; gap: 9px; width: 100%; padding: 9px 10px; border: 0; border-radius: 6px; background: transparent; color: var(--red-strong); text-align: left; font: inherit; font-size: .8125rem; cursor: pointer; }
 .delete-context-menu button:is(:hover, :focus-visible) { outline: none; background: var(--red-soft); }
 .delete-context-menu svg { flex: none; width: 16px; height: 16px; }
+.delete-context-menu button.delete-menu-neutral { color: var(--foreground); }
+.delete-context-menu button.delete-menu-neutral:is(:hover, :focus-visible) { background: var(--surface); }

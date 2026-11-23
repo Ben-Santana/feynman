@@ -1,7 +1,8 @@
 // Landing page contact form: input validation and a per-client rate limit.
 
 export const contactLimits = { name: 100, email: 254, message: 4000 };
-export const defaultContactInbox = 'basantana@wpi.edu';
+// The one inbox that receives contact form messages.
+export const contactInboxAddress = 'basantana@wpi.edu';
 
 const controlCharacters = /[\u0000-\u0008\u000b\u000c\u000e-\u001f\u007f]/g;
 const text = value => typeof value === 'string' ? value.replace(/\r\n?/g, '\n').replace(controlCharacters, '').trim() : '';

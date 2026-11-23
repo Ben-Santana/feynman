@@ -1,4 +1,4 @@
-import { contributorEmails, defaultContactInbox } from './contact.js';
+import { contributorEmails, contactInboxAddress } from './contact.js';
 import { checklistItems } from '../../frontend/src/rubricChecklist.js';
 import { createClient } from '@supabase/supabase-js';
 import { buildSignedConsent } from './consent.js';
@@ -39,7 +39,8 @@ export function createAccountService(env = process.env, clientFactory = createCl
     if (!env.SUPABASE_SECRET_KEY) throw new AccountError('Account administration is not configured.', 503);
     return clientFactory(url, env.SUPABASE_SECRET_KEY, options);
   }
-  const contactInboxEmail = (env.CONTACT_INBOX_EMAIL || defaultContactInbox).toLowerCase();
+  // Fixed in code on purpose: the contact form's inbox is not configurable by environment.
+  const contactInboxEmail = contactInboxAddress;
   const receivesContactMessages = account => account.role === 'admin' && account.email?.toLowerCase() === contactInboxEmail;
   async function contactInbox() {
     const { data, error } = await adminClient().from('contact_messages').select('id, name, email, message, created_at').order('created_at', { ascending: false }).limit(100);

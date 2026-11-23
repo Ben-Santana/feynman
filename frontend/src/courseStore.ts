@@ -168,6 +168,17 @@ export async function loadModuleDraft(courseId: string, id: string) {
   const record = await decodeSession<Concept, Session>({ owner_id: requireAccount().id, id, title: module.title, document: module.document, revision: module.revision, updated_at: module.created_at })
   return { record, revision: module.revision }
 }
+/** An unsaved copy of a topic's title, learning type, concepts, and rubrics. Its source files are not copied. */
+export async function copyModule(courseId: string, id: string, newId: string): Promise<ModuleSession> {
+  const signal = accountSignal()
+  const { data, error } = await supabase().from('course_modules').select('*').eq('course_id', courseId).eq('id', id).abortSignal(signal).single()
+  signal.throwIfAborted()
+  if (error || !data) throw new Error('Could not load the topic to duplicate. Please retry.')
+  const module = data as CourseModule
+  const document = { ...module.document, session: { ...module.document.session, files: [] } }
+  const record = await decodeSession<Concept, Session>({ owner_id: requireAccount().id, id: newId, title: module.title, document, revision: 0, updated_at: module.created_at })
+  return { ...record, started: false, activeId: null }
+}
 export async function startModule(id: string, personal = false) {
   const signal = accountSignal()
   await flushSessionSaves()

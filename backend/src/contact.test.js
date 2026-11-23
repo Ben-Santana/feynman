@@ -69,8 +69,9 @@ test('only the configured admin inbox lists and deletes contact messages', async
       async rpc(name) { return { data: name === 'course_invitations' ? [] : { users: [], total: 0, page: 1, pageSize: 25 }, error: null }; },
     };
   }
-  const service = createAccountService({ SUPABASE_URL: 'https://example.supabase.co', SUPABASE_PUBLISHABLE_KEY: 'public', SUPABASE_SECRET_KEY: 'secret', CONTACT_INBOX_EMAIL: 'owner@wpi.edu' }, factory);
-  const owner = { id: '11111111-1111-4111-8111-111111111111', email: 'Owner@wpi.edu', role: 'admin' };
+  const service = createAccountService({ SUPABASE_URL: 'https://example.supabase.co', SUPABASE_PUBLISHABLE_KEY: 'public', SUPABASE_SECRET_KEY: 'secret', CONTACT_INBOX_EMAIL: 'other@wpi.edu' }, factory);
+  // The inbox is fixed in code; the environment variable above must have no effect.
+  const owner = { id: '11111111-1111-4111-8111-111111111111', email: 'BASantana@wpi.edu', role: 'admin' };
   const otherAdmin = { ...owner, email: 'other@wpi.edu' };
   const ownerInbox = await service.inbox(owner, new URLSearchParams(), { headers: {} });
   assert.deepEqual(ownerInbox.messages.map(item => item.contact?.id), [message.id]);
