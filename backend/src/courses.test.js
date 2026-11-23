@@ -411,9 +411,14 @@ test('courses enforce enrollment, publication, assignment configuration, and pri
     const invalid = doc(); invalid.session.concepts[0].rubric.remember = '';
     await saveDraft(invalid,1);
     await assert.rejects(one('select * from public.publish_course_module($1,2)',[moduleId]),error => error.code === '23514');
-    await saveDraft(doc(),2);
+    // The teaching checklist prepared with the topic is published with it; other extras are not.
+    const guided = doc();
+    guided.session.concepts[0].guide = { remember: { source: 'Defines energy.', groups: [{ title: 'Say what it is', prompts: [{ text: 'Give the definition in your own words.', criteria: [1] }] }] } };
+    await saveDraft(guided,2);
     const published = await one('select * from public.publish_course_module($1,3)',[moduleId]);
     assert.ok(published.published_at);
+    assert.deepEqual(published.document.session.concepts[0].guide,guided.session.concepts[0].guide);
+    assert.deepEqual(Object.keys(published.document.session.concepts[0]).sort(),['guide','id','name','rubric','target']);
     assert.equal(published.document.session.files,undefined);
     assert.equal(published.document.session.messages,undefined);
     await assert.rejects(saveDraft(doc('Changed'),4),error => error.code === 'PT409');
@@ -429,6 +434,7 @@ test('courses enforce enrollment, publication, assignment configuration, and pri
     assert.ok(starts.every(row => row.id === session.id));
     assert.equal((await one('select count(*)::int as count from public.course_assignments')).count,1);
     assert.equal(session.document.session.started,true);
+    assert.equal(session.document.session.concepts[0].guide.remember.groups[0].title,'Say what it is');
     const save = (document, id=session.id, revision=1) => one('select * from public.save_learning_session($1,$2,$3,$4)',[id,'Energy',document,revision]);
     const changed = structuredClone(session.document); changed.session.concepts[0].target='remember';
     await assert.rejects(save(changed),error => error.code === '23514');

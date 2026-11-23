@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { accountSignal } from '../accounts'
+import { accountFetch, accountSignal } from '../accounts'
 import { respondCourseInvitation } from '../courseStore'
 import type { InboxMessage, useInbox } from '../useInbox'
 import { useToast } from './useToast'
@@ -30,6 +30,19 @@ export function InboxPage({ inbox, onNavigate }: {
       if (!signal.aborted) setActionError(reason instanceof Error ? reason.message : 'Could not save changes. Please retry.')
     } finally { if (!signal.aborted) setBusy('') }
   }
+  async function deleteContact(message: InboxMessage & { contact: object }) {
+    if (busy) return
+    const signal = accountSignal()
+    setBusy(message.id); setActionError('')
+    try {
+      const response = await accountFetch(`/api/inbox/contact/${encodeURIComponent(message.contact.id)}`, { method: 'DELETE', signal })
+      if (!response.ok) throw new Error((await response.json()).error)
+      window.dispatchEvent(new Event('focus'))
+      toast('Message deleted.')
+    } catch (reason) {
+      if (!signal.aborted) setActionError(reason instanceof Error ? reason.message : 'Could not delete the message. Please retry.')
+    } finally { if (!signal.aborted) setBusy('') }
+  }
   return <main className="admin-page inbox-page" aria-labelledby="inbox-title">
     <div className="admin-shell">
       <h1 id="inbox-title">Inbox</h1>
@@ -46,6 +59,17 @@ export function InboxPage({ inbox, onNavigate }: {
                 <span className="inbox-invitation-actions">
                   <button type="button" disabled={Boolean(busy)} onClick={() => void respond(message, false)}>Decline</button>
                   <button type="button" className="inbox-accept" disabled={Boolean(busy)} onClick={() => void respond(message, true)}>Accept</button>
+                </span>
+              </li>
+              if (message.contact) return <li key={message.id} className="inbox-contact" aria-busy={busy === message.id}>
+                <span className="inbox-message-copy">
+                  <strong>{message.title}</strong>
+                  <span>{message.description} · {new Date(message.contact.sentAt).toLocaleString(undefined, { dateStyle: 'medium', timeStyle: 'short' })}</span>
+                  <p className="inbox-contact-message">{message.contact.message}</p>
+                </span>
+                <span className="inbox-invitation-actions">
+                  <button type="button" disabled={Boolean(busy)} onClick={() => void deleteContact(message)}>Delete</button>
+                  <a className="inbox-accept" href={`mailto:${encodeURIComponent(message.contact.email)}?subject=${encodeURIComponent('Re: your message to Feynman')}`}>Reply</a>
                 </span>
               </li>
               const { href, label } = message.action

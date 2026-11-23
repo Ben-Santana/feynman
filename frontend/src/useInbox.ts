@@ -4,7 +4,11 @@ export type InboxMessage = {
   id: string
   title: string
   description: string
-} & ({ action: { label: string; href: string }; invitation?: never } | { invitation: { courseId: string; courseName: string }; action?: never })
+} & (
+  | { action: { label: string; href: string }; invitation?: never; contact?: never }
+  | { invitation: { courseId: string; courseName: string }; action?: never; contact?: never }
+  | { contact: { id: string; email: string; message: string; sentAt: string }; action?: never; invitation?: never }
+)
 /** `total` counts every message; `pagedTotal` counts only the ones split across pages. */
 type InboxResult = { messages: InboxMessage[]; total: number; pagedTotal?: number; page: number; pageSize: number }
 

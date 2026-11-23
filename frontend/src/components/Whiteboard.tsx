@@ -3,6 +3,20 @@ import { forwardRef, useEffect, useImperativeHandle, useRef, useState } from 're
 export type BoardSnapshot = { image: string; version: number }
 export type WhiteboardHandle = { snapshot: () => BoardSnapshot | null; markSent: (version: number) => void }
 type Shape = 'line' | 'circle' | 'rectangle' | 'polygon'
+type Pattern = 'dots' | 'grid' | 'plain'
+const patterns: { id: Pattern; label: string }[] = [
+  { id: 'dots', label: 'Dots' },
+  { id: 'grid', label: 'Grid' },
+  { id: 'plain', label: 'Plain' },
+]
+const patternKey = 'feynman-board-background'
+function savedPattern(): Pattern {
+  try {
+    const saved = localStorage.getItem(patternKey)
+    if (patterns.some(item => item.id === saved)) return saved as Pattern
+  } catch { /* Storage can be unavailable; the default still works. */ }
+  return 'dots'
+}
 type Tool = 'pen' | 'text' | 'eraser' | Shape
 type Point = { x: number; y: number }
 type TextDraft = { x: number; y: number; width: number; value: string }
@@ -65,6 +79,33 @@ function drawShape(context: CanvasRenderingContext2D, shape: Shape, start: Point
   context.stroke()
 }
 
+// Bounding box of everything visible on a white page; null for a blank board.
+function inkBounds(source: HTMLCanvasElement) {
+  const context = source.getContext('2d')
+  if (!context || !source.width || !source.height) return null
+  const { data, width, height } = context.getImageData(0, 0, source.width, source.height)
+  let left = width, top = height, right = -1, bottom = -1
+  for (let y = 0, index = 0; y < height; y++) {
+    for (let x = 0; x < width; x++, index += 4) {
+      if (data[index + 3] < 8 || (data[index] > 247 && data[index + 1] > 247 && data[index + 2] > 247)) continue
+      if (x < left) left = x
+      if (x > right) right = x
+      if (y < top) top = y
+      bottom = y
+    }
+  }
+  return right < 0 ? null : { left, top, right, bottom }
+}
+
+function PatternIcon({ pattern }: { pattern: Pattern }) {
+  const mark = {
+    dots: <path d="M8 8h.01M16 8h.01M8 16h.01M16 16h.01" strokeWidth="2.6" />,
+    grid: <path d="M9 4v16m6-16v16M4 9h16M4 15h16" strokeWidth="1.4" />,
+    plain: null,
+  }[pattern]
+  return <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><rect x="3" y="3" width="18" height="18" rx="3" />{mark}</svg>
+}
+
 function ShapeIcon({ shape }: { shape: Shape }) {
   const path = {
     line: <path d="M4 19 20 5" />,
@@ -94,10 +135,12 @@ export const Whiteboard = forwardRef<WhiteboardHandle, { open: boolean }>(functi
   const [shapeMenuOpen, setShapeMenuOpen] = useState(false)
   const [colorMenuOpen, setColorMenuOpen] = useState(false)
   const [color, setColor] = useState(colors[0].value)
-  const [strokeWidth, setStrokeWidth] = useState(7)
+  const [strokeWidth, setStrokeWidth] = useState(4)
   const [textDraft, setTextDraft] = useState<TextDraft | null>(null)
   const [textDraftId, setTextDraftId] = useState(0)
   const [historyAvailable, setHistoryAvailable] = useState({ undo: false, redo: false })
+  const [pattern, setPattern] = useState<Pattern>(savedPattern)
+  const [patternMenuOpen, setPatternMenuOpen] = useState(false)
   const surfaceRef = useRef<HTMLDivElement>(null)
   const eraserPreviewRef = useRef<HTMLSpanElement>(null)
   const textInputRef = useRef<HTMLTextAreaElement>(null)
@@ -108,6 +151,20 @@ export const Whiteboard = forwardRef<WhiteboardHandle, { open: boolean }>(functi
   useEffect(() => {
     if (!open && eraserPreviewRef.current) eraserPreviewRef.current.style.display = 'none'
   }, [open])
+
+  // Undo and redo from the keyboard, unless the student is typing somewhere.
+  useEffect(() => {
+    if (!open) return
+    const onKey = (event: KeyboardEvent) => {
+      if (event.key.toLowerCase() !== 'z' || !(event.metaKey || event.ctrlKey) || event.altKey) return
+      const target = event.target
+      if (target instanceof Element && target.closest('input, textarea, select, math-field, [contenteditable]')) return
+      event.preventDefault()
+      stepHistory(event.shiftKey ? 'redo' : 'undo')
+    }
+    window.addEventListener('keydown', onKey)
+    return () => window.removeEventListener('keydown', onKey)
+  })
 
   useEffect(() => {
     if (textDraftId) textInputRef.current?.focus()
@@ -157,15 +214,23 @@ export const Whiteboard = forwardRef<WhiteboardHandle, { open: boolean }>(functi
     snapshot: () => {
       commitText()
       if (version.current === sentVersion.current) return null
-      const canvas = canvasRef.current
-      if (!canvas) return null
+      const source = previewBaseRef.current ?? canvasRef.current
+      if (!source) return null
+      // A blank board says nothing, so it never goes out with a message.
+      const ink = inkBounds(source)
+      if (!ink) return null
+      // Send only the drawn area; a full-screen board is mostly empty space.
+      const margin = Math.round(32 * pixelRatio.current)
+      const left = Math.max(0, ink.left - margin)
+      const top = Math.max(0, ink.top - margin)
       const image = document.createElement('canvas')
-      image.width = canvas.width; image.height = canvas.height
+      image.width = Math.min(source.width, ink.right + margin + 1) - left
+      image.height = Math.min(source.height, ink.bottom + margin + 1) - top
       const context = image.getContext('2d')
       if (!context) return null
       context.fillStyle = '#ffffff'
       context.fillRect(0, 0, image.width, image.height)
-      context.drawImage(previewBaseRef.current ?? canvas, 0, 0)
+      context.drawImage(source, -left, -top)
       return { image: image.toDataURL('image/png'), version: version.current }
     },
     markSent: sent => { sentVersion.current = Math.max(sentVersion.current, sent) },
@@ -296,6 +361,11 @@ export const Whiteboard = forwardRef<WhiteboardHandle, { open: boolean }>(functi
     finishPendingResize()
     updateHistoryAvailable()
   }
+  function choosePattern(next: Pattern) {
+    setPattern(next)
+    setPatternMenuOpen(false)
+    try { localStorage.setItem(patternKey, next) } catch { /* The choice still applies to this board. */ }
+  }
   function selectTool(next: Tool) {
     commitText()
     hideEraserPreview()
@@ -308,7 +378,7 @@ export const Whiteboard = forwardRef<WhiteboardHandle, { open: boolean }>(functi
     finishPendingResize()
     setTool(next)
     setShapeMenuOpen(false)
-    setColorMenuOpen(false)
+    setColorMenuOpen(false); setPatternMenuOpen(false)
   }
   function previewShape(end: Point) {
     const canvas = canvasRef.current
@@ -364,7 +434,7 @@ export const Whiteboard = forwardRef<WhiteboardHandle, { open: boolean }>(functi
     }
     moveEraserPreview(event)
     setShapeMenuOpen(false)
-    setColorMenuOpen(false)
+    setColorMenuOpen(false); setPatternMenuOpen(false)
     const context = event.currentTarget.getContext('2d')
     if (!context) return
     const position = point(event)
@@ -423,7 +493,7 @@ export const Whiteboard = forwardRef<WhiteboardHandle, { open: boolean }>(functi
         setTextDraft(draft)
         setTextDraftId(id => id + 1)
         setShapeMenuOpen(false)
-        setColorMenuOpen(false)
+        setColorMenuOpen(false); setPatternMenuOpen(false)
       }
       return
     }
@@ -459,7 +529,7 @@ export const Whiteboard = forwardRef<WhiteboardHandle, { open: boolean }>(functi
     finishPendingResize()
   }
   return <div className="whiteboard" aria-label="Whiteboard">
-    <div className="whiteboard-surface" ref={surfaceRef}>
+    <div className="whiteboard-surface" data-pattern={pattern} ref={surfaceRef}>
       <canvas ref={canvasRef} width={1} height={1} className={tool === 'eraser' ? 'board-eraser-active' : tool === 'text' ? 'board-text-active' : undefined} aria-label="Drawing area" onPointerEnter={moveEraserPreview} onPointerLeave={hideEraserPreview} onPointerDown={startDraw} onPointerMove={moveDraw} onPointerUp={stopDraw} onPointerCancel={stopDraw} onDoubleClick={() => { if (tool === 'polygon') finishPolygon() }} />
       <span ref={eraserPreviewRef} className="board-eraser-preview" aria-hidden="true" />
       {textDraft && <textarea ref={textInputRef} className="board-text-input" aria-label="Whiteboard text" placeholder="Type here" rows={1} value={textDraft.value} style={{ left: textDraft.x, top: textDraft.y, width: textDraft.width, color }} onChange={event => { const next = { ...textDraft, value: event.target.value }; textDraftRef.current = next; setTextDraft(next); event.target.style.height = 'auto'; event.target.style.height = `${Math.max(46, event.target.scrollHeight)}px` }} onKeyDown={event => { if (event.key === 'Escape') { event.preventDefault(); cancelText() } else if (event.key === 'Enter' && !event.shiftKey) { event.preventDefault(); commitText() } }} onBlur={commitText} />}
@@ -469,12 +539,16 @@ export const Whiteboard = forwardRef<WhiteboardHandle, { open: boolean }>(functi
         <button type="button" className="board-tool-button board-marker-button board-tooltip-anchor" aria-label="Marker" aria-pressed={tool === 'pen'} onClick={() => selectTool('pen')}><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><g transform="rotate(35 12 12)"><rect x="8" y="2" width="8" height="6" rx="1.5" /><path d="M8 8h8v10H8zM8 18h8l-2.5 4h-3L8 18Z" /><path d="M10 11h4" /></g></svg><span className="board-tooltip" role="tooltip">Marker</span></button>
         <button type="button" className="board-tool-button board-tooltip-anchor" aria-label="Text" aria-pressed={tool === 'text'} onClick={() => selectTool('text')}><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="M4 6V4h16v2M12 4v16m-4 0h8" /></svg><span className="board-tooltip" role="tooltip">Text</span></button>
         <div className="board-colors">
-          <button type="button" className="board-tool-button board-color-button board-tooltip-anchor" aria-label="Marker color" aria-expanded={colorMenuOpen} onClick={() => { setShapeMenuOpen(false); setColorMenuOpen(open => !open) }}><span className="board-current-color" style={{ backgroundColor: color }} aria-hidden="true" /><span className="board-tooltip" role="tooltip">Marker color</span></button>
-          {colorMenuOpen && <div className="board-color-menu" role="group" aria-label="Marker settings"><div className="board-color-swatches">{colors.map(item => <button key={item.name} type="button" className="board-color-swatch" aria-label={item.name} aria-pressed={color === item.value} style={{ '--swatch-color': item.value } as React.CSSProperties} onClick={() => { setColor(item.value); setColorMenuOpen(false) }} />)}</div><label className="board-custom-color"><span>Custom color</span><input type="color" aria-label="Custom marker color" value={color} onChange={event => setColor(event.target.value)} /></label><div className="board-stroke-slider"><div className="board-stroke-heading"><span>Stroke</span><output>{strokeWidth} px</output></div><div className="level-slider-wrap"><div className="level-slider-track" aria-hidden="true"><span className="level-slider-fill" style={{ width: strokePosition }} />{strokeSizes.map(size => <span className="level-slider-stop" key={size} />)}<span className="level-slider-thumb" style={{ left: strokePosition }} /></div><span className="level-slider-tooltip" style={{ left: strokePosition }} aria-hidden="true">{strokeWidth} px</span><input className="level-slider-input" type="range" min="0" max={strokeSizes.length - 1} step="1" value={strokeIndex} aria-label="Stroke width" aria-valuetext={`${strokeWidth} pixels`} onChange={event => setStrokeWidth(strokeSizes[Number(event.target.value)])} /></div></div></div>}
+          <button type="button" className="board-tool-button board-color-button board-tooltip-anchor" aria-label="Marker color" aria-expanded={colorMenuOpen} onClick={() => { setShapeMenuOpen(false); setPatternMenuOpen(false); setColorMenuOpen(open => !open) }}><span className="board-current-color" style={{ backgroundColor: color }} aria-hidden="true" /><span className="board-tooltip" role="tooltip">Marker color</span></button>
+          {colorMenuOpen && <div className="board-color-menu" role="group" aria-label="Marker settings"><div className="board-color-swatches">{colors.map(item => <button key={item.name} type="button" className="board-color-swatch" aria-label={item.name} aria-pressed={color === item.value} style={{ '--swatch-color': item.value } as React.CSSProperties} onClick={() => { setColor(item.value); setColorMenuOpen(false); setPatternMenuOpen(false) }} />)}</div><label className="board-custom-color"><span>Custom color</span><input type="color" aria-label="Custom marker color" value={color} onChange={event => setColor(event.target.value)} /></label><div className="board-stroke-slider"><div className="board-stroke-heading"><span>Stroke</span><output>{strokeWidth} px</output></div><div className="level-slider-wrap"><div className="level-slider-track" aria-hidden="true"><span className="level-slider-fill" style={{ width: strokePosition }} />{strokeSizes.map(size => <span className="level-slider-stop" key={size} />)}<span className="level-slider-thumb" style={{ left: strokePosition }} /></div><span className="level-slider-tooltip" style={{ left: strokePosition }} aria-hidden="true">{strokeWidth} px</span><input className="level-slider-input" type="range" min="0" max={strokeSizes.length - 1} step="1" value={strokeIndex} aria-label="Stroke width" aria-valuetext={`${strokeWidth} pixels`} onChange={event => setStrokeWidth(strokeSizes[Number(event.target.value)])} /></div></div></div>}
         </div>
         <div className="board-shapes">
-          <button type="button" className="board-tool-button board-ruler-button board-tooltip-anchor" aria-label="Shapes" aria-expanded={shapeMenuOpen} aria-pressed={shapes.some(shape => shape.id === tool)} onClick={() => { setColorMenuOpen(false); setShapeMenuOpen(open => !open) }}><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><rect x="3" y="6" width="18" height="12" rx="2" /><path d="M7 6v5m4-5v3m4-3v5m4-5v3" /></svg><span className="board-tooltip" role="tooltip">Shapes</span></button>
+          <button type="button" className="board-tool-button board-ruler-button board-tooltip-anchor" aria-label="Shapes" aria-expanded={shapeMenuOpen} aria-pressed={shapes.some(shape => shape.id === tool)} onClick={() => { setColorMenuOpen(false); setPatternMenuOpen(false); setShapeMenuOpen(open => !open) }}><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><rect x="3" y="6" width="18" height="12" rx="2" /><path d="M7 6v5m4-5v3m4-3v5m4-5v3" /></svg><span className="board-tooltip" role="tooltip">Shapes</span></button>
           {shapeMenuOpen && <div className="board-shape-menu" role="group" aria-label="Choose a shape">{shapes.map(shape => <button key={shape.id} type="button" aria-pressed={tool === shape.id} onClick={() => selectTool(shape.id)}><ShapeIcon shape={shape.id} /><span>{shape.label}</span></button>)}</div>}
+        </div>
+        <div className="board-shapes">
+          <button type="button" className="board-tool-button board-tooltip-anchor" aria-label="Background" aria-expanded={patternMenuOpen} onClick={() => { setColorMenuOpen(false); setShapeMenuOpen(false); setPatternMenuOpen(open => !open) }}><PatternIcon pattern={pattern} /><span className="board-tooltip" role="tooltip">Background</span></button>
+          {patternMenuOpen && <div className="board-shape-menu board-pattern-menu" role="group" aria-label="Choose a background">{patterns.map(item => <button key={item.id} type="button" aria-pressed={pattern === item.id} onClick={() => choosePattern(item.id)}><PatternIcon pattern={item.id} /><span>{item.label}</span></button>)}</div>}
         </div>
       </div>
       <div className="board-erasers">

@@ -460,9 +460,11 @@ function faceDetailsTransform(pose: Pose, detail: CharacterAppearance['accessori
   return `translate(${x} ${anchorY}) scale(${width} 1)`
 }
 
-export function Bloub({ mode = 'default', animateEntrance = mode === 'default', entranceExpression = 'neutral', expression, showControls = true, followPointer = false, appearance = defaultAppearance, static: isStatic = false, facingForward = false, previewSlot }: {
+export function Bloub({ mode = 'default', animateEntrance = mode === 'default', entranceExpression = 'neutral', expression, showControls = true, followPointer = false, appearance = defaultAppearance, static: isStatic = false, facingForward = false, previewSlot, idleOffset = 0 }: {
   mode?: BloubMode; animateEntrance?: boolean; entranceExpression?: EmotionId; expression?: EmotionId; showControls?: boolean; followPointer?: boolean
   appearance?: CharacterAppearance; static?: boolean; facingForward?: boolean; previewSlot?: AccessorySlot
+  /** Milliseconds to shift the idle loop (and its blinks) so neighbouring characters don't move in sync. */
+  idleOffset?: number
 }) {
   const isHero = mode === 'hero'
   const isLoading = mode === 'loading'
@@ -480,7 +482,7 @@ export function Bloub({ mode = 'default', animateEntrance = mode === 'default', 
   const accessoriesRef = useRef<SVGGElement>(null)
   const [emotion, setEmotion] = useState<EmotionId>('neutral')
   const [bursting, setBursting] = useState(!noEntrance && !reducedMotion)
-  const displayedEmotion: EmotionId = isHero ? 'attentive' : expression ?? emotion
+  const displayedEmotion: EmotionId = isHero ? expression ?? 'attentive' : expression ?? emotion
   const reactId = useId().replace(/[^a-zA-Z0-9_-]/g, '')
   const maskId = `bloub-mask-${reactId}`
   const rootRef = useRef<HTMLDivElement>(null)
@@ -503,7 +505,7 @@ export function Bloub({ mode = 'default', animateEntrance = mode === 'default', 
   const burstStateRef = useRef<'idle' | 'waiting' | 'playing'>(noEntrance || reducedMotion ? 'idle' : 'waiting')
   const burstStartedAtRef = useRef(0)
   const burstRestPoseRef = useRef(sampleEmotion(emotionsById[entranceExpression], 0))
-  const idleStartedAtRef = useRef(0)
+  const idleStartedAtRef = useRef(-idleOffset)
   const burstingRef = useRef(!noEntrance && !reducedMotion)
 
   const staticEmotion = isStatic || reducedMotion ? displayedEmotion : null
@@ -768,7 +770,7 @@ export function Bloub({ mode = 'default', animateEntrance = mode === 'default', 
     <svg
       ref={svgRef}
       data-loading-phase={isLoading ? isStatic || reducedMotion ? 'still' : 'spawn' : undefined}
-      viewBox={previewViewBox ?? (mode === 'studio' || Object.values(appearance.accessories).some(Boolean) ? '-135 -145 270 290' : '-125 -125 250 250')}
+      viewBox={previewViewBox ?? (mode === 'studio' || (mode !== 'hero' && Object.values(appearance.accessories).some(Boolean)) ? '-135 -145 270 290' : '-125 -125 250 250')}
       style={{ '--character': color } as CSSProperties}
       role="img"
       aria-label={bursting ? `${appearance.name} appearing` : `${appearance.name} looking ${active.label.toLowerCase()}`}
@@ -803,9 +805,9 @@ export function Bloub({ mode = 'default', animateEntrance = mode === 'default', 
         <g ref={accessoriesRef} opacity={bursting ? 0 : 1}>
           {appearance.accessories.pin && <g transform={`translate(${shape.pin.join(' ')}) scale(.62)`}><g key={appearance.accessories.pin} className="bloub-accessory-enter"><AccessoryArtwork id={appearance.accessories.pin} /></g></g>}
           <g transform={`translate(${faceOffset.join(' ')})`}>
-            {appearance.accessories.face && <g ref={faceDetailsRef} transform={faceDetailsTransform(restPose, appearance.accessories.face, appearance.shape)}><g key={appearance.accessories.face} className="bloub-accessory-enter"><AccessoryArtwork id={appearance.accessories.face} /></g></g>}
+            {appearance.accessories.face && <g ref={faceDetailsRef} transform={faceDetailsTransform(restPose, appearance.accessories.face, appearance.shape)}><g key={appearance.accessories.face} className="bloub-accessory-enter bloub-face-art"><AccessoryArtwork id={appearance.accessories.face} /></g></g>}
             <g ref={glassesRef} transform={glassesTransform(restPose.eye0.matrix, restPose.eye1.matrix, eyeHeight(restPose), appearance.accessories.glasses)}>
-              {appearance.accessories.glasses && <g key={appearance.accessories.glasses} className="bloub-accessory-enter"><AccessoryArtwork id={appearance.accessories.glasses} monocleChainRef={monocleChainRef} /></g>}
+              {appearance.accessories.glasses && <g key={appearance.accessories.glasses} className="bloub-accessory-enter bloub-glasses-art"><AccessoryArtwork id={appearance.accessories.glasses} monocleChainRef={monocleChainRef} /></g>}
             </g>
           </g>
         </g>
@@ -883,4 +885,9 @@ export function Bloub({ mode = 'default', animateEntrance = mode === 'default', 
       </div>}
     </div>
   )
+}
+
+/** The classmate's silhouette without a face, for small brand marks. */
+export function BloubMark({ className }: { className?: string }) {
+  return <svg className={className} viewBox="-110 -110 220 220" aria-hidden="true" focusable="false"><path d={bodyPath} fill="var(--character)" /></svg>
 }

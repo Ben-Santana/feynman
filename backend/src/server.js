@@ -1,5 +1,6 @@
 import { createStudyGuidanceGenerator } from './studyGuidance.js';
 import { readRequestBody } from './requestBody.js';
+import { clientAddress, createRateLimiter, parseContactMessage } from './contact.js';
 import { usageFeatures, usageRecord } from './usage.js';
 import { InvalidOutputError } from './structuredOutput.js';
 import { createServer } from 'node:http';
@@ -8,6 +9,7 @@ import { AccountError, createAccountService } from './accounts.js';
 import { pathToFileURL } from 'node:url';
 import { resolveLearningType } from '../../frontend/src/learningTypes.js';
 import { chat, conceptsFromStudyTest, generateRubric, generateLevelRubric, suggestConceptsFromFiles, validate } from './chat.js';
+import { generateTeachingGuides } from './teachingGuide.js';
 import { listPrompts, savePrompt, PromptError, promptFile, loadPrompts } from './promptStore.js';
 import { createChatGPT } from './chatgpt.js';
 import { AIError, createProviderQuery } from './providers/LanguageModelProvider.js';
@@ -32,6 +34,8 @@ export function createApiServer({ query, hosted = false, env = process.env, prom
   const allowedOrigins = hosted
     ? [env.APP_ORIGIN, ...[env.VERCEL_URL, env.VERCEL_PROJECT_PRODUCTION_URL, env.VERCEL_BRANCH_URL].filter(Boolean).map(host => `https://${host}`)].filter(Boolean).map(origin => new URL(origin).origin)
     : ['http://localhost:5173', 'http://127.0.0.1:5173', 'http://localhost:3001', 'http://127.0.0.1:3001'];
+  const contactLimiter = createRateLimiter({ limit: 5, windowMs: 3_600_000 });
+  let contributorCache = null;
   const server = createServer(async (req, res) => {
     res.setHeader('Content-Type', 'application/json');
     res.setHeader('Cache-Control', 'no-store');
@@ -64,9 +68,24 @@ export function createApiServer({ query, hosted = false, env = process.env, prom
     if (req.headers.origin && !allowedOrigins.includes(req.headers.origin)) return send(403, { error: 'Origin not allowed' });
     try {
       const url = new URL(req.url, 'http://localhost');
+      if (url.pathname === '/api/contributors' && req.method === 'GET') {
+        if (!contributorCache || Date.now() - contributorCache.at > 300_000) contributorCache = { at: Date.now(), avatars: await accountService.contributorAppearances() };
+        return send(200, { avatars: contributorCache.avatars });
+      }
+      // The landing page's contact form and contributor avatars are the routes open to signed-out visitors.
+      if (url.pathname === '/api/contact') {
+        if (req.method !== 'POST') return send(405, { error: 'Method not allowed' });
+        if (!contactLimiter.take(clientAddress(req, hosted))) return send(429, { error: 'You have sent several messages recently. Please try again later.' });
+        let input;
+        try { input = JSON.parse(await readRequestBody(req, 16_000)); } catch (error) { return send(error.status || 400, { error: error.status ? error.message : 'Send your message as JSON.' }); }
+        const parsed = parseContactMessage(input);
+        if (parsed.error) return send(400, { error: parsed.error });
+        if (!parsed.spam) await accountService.submitContactMessage(parsed.value);
+        return send(201, { sent: true });
+      }
       const consentRoute = url.pathname === '/api/account/consent';
       const account = await accountService.authenticate(req, { allowPending: (url.pathname === '/api/account' && req.method === 'GET') || consentRoute });
-      if (req.method === 'POST' && ['/api/chat', '/api/concepts', '/api/concept-suggestions', '/api/rubric'].includes(url.pathname)) await accountService.assertLearningSurvey?.(req, account);
+      if (req.method === 'POST' && ['/api/chat', '/api/concepts', '/api/concept-suggestions', '/api/rubric', '/api/teaching-guide'].includes(url.pathname)) await accountService.assertLearningSurvey?.(req, account);
       if (url.pathname === '/api/account' && req.method === 'GET') return send(200, { ...account, hosted });
       const studyGuidanceRoute = /^\/api\/sessions\/([^/]+)\/report\/guidance$/.exec(url.pathname);
       if (studyGuidanceRoute && req.method === 'GET') {
@@ -104,6 +123,8 @@ export function createApiServer({ query, hosted = false, env = process.env, prom
         return send(200, await accountService.signConsent(account, input));
       }
       if (req.method === 'GET' && url.pathname === '/api/inbox') return send(200, await accountService.inbox(account, url.searchParams, req));
+      const contactMessage = /^\/api\/inbox\/contact\/([^/]+)$/.exec(url.pathname);
+      if (req.method === 'DELETE' && contactMessage) { await accountService.deleteContactMessage(account, contactMessage[1]); return send(200, { deleted: true }); }
       if (url.pathname.startsWith('/api/admin/')) {
         if (account.role !== 'admin') throw new AccountError('Admin access required.', 403);
         if (url.pathname === '/api/admin/ai-model') {
@@ -180,7 +201,7 @@ export function createApiServer({ query, hosted = false, env = process.env, prom
       if (req.method === 'GET' && req.url === '/api/health') return send(200, { configured, provider, model, accounts, pendingRegistration: !hosted && (chatgpt?.hasPendingRegistration?.() || false), anthropicConfigured: providers.resolve('anthropic').getStatus().configured });
       if (req.method === 'GET' && req.url === '/api/ai/models') return send(200, { models: await adapter.listModels() });
       if (aiControl && (!req.headers.origin || !/^application\/json(?:;|$)/i.test(req.headers['content-type'] || ''))) return send(403, { error: 'Open AI settings in the local Feynman app to manage accounts.' });
-      if (req.method !== 'POST' || !['/api/chat', '/api/concepts', '/api/concept-suggestions', '/api/rubric', '/api/developer/rubric', '/api/developer/prompts', '/api/developer/question-comparison', '/api/developer/question-review', '/api/developer/evaluator-comparison', '/api/developer/puzzles', '/api/ai/sign-in', '/api/ai/sign-out', '/api/ai/remove-account'].includes(req.url)) return send(404, { error: 'Not found' });
+      if (req.method !== 'POST' || !['/api/chat', '/api/concepts', '/api/concept-suggestions', '/api/rubric', '/api/teaching-guide', '/api/developer/rubric', '/api/developer/prompts', '/api/developer/question-comparison', '/api/developer/question-review', '/api/developer/evaluator-comparison', '/api/developer/puzzles', '/api/ai/sign-in', '/api/ai/sign-out', '/api/ai/remove-account'].includes(req.url)) return send(404, { error: 'Not found' });
       let body;
       const limit = puzzleGeneration ? 40_000 : aiControl ? 10_000 : developer ? 200_000 : req.url === '/api/chat' || evaluatorComparison ? 12_000_000 : 7_000_000;
       try { body = await readRequestBody(req, limit); }
@@ -249,6 +270,7 @@ export function createApiServer({ query, hosted = false, env = process.env, prom
         try {
           if (req.url === '/api/developer/rubric') return send(200, await generateLevelRubric(input, selectedQuery, loadPrompts(promptsPath)));
           if (req.url === '/api/concept-suggestions') return send(200, { concepts: await suggestConceptsFromFiles(input.files, selectedQuery, input.learningType, loadPrompts(promptsPath)) });
+          if (req.url === '/api/teaching-guide') return send(200, { concepts: await generateTeachingGuides(input, selectedQuery) });
           if (req.url === '/api/rubric') return send(200, { concepts: await generateRubric(input, selectedQuery, loadPrompts(promptsPath)) });
           return send(200, { concepts: await conceptsFromStudyTest(input, selectedQuery, loadPrompts(promptsPath)) });
         } catch (error) { return send(error instanceof InvalidOutputError ? 502 : error instanceof AIError ? error.status : /^(Upload|Choose|Enter|Could not read|Could not generate)/.test(error.message) ? 400 : /^Rubric generation took too long/.test(error.message) ? 504 : 502, { error: error.message }); }

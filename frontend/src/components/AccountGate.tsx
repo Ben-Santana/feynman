@@ -1,7 +1,7 @@
 import { useEffect, useId, useRef, useState, type ComponentProps, type FormEvent, type ReactNode } from 'react'
 import { accountFetch, activateAccount, completeAccountCallback, currentAccount, loadAccountAuthMode, navigateAccountPage, requestPasswordReset, signInWithEmail, signInWithWpi, signUpWithEmail, supabase, updateAccountPassword, type Account, type AccountAuthMode, type AccountSignInMethod } from '../accounts'
 import { Bloub } from './Bloub'
-import { CornerDrops } from './CornerDrops'
+import { HomePage } from './HomePage'
 import { AccountLoading, LoadingAnimation } from './AccountLoading'
 import './Accounts.css'
 import { ConsentAgreement } from './ConsentAgreement'
@@ -189,15 +189,7 @@ export function AccountGate({ children }: { children: (account: Account, onProfi
       {error && <p className="account-error" role="alert">{error}</p>}
     </div>
   </section></main>
-  if (page === '/') return <main className="bg-background text-foreground"><section className="home-hero">
-    <div className="home-hero-art"><Bloub mode="hero" /></div><CornerDrops />
-    <div className="home-hero-copy"><div className="home-hero-content">
-      <p className="font-display text-sm font-medium tracking-[0.2em] text-primary uppercase">Feynman</p>
-      <h1 className="font-display mt-3 text-4xl font-semibold tracking-tight sm:text-5xl">Learn by teaching.</h1>
-      <p className="mt-4 text-lg leading-relaxed text-muted-foreground">Teach your AI classmate what you have been learning, one concept at a time.</p>
-      <button className="home-chat-link" onClick={() => navigateAccountPage(account ? '/dashboard' : '/account/login')}>Start learning →</button>
-    </div></div>
-  </section></main>
+  if (page === '/') return <HomePage onStart={() => navigateAccountPage(account ? '/dashboard' : '/account/login')} />
   if (loading) return <AccountLoading />
   const emailEnabled = authMode === 'email' || authMode === 'both'
   const wpiEnabled = authMode === 'wpi' || authMode === 'both'

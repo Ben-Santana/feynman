@@ -1,0 +1,51 @@
+.concept-checklist { position: fixed; z-index: 1000; box-sizing: border-box; width: min(340px, calc(100vw - 24px)); max-height: calc(100dvh - 24px); padding: 14px 16px; overflow-y: auto; overscroll-behavior: contain; border: 1px solid var(--border); border-radius: 12px; background: var(--surface-raised); color: var(--foreground); box-shadow: 0 4px 18px #14141422; font-size: 0.8125rem; line-height: 1.45; text-align: left; }
+.concept-checklist[data-placed="false"] { visibility: hidden; }
+.concept-checklist-name { margin: 0; font-family: "Fredoka", ui-rounded, system-ui, sans-serif; font-size: 0.9375rem; font-weight: 600; overflow-wrap: anywhere; }
+.concept-checklist-level { margin: 2px 0 0; color: var(--muted-foreground); font-size: 0.75rem; }
+.concept-checklist-groups { display: grid; gap: 10px; margin: 12px 0 0; padding: 0; list-style: none; }
+.concept-checklist-groups h3 { margin: 0; font-size: 0.8125rem; font-weight: 600; }
+.concept-checklist-prompts { display: grid; gap: 4px; margin: 4px 0 0; padding: 0; list-style: none; }
+.concept-checklist-prompts li { display: grid; grid-template-columns: 14px 1fr; gap: 8px; align-items: start; color: var(--muted-foreground); }
+.concept-checklist-prompts li[data-state="done"] { color: var(--foreground); }
+.concept-checklist-mark { width: 14px; height: 14px; margin-top: 2px; overflow: visible; }
+.concept-checklist-mark circle { fill: none; stroke: var(--muted-foreground); stroke-width: 1.5; }
+.concept-checklist-mark path { fill: none; stroke: var(--primary-foreground); stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+li[data-state="done"] .concept-checklist-mark circle { fill: var(--primary); stroke: var(--primary); }
+li[data-state="partial"] .concept-checklist-mark circle { stroke: var(--primary); }
+li[data-state="partial"] .concept-checklist-mark path { fill: var(--primary); stroke: none; }
+.concept-checklist-status { margin: 10px 0 0; color: var(--muted-foreground); }
+.concept-checklist-note { margin: 12px 0 0; padding-top: 10px; border-top: 1px solid var(--border); color: var(--muted-foreground); font-size: 0.75rem; }
+.next-concept { max-width: min(320px, calc(100% - 48px)); overflow: hidden; color: var(--primary); text-overflow: ellipsis; white-space: nowrap; }
+.finish-topic.next-concept:hover:not(:disabled), .finish-topic.next-concept:focus-visible { background: var(--primary); color: var(--primary-foreground); }
+.level-divider-next { order: 3; max-width: 100%; padding: 6px 18px; overflow: hidden; border: 1px solid var(--primary); border-radius: 999px; background: var(--primary); color: var(--primary-foreground); font-size: 0.8125rem; font-weight: 600; text-overflow: ellipsis; white-space: nowrap; }
+.level-divider-next:hover { background: var(--primary-hover); }
+.level-divider-next:focus-visible { outline: 2px solid var(--primary); outline-offset: 2px; }
+.concept-checklist-groups > li:last-child .concept-checklist-prompts li:last-child { animation: concept-checklist-reveal 260ms ease-out; }
+@keyframes concept-checklist-reveal { from { opacity: 0; transform: translateY(4px); } }
+.concept-checklist-waiting { display: grid; gap: 8px; margin: 12px 0 0; padding: 10px 12px; border: 1px dashed var(--border); border-radius: 10px; }
+.concept-checklist-waiting p { margin: 0; color: var(--muted-foreground); font-size: 0.75rem; }
+.concept-checklist-veil { display: grid; gap: 6px; }
+.concept-checklist-veil i { display: block; height: 8px; border-radius: 999px; background: linear-gradient(90deg, var(--surface-hover) 25%, var(--surface) 50%, var(--surface-hover) 75%); background-size: 200% 100%; animation: concept-checklist-shimmer 2.2s linear infinite; }
+.concept-checklist-veil i:last-child { width: 62%; }
+@keyframes concept-checklist-shimmer { to { background-position: -200% 0; } }
+.concept-checklist-later { display: flex; align-items: center; gap: 8px; margin: 10px 0 0; color: var(--muted-foreground); font-size: 0.75rem; }
+.concept-checklist-later span { display: flex; gap: 4px; }
+.concept-checklist-later i { width: 6px; height: 6px; border: 1.5px solid var(--muted-foreground); border-radius: 50%; opacity: .55; }
+@media (prefers-reduced-motion: reduce) { .concept-checklist-groups .concept-checklist-prompts li, .concept-checklist-veil i { animation: none; } }
+/* The scoring note opens when the pointer is over the checklist. Touch screens have no hover, so they always show it. */
+@media (hover: hover) {
+  .concept-checklist-note { max-height: 0; margin-top: 0; padding-top: 0; overflow: hidden; border-top-color: transparent; opacity: 0; transform: translateY(-4px); transition: max-height 220ms ease, margin-top 220ms ease, padding-top 220ms ease, border-color 220ms ease, opacity 180ms ease, transform 220ms ease; }
+  .concept-checklist:hover .concept-checklist-note { max-height: 5em; margin-top: 12px; padding-top: 10px; border-top-color: var(--border); opacity: 1; transform: none; }
+}
+@media (prefers-reduced-motion: reduce) { .concept-checklist-note { transition: none; } }
+/* The hint under the hidden item opens the same way; the placeholder bars stay. */
+@media (hover: hover) {
+  .concept-checklist-waiting { gap: 0; transition: gap 220ms ease; }
+  .concept-checklist-waiting p { max-height: 0; overflow: hidden; opacity: 0; transform: translateY(-4px); transition: max-height 220ms ease, opacity 180ms ease, transform 220ms ease; }
+  .concept-checklist:hover .concept-checklist-waiting { gap: 8px; }
+  .concept-checklist:hover .concept-checklist-waiting p { max-height: 4em; opacity: 1; transform: none; }
+}
+@media (prefers-reduced-motion: reduce) { .concept-checklist-waiting, .concept-checklist-waiting p { transition: none; } }
+li[data-state="corrected"] { color: var(--foreground); }
+li[data-state="corrected"] .concept-checklist-mark circle { stroke: var(--primary); }
+.concept-checklist-hatch { stroke: var(--primary); stroke-width: 1.4; }

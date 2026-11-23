@@ -86,7 +86,6 @@
 @keyframes studio-reveal { from { opacity: .4; transform: translateY(3px); } to { opacity: 1; transform: translateY(0); } }
 .character-customize-link { font-family: "Fredoka", ui-rounded, system-ui, sans-serif; display: inline-flex; align-items: center; gap: 8px; padding: 10px 14px; border-radius: 12px; border: 1px solid var(--border); background: transparent; color: var(--foreground); font-size: 0.8125rem; cursor: pointer; min-height: 42px; }
 .character-customize-link:hover { background: var(--surface); }
-.home-hero-content .character-customize-link { margin-top: 16px; display: flex; width: fit-content; color: var(--muted-foreground); font-size: 0.75rem; }
 .sessions-heading-actions { display: flex; flex-wrap: wrap; align-items: center; gap: 10px; }
 @media (max-width: 1000px) {
   .studio-layout { gap: 32px; grid-template-columns: minmax(0, 1fr) minmax(0, 1.15fr); }

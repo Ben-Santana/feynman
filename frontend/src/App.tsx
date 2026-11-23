@@ -10,7 +10,9 @@ import { LearningActions, SkipRubricButton } from './components/LearningActions'
 import { learningActionMessage, type LearningAction } from './learningActions'
 import { ChatActionItems, ChatActions, type ChatActionProps } from './components/ChatActions'
 import { TooltipButton } from './components/TooltipButton'
-import { ConceptTooltip } from './components/ConceptTooltip'
+import { ConceptTracker } from './components/ConceptTracker'
+import { missingGuideLevels } from './teachingGuide.js'
+import { prepareGuides, type GuideUpdates } from './guidePreparation'
 import { ChatMessage, ThoughtCloud } from './components/ChatMessage'
 import { useCallback, useEffect, useRef, useState, useSyncExternalStore } from 'react'
 import { BackButton } from './components/BackButton'
@@ -211,6 +213,14 @@ export default function App({ account, onProfileUpdated, authMode }: { account: 
   const [active, setActive] = useState<string>('')
   const [started, setStarted] = useState(false)
   const [boardOpen, setBoardOpen] = useState(false)
+  const [boardFullscreen, setBoardFullscreen] = useState(false)
+  const toggleBoard = () => { setBoardOpen(open => !open); setBoardFullscreen(false) }
+  useEffect(() => {
+    if (!boardFullscreen) return
+    const exit = (event: KeyboardEvent) => { if (event.key === 'Escape' && !event.defaultPrevented) setBoardFullscreen(false) }
+    window.addEventListener('keydown', exit)
+    return () => window.removeEventListener('keydown', exit)
+  }, [boardFullscreen])
   const [boardHovered, setBoardHovered] = useState(false)
   const [hydrated, setHydrated] = useState(false)
   // Each concept owns its turn, so learners can work elsewhere while one loads.
@@ -227,7 +237,8 @@ export default function App({ account, onProfileUpdated, authMode }: { account: 
   }, [toast])
   const [validationError, setValidationError] = useState<{ step: 'title' | 'concepts' | 'rubric'; fieldId: string; message: string; attempt: number } | null>(null)
   const [trackerOverflow, setTrackerOverflow] = useState(false)
-  const [conceptTooltip, setConceptTooltip] = useState<{ name: string; left: number; top: number; bottom: number } | null>(null)
+  const [guidesPreparing, setGuidesPreparing] = useState(false)
+  const guideAttempts = useRef(new Set<string>())
   const messageList = useRef<HTMLDivElement>(null)
   const attachMessageList = useCallback((element: HTMLDivElement) => {
     messageList.current = element
@@ -254,10 +265,17 @@ export default function App({ account, onProfileUpdated, authMode }: { account: 
   const editingQueuedId = editingQueued?.conceptId === active ? editingQueued.id : null
   const [draggingQueued, setDraggingQueued] = useState(false)
   const awaitingGrades = Boolean(quantitative && currentConcept && levels[currentConcept.passed]?.id === 'analyze' && paper && !review)
+  // After a concept is finished, the next step is the next unfinished concept, not the whole topic.
+  const activeIndex = concepts.findIndex(concept => concept.id === active)
+  const nextConcept = done ? [...concepts.slice(activeIndex + 1), ...concepts.slice(0, activeIndex)].find(concept => !conceptFinished(concept)) : undefined
   const chatActionProps: ChatActionProps = {
     boardOpen,
-    onToggleBoard: () => setBoardOpen(open => !open),
+    onToggleBoard: toggleBoard,
     topicComplete: sessionComplete(concepts),
+    remaining: concepts.filter(concept => !conceptFinished(concept)).length,
+    total: concepts.length,
+    nextConcept: nextConcept?.name,
+    onNextConcept: () => { if (nextConcept) switchChat(nextConcept.id) },
     reportDisabled: sessionBusy,
     onFinishTopic: () => navigate(`/summary?session=${encodeURIComponent(sessionId)}`),
     assigned: Boolean(assignment),
@@ -271,21 +289,22 @@ export default function App({ account, onProfileUpdated, authMode }: { account: 
     if (isChatPage && !started && setupStep === 'title') void preloadClassModelPreview().catch(() => {})
   }, [isChatPage, started, setupStep])
 
+  // A started session prepares any missing teaching checklist once and saves it with
+  // the concept. Hovering a progress circle only reads what was saved.
+  const guideRequest = started && hydrated && !isModuleEditor && learningType && !(fruitFlySelected() && !assignment)
+    ? JSON.stringify([sessionId, learningType, concepts.filter(concept => missingGuideLevels(concept).length).map(concept => [concept.id, missingGuideLevels(concept).map(level => concept.rubric[level])])])
+    : ''
   useEffect(() => {
-    if (!conceptTooltip) return
-    const dismiss = () => setConceptTooltip(null)
-    window.addEventListener('scroll', dismiss, true)
-    window.addEventListener('resize', dismiss)
-    return () => {
-      window.removeEventListener('scroll', dismiss, true)
-      window.removeEventListener('resize', dismiss)
-    }
-  }, [conceptTooltip])
-
-  function showConceptTooltip(button: HTMLButtonElement, name: string) {
-    const bounds = button.getBoundingClientRect()
-    setConceptTooltip({ name, left: bounds.left + bounds.width / 2, top: bounds.bottom + 8, bottom: bounds.top })
-  }
+    if (!guideRequest || !learningType || guideAttempts.current.has(guideRequest)) return
+    const pending = latestConcepts.current.filter(concept => missingGuideLevels(concept).length)
+    if (!pending.length) return
+    guideAttempts.current.add(guideRequest)
+    const signal = accountSignal()
+    setGuidesPreparing(true)
+    void prepareGuides(pending, learningType, (path, body, requestSignal) => post(path, body, requestSignal), signal, prepared => {
+      if (!signal.aborted) setConcepts(items => items.map(item => prepared.get(item.id)?.(item) ?? item))
+    }).catch(reason => console.error('Feynman checklist preparation failed', reason)).finally(() => { if (!signal.aborted) setGuidesPreparing(false) })
+  }, [guideRequest, learningType])
 
   useEffect(() => {
     if (!validationError?.fieldId) return
@@ -438,7 +457,18 @@ export default function App({ account, onProfileUpdated, authMode }: { account: 
     moduleSavingRef.current = true
     setModuleSaving(true); setError(''); setModuleNotice('')
     try {
-      const record = moduleRecord()
+      let record = moduleRecord()
+      // Students start from the published topic, so its checklists are written before it goes out.
+      // A failure here does not block publishing: a student's session prepares its own instead.
+      if (publish && learningType) {
+        const updates: GuideUpdates = new Map()
+        await prepareGuides(record.concepts, learningType, (path, body, requestSignal) => post(path, body, requestSignal), signal, prepared => prepared.forEach((update, id) => updates.set(id, update))).catch(reason => console.error('Feynman checklist preparation failed', reason))
+        signal.throwIfAborted()
+        if (updates.size) {
+          record = { ...record, concepts: record.concepts.map(concept => updates.get(concept.id)?.(concept) ?? concept) }
+          setConcepts(record.concepts)
+        }
+      }
       const saved = await saveModule(moduleCourseId, record, moduleRevision)
       moduleRevisionRef.current = saved.revision
       setModuleRevision(saved.revision)
@@ -800,17 +830,14 @@ export default function App({ account, onProfileUpdated, authMode }: { account: 
           {!started && title.trim() && <h1 className="rubric-page-title" title={title.trim()}>{title.trim()}</h1>}
           {started && <>
             <h1 className="chat-page-title" title={currentConcept?.name || 'Your learning'}>{currentConcept?.name || 'Your learning'}</h1>
-            <div ref={tracker} className={`concept-tracker ${trackerOverflow ? 'concept-tracker-overflow' : ''}`} role="group" aria-label="Concept progress" tabIndex={trackerOverflow ? 0 : undefined} onScroll={() => setConceptTooltip(null)}>
-              {concepts.map(concept => <button key={concept.id} type="button" className={`concept-orb ${concept.id in conceptTurns ? 'concept-orb-loading' : ''}`} onClick={() => { setConceptTooltip(null); switchChat(concept.id) }} onKeyDown={event => { if (event.key === 'Escape') setConceptTooltip(null) }} onPointerEnter={event => { if (event.pointerType === 'mouse') showConceptTooltip(event.currentTarget, concept.name) }} onPointerLeave={() => setConceptTooltip(null)} onFocus={event => { if (event.currentTarget.matches(':focus-visible')) showConceptTooltip(event.currentTarget, concept.name) }} onBlur={() => setConceptTooltip(null)} aria-label={`${concept.name}, ${concept.passed} of ${targetCount(concept.target)} target levels complete${concept.id in conceptTurns ? ', waiting for a reply' : ''}`} aria-busy={concept.id in conceptTurns} aria-current={active === concept.id ? 'true' : undefined}><svg className="concept-orb-visual" viewBox="0 0 32 32" aria-hidden="true"><circle className="concept-orb-track" cx="16" cy="16" r="13.75" /><circle className="concept-orb-progress" cx="16" cy="16" r="13.75" pathLength="100" strokeDasharray={`${Math.min(concept.passed / targetCount(concept.target), 1) * 100} 100`} />{concept.id in conceptTurns && <g className="concept-orb-loader">{[0, 1, 2].map(trail => <circle key={trail} className="concept-orb-swirl" cx="16" cy="16" r="13.75" pathLength="100" />)}</g>}{active === concept.id && <circle className="concept-orb-selection" cx="16" cy="16" r="5" />}</svg></button>)}
-            </div>
-            {conceptTooltip && <ConceptTooltip {...conceptTooltip} />}
+            <ConceptTracker ref={tracker} concepts={concepts} active={active} waiting={conceptTurns} overflow={trackerOverflow} guideStatus={guidesPreparing ? 'preparing' : 'unavailable'} onSelect={switchChat} />
           </>}
           {isModuleEditor && <div className="module-editor-toolbar"><button disabled={moduleSaving || uploading || setupStep === 'loading'} onClick={() => void commitModule()}>{moduleSaving ? 'Saving…' : 'Save draft'}</button></div>}
         </nav>
         {isModuleEditor && <div className="module-editor-feedback"><span role="status">{moduleNotice}</span>{moduleConflict && <><p role="alert">{moduleConflict}</p><button disabled={moduleSaving} onClick={() => void reloadModule().catch(reason => reportError(reason))}>Reload saved draft</button></>}</div>}
-        <section inert={(isModuleEditor && moduleSaving) || restartingSession} className={`chat-section ${started ? 'chat-section-started' : 'chat-section-setup'} ${boardOpen ? 'board-open' : 'board-closed'} ${started && !done && !awaitingGrades ? 'composer-open' : ''} ${concepts.length > 3 ? 'concept-rail' : ''} ${!started && setupStep === 'class-type' ? 'class-type-section' : ''}`} aria-label="Learning chat">
+        <section inert={(isModuleEditor && moduleSaving) || restartingSession} className={`chat-section ${started ? 'chat-section-started' : 'chat-section-setup'} ${boardOpen ? 'board-open' : 'board-closed'} ${boardOpen && boardFullscreen ? 'board-fullscreen' : ''} ${started && !done && !awaitingGrades ? 'composer-open' : ''} ${concepts.length > 3 ? 'concept-rail' : ''} ${!started && setupStep === 'class-type' ? 'class-type-section' : ''}`} aria-label="Learning chat">
           {started && <ChatActions {...chatActionProps} />}
-          <aside className="chat-avatar" aria-label="Your classroom student">{started && <div id="classroom-whiteboard" className="whiteboard-container" onPointerEnter={event => { if (event.pointerType === 'mouse') setBoardHovered(true) }} onPointerLeave={() => setBoardHovered(false)}><TooltipButton type="button" className="whiteboard-toggle" tooltip={boardOpen ? 'Close whiteboard' : 'Open whiteboard'} aria-label={boardOpen ? 'Close whiteboard' : 'Open whiteboard'} aria-expanded={boardOpen} aria-controls="whiteboard-drawing" onClick={() => setBoardOpen(open => !open)}><svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">{boardOpen ? <path d="m6 6 12 12M18 6 6 18" /> : <rect x="3" y="3" width="18" height="18" rx="4" />}</svg></TooltipButton><div id="whiteboard-drawing" className="whiteboard-drawing" aria-hidden={!boardOpen} inert={!boardOpen}><Whiteboard key={active} ref={whiteboard} open={boardOpen} /></div></div>}{started && <div ref={avatarCharacter} className="avatar-character"><Bloub key={active} appearance={appearance} showControls={false} followPointer={!busy && boardOpen && boardHovered} expression={busy ? 'confused' : boardOpen && boardHovered ? 'attentive' : done ? 'excited' : session.expression || 'attentive'} /><ThoughtCloud thinking={busy} transferring={Boolean(arrivingReply)} /></div>}</aside>
+          <aside className="chat-avatar" aria-label="Your classroom student">{started && <div id="classroom-whiteboard" className="whiteboard-container" onPointerEnter={event => { if (event.pointerType === 'mouse') setBoardHovered(true) }} onPointerLeave={() => setBoardHovered(false)}><TooltipButton type="button" className="whiteboard-toggle" tooltip={boardOpen ? 'Close whiteboard' : 'Open whiteboard'} aria-label={boardOpen ? 'Close whiteboard' : 'Open whiteboard'} aria-expanded={boardOpen} aria-controls="whiteboard-drawing" onClick={toggleBoard}><svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">{boardOpen ? <path d="m6 6 12 12M18 6 6 18" /> : <rect x="3" y="3" width="18" height="18" rx="4" />}</svg></TooltipButton>{boardOpen && <TooltipButton type="button" className="whiteboard-fullscreen" tooltip={boardFullscreen ? 'Exit full screen' : 'Full screen'} aria-label={boardFullscreen ? 'Exit full screen' : 'Full screen'} aria-pressed={boardFullscreen} onClick={() => setBoardFullscreen(value => !value)}><svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">{boardFullscreen ? <path d="M9 4v5H4m16 0h-5V4M4 15h5v5m6 0v-5h5" /> : <path d="M4 9V4h5m6 0h5v5m0 6v5h-5m-6 0H4v-5" />}</svg></TooltipButton>}<div id="whiteboard-drawing" className="whiteboard-drawing" aria-hidden={!boardOpen} inert={!boardOpen}><Whiteboard key={active} ref={whiteboard} open={boardOpen} /></div></div>}{started && <div ref={avatarCharacter} className="avatar-character"><Bloub key={active} appearance={appearance} showControls={false} followPointer={!busy && boardOpen && boardHovered} expression={busy ? 'confused' : boardOpen && boardHovered ? 'attentive' : done ? 'excited' : session.expression || 'attentive'} /><ThoughtCloud thinking={busy} transferring={Boolean(arrivingReply)} /></div>}</aside>
           <div className="chat-panel">
             {!started && <div className="setup-progress" role="progressbar" aria-label={isModuleEditor ? 'Topic setup progress' : 'Session setup progress'} aria-valuemin={0} aria-valuemax={100} aria-valuenow={setupProgress} aria-valuetext={setupProgressLabel}>
               <span className="setup-progress-fill" style={{ transform: `scaleX(${setupProgress / 100})` }} />
@@ -836,7 +863,7 @@ export default function App({ account, onProfileUpdated, authMode }: { account: 
             const skipItem = message.role === 'assistant' && index === session.messages.length - 1 && !pendingMessage && !done && !currentConcept?.finalSummary && message.rubricFocus && rubricSkipReason(session.messages.slice(currentConcept?.stageStart ?? 0), message.rubricFocus, { aware: true }) ? message.rubricFocus : undefined
             const divider = message.passedLevel && <div className="level-divider" role="status"><span>{levels.find(level => level.id === message.passedLevel)?.name} level {currentConcept?.assessments?.[message.passedLevel!]?.readyToAdvance ? 'finished with skipped items' : 'passed'}!</span></div>
             return <div key={`${sessionId}-${active}-${index}-${message.role}-${message.content}`}>{divider}<ChatMessage role={message.role} name={message.assistance ? 'Prerequisite review' : message.role === 'user' ? 'You' : appearance.name} content={message.content} inlineAction={skipItem && <><p className="chat-skip-offer">Skip this one and move on?</p><SkipRubricButton busy={busy} onSkip={() => { void send(undefined, 'skip') }} onContinue={() => updateSession({ messages: session.messages.map((item, messageIndex) => messageIndex === index ? { ...item, skipOfferDeclined: true } : item) })} /></>} className={message.paper ? 'chat-message-with-paper' : ''} avatarRef={avatarCharacter} arrive={message.role === 'assistant' && arrivingReply?.index === index && arrivingReply.content === message.content} onArrived={finishReplyArrival} feedback={quantitative && reviewedPaper && reviewedMessage?.review && <ReviewFeedback paper={reviewedPaper} review={reviewedMessage.review} busy={busy} onRevise={!done && !currentConcept?.finalSummary && reviewedMessage.review === review && reviewedPaper.id === paper?.id ? () => setRevisingPaper(reviewedPaper.id) : undefined} />} boardImage={message.boardImage}>{quantitative && message.paper && currentConcept && <><svg className="paper-invite-arrow" viewBox="0 0 120 72" preserveAspectRatio="none" aria-hidden="true"><path d="M3 53 C27 64 42 51 57 36 S88 20 108 32" /><path d="M97 19 Q105 25 109 32 Q100 35 94 43" /></svg><PaperReview characterName={appearance.name} key={`${active}-${message.paper.id}-${revisingPaper === message.paper.id}`} paper={message.paper} review={revisingPaper === message.paper.id ? undefined : session.messages.findLast(item => item.review?.paperId === message.paper?.id)?.review} busy={busy} error={error} onSubmit={review => send(review)} autoOpen={revisingPaper === message.paper.id} onClose={() => setRevisingPaper(null)} /></>}</ChatMessage></div>
-          })}{done && currentConcept && <div className="level-divider level-divider-final" role="status"><span>{currentConcept.finalSummary ? 'Analyze assessment finished.' : <>{levels[currentConcept.passed - 1]?.name} level {currentConcept.assessment?.readyToAdvance ? 'finished with skipped items' : 'passed'}!</>}</span>{!assignment && !currentConcept.finalSummary && currentConcept.passed < levels.length && <button type="button" className="level-divider-continue" disabled={busy} onClick={() => void raiseTarget(currentConcept, levels[currentConcept.passed].id)}>{busy ? 'Thinking' : 'Continue'}</button>}{sessionComplete(concepts) && currentConcept.passed < levels.length && <button type="button" className="level-divider-summary" onClick={() => navigate(`/summary?session=${encodeURIComponent(sessionId)}`)}>View session summary →</button>}</div>}</div><MessageQueue key={active} items={queue} editingId={editingQueuedId} status={queueStatus} canEdit={!done} onResume={session.queuePaused && !done && !awaitingGrades ? () => updateSession({ queuePaused: false }) : undefined} onEditingChange={id => setEditingQueued(id ? { conceptId: active, id } : null)} onDraggingChange={setDraggingQueued} onChange={next => updateSession({ queue: next })} onMove={(from, to) => updateSession({ queue: moveQueued(queue, from, to) })} />{done ? null : awaitingGrades ? <div className="chat-awaiting-grade">Sort all my papers to continue the conversation.</div> : <ChatComposer key={active} className="chat-composer" value={session.draft} onChange={draft => updateSession({ draft })} onSend={submitDraft} busy={false} sendLabel={busy || queue.length ? 'Queue' : 'Send'} menuActions={close => <ChatActionItems {...chatActionProps} onSelect={close} />} />}{!done && !currentConcept?.finalSummary && <LearningActions busy={busy} canFinish={Boolean(quantitative && currentConcept?.passed === 3 && review && session.assessment)} onAction={action => { void send(undefined, action) }} />}</>}{error && <p className="chat-error" role="alert">{error}</p>}</div></section></>}
+          })}{done && currentConcept && <div className="level-divider level-divider-final" role="status"><span>{currentConcept.finalSummary ? 'Analyze assessment finished.' : <>{levels[currentConcept.passed - 1]?.name} level {currentConcept.assessment?.readyToAdvance ? 'finished with skipped items' : 'passed'}!</>}</span>{!assignment && !currentConcept.finalSummary && currentConcept.passed < levels.length && <button type="button" className="level-divider-continue" disabled={busy} onClick={() => void raiseTarget(currentConcept, levels[currentConcept.passed].id)}>{busy ? 'Thinking' : `Continue to ${levels[currentConcept.passed].name}`}</button>}{nextConcept && <button type="button" className="level-divider-next" onClick={() => switchChat(nextConcept.id)}>Next concept: {nextConcept.name} →</button>}{sessionComplete(concepts) && currentConcept.passed < levels.length && <button type="button" className="level-divider-summary" onClick={() => navigate(`/summary?session=${encodeURIComponent(sessionId)}`)}>View session summary →</button>}</div>}</div><MessageQueue key={active} items={queue} editingId={editingQueuedId} status={queueStatus} canEdit={!done} onResume={session.queuePaused && !done && !awaitingGrades ? () => updateSession({ queuePaused: false }) : undefined} onEditingChange={id => setEditingQueued(id ? { conceptId: active, id } : null)} onDraggingChange={setDraggingQueued} onChange={next => updateSession({ queue: next })} onMove={(from, to) => updateSession({ queue: moveQueued(queue, from, to) })} />{done ? null : awaitingGrades ? <div className="chat-awaiting-grade">Sort all my papers to continue the conversation.</div> : <ChatComposer key={active} className="chat-composer" value={session.draft} onChange={draft => updateSession({ draft })} onSend={submitDraft} busy={false} sendLabel={busy || queue.length ? 'Queue' : 'Send'} menuActions={close => <ChatActionItems {...chatActionProps} onSelect={close} />} />}{!done && !currentConcept?.finalSummary && <LearningActions busy={busy} canFinish={Boolean(quantitative && currentConcept?.passed === 3 && review && session.assessment)} onAction={action => { void send(undefined, action) }} />}</>}{error && <p className="chat-error" role="alert">{error}</p>}</div></section></>}
       {!started && setupStep === 'class-type' && pendingLearningType && <LearningTypeChangeDialog learningType={pendingLearningType} onConfirm={confirmLearningTypeChange} onCancel={() => setPendingLearningType(null)} />}
     </main>
   }

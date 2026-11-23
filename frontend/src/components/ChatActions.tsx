@@ -6,6 +6,12 @@ export type ChatActionProps = {
   boardOpen: boolean
   onToggleBoard: () => void
   topicComplete: boolean
+  /** Concepts not yet finished, and how many the topic has. */
+  remaining: number
+  total: number
+  /** Set when the open concept is finished and another one is not. */
+  nextConcept?: string
+  onNextConcept: () => void
   reportDisabled: boolean
   onFinishTopic: () => void
   assigned: boolean
@@ -15,12 +21,13 @@ export type ChatActionProps = {
   onOpenSurvey?: () => void
 }
 
-function useChatActionRequests({ topicComplete, onFinishTopic, assigned, onRestart }: ChatActionProps) {
+function useChatActionRequests({ topicComplete, remaining, total, onFinishTopic, assigned, onRestart }: ChatActionProps) {
   const confirm = useConfirm()
-  const reportLabel = topicComplete ? 'View topic report' : 'Finish topic'
+  // Finishing language is kept for a finished topic; leaving with concepts open is ending early.
+  const reportLabel = topicComplete ? 'View topic report' : 'End topic early'
 
   async function requestFinish() {
-    if (topicComplete || await confirm({ title: 'Finish topic?', description: 'You’ll open your topic report and can’t resume this chat.', confirmLabel: 'Hold to finish' })) onFinishTopic()
+    if (topicComplete || await confirm({ title: 'End topic early?', description: `${remaining} of ${total} ${total === 1 ? 'concept' : 'concepts'} ${remaining === 1 ? 'isn’t' : 'aren’t'} finished, and unfinished goals score 0. You’ll open your topic report and can’t resume this chat.`, confirmLabel: 'Hold to end' })) onFinishTopic()
   }
 
   async function requestRestart() {
@@ -69,7 +76,7 @@ export function ChatActionItems({ onSelect, showBoard = true, ...props }: ChatAc
 }
 
 export function ChatActions(props: ChatActionProps) {
-  const { reportDisabled, boardOpen, onToggleBoard } = props
+  const { reportDisabled, boardOpen, onToggleBoard, nextConcept, onNextConcept } = props
   const { reportLabel, requestFinish } = useChatActionRequests(props)
   const [open, setOpen] = useState(false)
   const actions = useRef<HTMLDivElement>(null)
@@ -110,6 +117,8 @@ export function ChatActions(props: ChatActionProps) {
         <BoardIcon size={22} />
       </TooltipButton>
     </div>
-    <button type="button" className="finish-topic" disabled={reportDisabled} onClick={event => { event.currentTarget.focus(); void requestFinish() }}>{reportLabel}</button>
+    {nextConcept
+      ? <button type="button" className="finish-topic next-concept" onClick={onNextConcept}>Next concept: {nextConcept}</button>
+      : <button type="button" className="finish-topic" disabled={reportDisabled} onClick={event => { event.currentTarget.focus(); void requestFinish() }}>{reportLabel}</button>}
   </>
 }

@@ -36,7 +36,7 @@ export function usageRecord({ userId, feature, operation, provider, model, usage
 
 export const usageFeatures = {
   '/api/chat': 'Learning sessions', '/api/concepts': 'Concept extraction',
-  '/api/concept-suggestions': 'Concept suggestions', '/api/rubric': 'Rubric generation',
+  '/api/concept-suggestions': 'Concept suggestions', '/api/rubric': 'Rubric generation', '/api/teaching-guide': 'Teaching checklists',
   '/api/developer/rubric': 'Rubric testing', '/api/developer/puzzles': 'Puzzle generation',
   '/api/developer/question-comparison': 'Question comparisons', '/api/developer/question-review': 'Question reviews',
   '/api/developer/evaluator-comparison': 'Evaluator comparisons',

@@ -1,3 +1,4 @@
+import { contributorEmails, defaultContactInbox } from './contact.js';
 import { checklistItems } from '../../frontend/src/rubricChecklist.js';
 import { createClient } from '@supabase/supabase-js';
 import { buildSignedConsent } from './consent.js';
@@ -37,6 +38,18 @@ export function createAccountService(env = process.env, clientFactory = createCl
     requireConfig();
     if (!env.SUPABASE_SECRET_KEY) throw new AccountError('Account administration is not configured.', 503);
     return clientFactory(url, env.SUPABASE_SECRET_KEY, options);
+  }
+  const contactInboxEmail = (env.CONTACT_INBOX_EMAIL || defaultContactInbox).toLowerCase();
+  const receivesContactMessages = account => account.role === 'admin' && account.email?.toLowerCase() === contactInboxEmail;
+  async function contactInbox() {
+    const { data, error } = await adminClient().from('contact_messages').select('id, name, email, message, created_at').order('created_at', { ascending: false }).limit(100);
+    if (error) throw new AccountError('Could not load contact messages. Apply the latest Supabase migrations, then retry.', 503);
+    return data.map(item => ({
+      id: `contact:${item.id}`,
+      title: `Message from ${item.name}`,
+      description: item.email,
+      contact: { id: item.id, email: item.email, message: item.message, sentAt: item.created_at },
+    }));
   }
   async function instructorApplications(account, params, targetId = null) {
     if (account.role !== 'admin') throw new AccountError('Admin access required.', 403);
@@ -146,6 +159,35 @@ export function createAccountService(env = process.env, clientFactory = createCl
       if (error) throw new AccountError(error.code === '42501' ? 'Admin access required.' : 'Could not load accounts.', error.code === '42501' ? 403 : 503);
       return data;
     },
+    /** Saved classmate appearances for the landing page's contributors, keyed by slug; null when unset. */
+    async contributorAppearances() {
+      const db = adminClient();
+      const emails = Object.values(contributorEmails);
+      const profiles = await db.from('profiles').select('id, email').or(emails.map(email => `email.ilike.${email}`).join(','));
+      if (profiles.error) throw new AccountError('Could not load contributors.', 503);
+      const ids = profiles.data.map(profile => profile.id);
+      const saved = ids.length ? await db.from('user_customizations').select('user_id, appearance').in('user_id', ids) : { data: [], error: null };
+      if (saved.error) throw new AccountError('Could not load contributors.', 503);
+      return Object.fromEntries(Object.entries(contributorEmails).map(([slug, email]) => {
+        const profile = profiles.data.find(item => item.email?.toLowerCase() === email);
+        return [slug, saved.data.find(item => item.user_id === profile?.id)?.appearance ?? null];
+      }));
+    },
+    async submitContactMessage(message) {
+      const db = adminClient();
+      // A global ceiling backs up the per-visitor limit, which only holds within one server instance.
+      const recent = await db.from('contact_messages').select('id', { count: 'exact', head: true }).gte('created_at', new Date(Date.now() - 3_600_000).toISOString());
+      if (recent.error) throw new AccountError('Could not send your message. Please try again later.', 503);
+      if (recent.count >= 60) throw new AccountError('Too many messages are being sent right now. Please try again later.', 429);
+      const { error } = await db.from('contact_messages').insert(message);
+      if (error) throw new AccountError('Could not send your message. Please try again later.', 503);
+    },
+    async deleteContactMessage(account, id) {
+      if (!receivesContactMessages(account)) throw new AccountError('Admin access required.', 403);
+      if (!/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(id)) throw new AccountError('Choose a valid message.', 400);
+      const { error } = await adminClient().from('contact_messages').delete().eq('id', id);
+      if (error) throw new AccountError('Could not delete the message. Please retry.', 503);
+    },
     async inbox(account, params, req) {
       if (account.role !== 'instructor' && account.role !== 'admin') throw new AccountError('Instructor access required.', 403);
       requireConfig();
@@ -160,6 +202,7 @@ export function createAccountService(env = process.env, clientFactory = createCl
         invitation: { courseId: invitation.courseId, courseName: invitation.courseName },
       }));
       if (account.role === 'instructor') return { messages: invitations, total: invitations.length, pagedTotal: 0, page: 1, pageSize: 25 };
+      const contacts = receivesContactMessages(account) ? await contactInbox() : [];
       const { users, ...pagination } = await instructorApplications(account, params);
       const messages = users.map(user => ({
         id: `instructor-application:${user.id}`,
@@ -167,8 +210,9 @@ export function createAccountService(env = process.env, clientFactory = createCl
         description: user.display_name ? `${user.display_name} · ${user.email}` : user.email,
         action: { label: 'Review application', href: `/admin?account=${encodeURIComponent(user.id)}` },
       }));
-      // Invitations sit above the first page of applications; only applications are paged.
-      return { ...pagination, messages: pagination.page === 1 ? [...invitations, ...messages] : messages, total: pagination.total + invitations.length, pagedTotal: pagination.total };
+      // Invitations and contact messages sit above the first page of applications; only applications are paged.
+      const pinned = [...invitations, ...contacts];
+      return { ...pagination, messages: pagination.page === 1 ? [...pinned, ...messages] : messages, total: pagination.total + pinned.length, pagedTotal: pagination.total };
     },
     async listCourses(account, params) {
       if (account.role !== 'admin') throw new AccountError('Admin access required.', 403);

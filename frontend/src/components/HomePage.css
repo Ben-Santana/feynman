@@ -1,0 +1,331 @@
+/* `overflow-x: hidden` on the app roots would turn them into scroll containers and break the pinned stage. */
+html:has(.home-page), html:has(.home-page) body, html:has(.home-page) #root { overflow-x: clip; }
+
+.home-page {
+  --gutter: clamp(16px, 5vw, 96px);
+  --nav-height: 64px;
+  --nav-top: 16px;
+  position: relative;
+  background: var(--background);
+  color: var(--foreground);
+  font-family: "Fredoka", ui-rounded, system-ui, sans-serif;
+  -webkit-user-select: none;
+  user-select: none;
+  -webkit-touch-callout: none;
+}
+.home-page svg { overflow: visible; }
+
+/* Navigation */
+.home-nav {
+  position: fixed;
+  z-index: 20;
+  top: var(--nav-top);
+  left: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: min(calc(100% - var(--gutter) * 2), 1240px);
+  height: var(--nav-height);
+  padding: 0 10px 0 14px;
+  overflow: hidden;
+  border-radius: 20px;
+  background: color-mix(in srgb, var(--surface-raised) 78%, transparent);
+  box-shadow: 0 1px 2px color-mix(in srgb, var(--black) 6%, transparent), 0 12px 32px -16px color-mix(in srgb, var(--black) 28%, transparent);
+  -webkit-backdrop-filter: blur(16px) saturate(1.6);
+  backdrop-filter: blur(16px) saturate(1.6);
+  transform: translateX(-50%);
+}
+.home-nav-brand {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  justify-content: center;
+  min-width: 44px;
+  min-height: 44px;
+  padding: 0 6px;
+  border: 0;
+  border-radius: 12px;
+  background: none;
+  color: var(--foreground);
+  font: 600 1.375rem/1 "Fredoka", ui-rounded, system-ui, sans-serif;
+  letter-spacing: -0.02em;
+  cursor: pointer;
+}
+.home-nav-mark { display: block; width: 36px; height: 36px; overflow: visible; transition: transform 320ms cubic-bezier(.16, 1, .3, 1); }
+.home-nav-brand:hover .home-nav-mark { transform: rotate(-8deg) scale(1.06); }
+.home-nav-brand:focus-visible { outline: 2px solid var(--primary); outline-offset: 2px; }
+.home-nav-progress { position: absolute; right: 0; bottom: 0; left: 0; height: 2px; }
+.home-nav-progress span { position: absolute; inset: 0; background: var(--primary); transform: scaleX(0); transform-origin: left; }
+
+.home-start {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  min-height: 56px;
+  padding: 0 24px 0 28px;
+  border: 0;
+  border-radius: 16px;
+  background: var(--primary);
+  color: var(--primary-foreground);
+  font: 500 1.125rem "Fredoka", ui-rounded, system-ui, sans-serif;
+  white-space: nowrap;
+  box-shadow: 0 10px 24px -10px color-mix(in srgb, var(--red) 60%, transparent);
+  cursor: pointer;
+  transition: background-color 160ms ease-out, transform 240ms cubic-bezier(.16, 1, .3, 1), box-shadow 240ms ease-out;
+}
+.home-start-small { min-height: 44px; padding: 0 16px 0 20px; border-radius: 12px; font-size: 1rem; box-shadow: none; }
+.home-start svg { width: 20px; height: 20px; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; transition: transform 240ms cubic-bezier(.16, 1, .3, 1); }
+.home-start:hover { background: var(--primary-hover); transform: translateY(-1px); }
+.home-start:hover svg { transform: translateX(3px); }
+.home-start:active { transform: translateY(0); }
+.home-start:focus-visible { outline: 2px solid var(--primary); outline-offset: 4px; }
+
+/* Pinned stage: scenes cross-fade in place while the page scrolls underneath. */
+.home-story { position: relative; }
+.home-stage { position: sticky; top: 0; height: 100svh; overflow: hidden; }
+.home-scene {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  align-items: center;
+  column-gap: clamp(24px, 4vw, 72px);
+  padding: calc(var(--nav-top) + var(--nav-height) + 24px) var(--gutter) 40px;
+  will-change: opacity, transform;
+}
+.home-scene[data-side="right"] .home-chapter { grid-column: 2; }
+.home-classmate {
+  position: absolute;
+  z-index: 1;
+  top: 0;
+  left: 0;
+  aspect-ratio: 1;
+  transform-origin: 50% 50%;
+  pointer-events: none;
+}
+.home-classmate .bloub-hero { position: absolute; inset: 0; }
+.home-scene { z-index: 2; }
+
+/* Hero conversation */
+.home-scene-hero { align-items: center; }
+.home-thread {
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-end;
+  gap: 10px;
+  justify-self: center;
+  width: min(100%, 30rem);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.home-line {
+  max-width: 86%;
+  padding: 13px 18px;
+  border-radius: 22px;
+  font-size: clamp(1rem, 1.25vw, 1.1875rem);
+  line-height: 1.35;
+  animation: home-line-in 440ms cubic-bezier(.16, 1, .3, 1) backwards;
+}
+/* The classmate sits to the right, so its lines lean toward it. */
+.home-line[data-from="classmate"] {
+  align-self: flex-end;
+  border-bottom-right-radius: 6px;
+  background: var(--surface-raised);
+  color: var(--foreground);
+  box-shadow: 0 8px 22px -10px color-mix(in srgb, var(--black) 24%, transparent);
+  transform-origin: bottom right;
+}
+.home-line[data-from="you"] {
+  align-self: flex-start;
+  border-bottom-left-radius: 6px;
+  background: var(--foreground);
+  color: var(--background);
+  transform-origin: bottom left;
+}
+.home-typing { display: flex; gap: 5px; padding: 18px 20px; }
+.home-typing i { width: 8px; height: 8px; border-radius: 50%; background: currentColor; opacity: .35; animation: home-dot 900ms ease-in-out infinite; }
+.home-typing i:nth-child(2) { animation-delay: 120ms; }
+.home-typing i:nth-child(3) { animation-delay: 240ms; }
+.home-scroll-cue {
+  position: absolute;
+  bottom: 28px;
+  left: 25%;
+  width: 28px;
+  height: 28px;
+  margin-left: -14px;
+  fill: none;
+  stroke: var(--muted-foreground);
+  stroke-width: 2;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  animation: home-cue 2.4s ease-in-out infinite;
+}
+
+/* Chapters */
+.home-chapter { justify-self: center; width: min(100%, 32rem); }
+.home-chapter h2 {
+  margin: 0;
+  font-size: clamp(2.25rem, 4.2vw, 4rem);
+  font-weight: 600;
+  line-height: 0.98;
+  letter-spacing: -0.03em;
+  text-wrap: balance;
+}
+.home-chapter p {
+  max-width: 38ch;
+  margin: 18px 0 0;
+  color: var(--muted-foreground);
+  font-size: clamp(1.0625rem, 1.3vw, 1.25rem);
+  line-height: 1.45;
+  text-wrap: pretty;
+}
+
+/* Diagrams */
+.diagram { width: min(100%, 26rem); margin-top: clamp(24px, 4svh, 40px); }
+
+/* A loose, overlapping fan of classmates that spreads out when the scene arrives. */
+.diagram-cast { position: relative; width: min(100%, 30rem); aspect-ratio: 2 / 1.15; }
+.cast-member {
+  position: absolute;
+  top: 20%;
+  left: 32%;
+  width: var(--size);
+  aspect-ratio: 1;
+  opacity: 0;
+  transform: rotate(0deg) scale(.6);
+  transition: left 900ms cubic-bezier(.16, 1, .3, 1) calc(var(--member) * 90ms), top 900ms cubic-bezier(.16, 1, .3, 1) calc(var(--member) * 90ms), transform 900ms cubic-bezier(.16, 1, .3, 1) calc(var(--member) * 90ms), opacity 300ms ease-out calc(var(--member) * 90ms);
+}
+.diagram-cast[data-active="true"] .cast-member { top: var(--y); left: var(--x); opacity: 1; transform: rotate(var(--tilt)); }
+.cast-member .bloub-hero { position: absolute; inset: 0; filter: drop-shadow(0 10px 14px color-mix(in srgb, var(--black) 16%, transparent)); }
+.cast-member:nth-child(2) .bloub-float-hero { animation-delay: -1.2s; animation-duration: 5.2s; }
+.cast-member:nth-child(3) .bloub-float-hero { animation-delay: -2.6s; animation-duration: 6.6s; }
+.cast-member:nth-child(4) .bloub-float-hero { animation-delay: -0.6s; animation-duration: 4.8s; }
+.cast-member:nth-child(5) .bloub-float-hero { animation-delay: -3.4s; animation-duration: 5.8s; }
+
+.levels-steps { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 10px; height: clamp(150px, 26svh, 220px); }
+.levels-step { display: grid; grid-template-rows: minmax(0, 1fr) auto; gap: 10px; min-width: 0; }
+.levels-bar { align-self: end; }
+.levels-bar {
+  position: relative;
+  border-radius: 12px;
+  background: var(--surface);
+  transform: scaleY(.15);
+  transform-origin: bottom;
+  transition: transform 800ms cubic-bezier(.16, 1, .3, 1) calc(var(--step) * 160ms), background-color 500ms ease-out calc(var(--step) * 160ms + 200ms);
+}
+/* Each level is a step deeper, so each bar carries more of the brand red. */
+.diagram-levels[data-active="true"] .levels-bar { transform: none; }
+.diagram-levels[data-active="true"] .levels-step:nth-child(1) .levels-bar { background: var(--red-soft); }
+.diagram-levels[data-active="true"] .levels-step:nth-child(2) .levels-bar { background: color-mix(in srgb, var(--red) 45%, var(--red-soft)); }
+.diagram-levels[data-active="true"] .levels-step:nth-child(3) .levels-bar { background: color-mix(in srgb, var(--red) 75%, var(--red-soft)); }
+.diagram-levels[data-active="true"] .levels-step:nth-child(4) .levels-bar { background: var(--primary); }
+.levels-label { overflow: hidden; color: var(--muted-foreground); font-size: 0.875rem; font-weight: 500; text-align: center; text-overflow: ellipsis; white-space: nowrap; }
+
+/* Scholar accessories: glasses pop in and out, freckles fade. */
+/* The studio's equip animation would flash them visible on first load; the scene transitions below replace it. */
+.home-classmate .bloub-accessory-enter { animation: none; }
+.home-classmate .bloub-glasses-art {
+  transform-box: fill-box;
+  transform-origin: center;
+  opacity: 0;
+  transform: scale(0) rotate(-12deg);
+  transition: transform 260ms cubic-bezier(.6, -0.6, .7, 0), opacity 120ms ease-in 140ms;
+}
+.home-classmate[data-scholar="true"] .bloub-glasses-art {
+  opacity: 1;
+  transform: none;
+  transition: transform 560ms cubic-bezier(.3, 1.9, .5, 1), opacity 100ms ease-out;
+}
+.home-classmate .bloub-face-art { opacity: 0; transition: opacity 500ms ease-out; }
+.home-classmate[data-scholar="true"] .bloub-face-art { opacity: 1; transition-delay: 180ms; }
+/* The research scene's moustache pops like the glasses. */
+.home-classmate[data-moustache] .bloub-face-art { transform-box: fill-box; transform-origin: center; }
+.home-classmate[data-moustache="false"] .bloub-face-art { transform: scale(0); }
+.home-classmate[data-scholar="false"][data-moustache="false"] .bloub-face-art { transition: transform 260ms cubic-bezier(.6, -0.6, .7, 0), opacity 120ms ease-in 140ms; }
+.home-classmate[data-moustache="true"] .bloub-face-art { opacity: 1; transform: none; transition: transform 560ms cubic-bezier(.3, 1.9, .5, 1), opacity 100ms ease-out; }
+
+/* Sections after the pinned story scroll normally. */
+.home-page :is(input, textarea) { -webkit-user-select: text; user-select: text; }
+.home-section { position: relative; z-index: 3; padding: clamp(88px, 12vw, 160px) var(--gutter); }
+.home-section h2 { margin: 0; font-size: clamp(2.25rem, 4.2vw, 4rem); font-weight: 600; line-height: 0.98; letter-spacing: -0.03em; }
+
+.home-contributors { max-width: 1240px; margin: 0 auto; }
+.home-contributors ul { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: clamp(32px, 5vw, 72px); margin: clamp(40px, 6vw, 72px) 0 0; padding: 0; list-style: none; }
+.contributor-art { position: relative; width: min(100%, 200px); aspect-ratio: 1; margin-bottom: 20px; }
+.contributor-art .bloub-hero { position: absolute; inset: 0; }
+a.contributor-art { display: block; border-radius: 24px; cursor: pointer; transition: transform 380ms cubic-bezier(.16, 1, .3, 1); }
+a.contributor-art:hover { transform: scale(1.07); }
+a.contributor-art:active { transform: scale(1.02); }
+a.contributor-art:focus-visible { outline: 2px solid var(--primary); outline-offset: 6px; }
+.home-contributors h3 { margin: 0; font-size: clamp(1.5rem, 2.2vw, 1.875rem); font-weight: 600; letter-spacing: -0.02em; }
+.home-contributors p { max-width: 34ch; margin: 6px 0 0; color: var(--muted-foreground); font-size: 1rem; line-height: 1.45; }
+.home-contributors p.contributor-role { margin-top: 4px; color: var(--red-strong); font-weight: 500; }
+
+.home-contact {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1.1fr);
+  gap: clamp(40px, 6vw, 96px);
+  align-items: start;
+  max-width: 1240px;
+  margin: 0 auto;
+  padding-bottom: clamp(96px, 12vw, 160px);
+}
+.home-contact-intro p { max-width: 34ch; margin: 18px 0 0; color: var(--muted-foreground); font-size: clamp(1.0625rem, 1.3vw, 1.25rem); line-height: 1.45; }
+.home-contact-form { position: relative; display: grid; gap: 8px; padding: clamp(24px, 3vw, 36px); border-radius: 20px; background: var(--surface-raised); box-shadow: 0 24px 48px -28px color-mix(in srgb, var(--black) 30%, transparent); }
+.home-contact-form label { margin-top: 10px; font-size: 0.9375rem; font-weight: 500; }
+.home-contact-form label:first-child { margin-top: 0; }
+.home-contact-form :is(input, textarea) {
+  width: 100%;
+  padding: 12px 14px;
+  border: 1.5px solid var(--border);
+  border-radius: 12px;
+  background: var(--background);
+  color: var(--foreground);
+  font: 400 1rem/1.45 "Fredoka", ui-rounded, system-ui, sans-serif;
+  caret-color: var(--primary);
+  transition: border-color 160ms ease-out, box-shadow 160ms ease-out;
+}
+.home-contact-form textarea { min-height: 148px; resize: vertical; }
+.home-contact-form :is(input, textarea):focus { outline: none; border-color: var(--primary); box-shadow: 0 0 0 4px color-mix(in srgb, var(--red) 16%, transparent); }
+.home-contact-form :is(input, textarea):disabled { opacity: .6; }
+.home-contact-form ::selection { background: color-mix(in srgb, var(--red) 24%, transparent); }
+.home-contact-count { min-height: 1em; color: var(--muted-foreground); font-size: 0.8125rem; text-align: right; }
+.home-contact-trap { position: absolute; left: -10000px; width: 1px; height: 1px; overflow: hidden; }
+.home-contact-error { margin: 4px 0 0; color: var(--red-strong); font-size: 0.9375rem; }
+.home-contact-form .home-start { justify-self: start; margin-top: 12px; }
+.home-contact-form .home-start:disabled { opacity: .6; cursor: default; transform: none; }
+.home-contact-sent { padding: clamp(24px, 3vw, 36px); border-radius: 20px; background: var(--surface-raised); box-shadow: 0 24px 48px -28px color-mix(in srgb, var(--black) 30%, transparent); }
+.home-contact-sent strong { font-size: 1.375rem; font-weight: 600; }
+.home-contact-sent p { margin: 8px 0 0; color: var(--muted-foreground); }
+.home-contact-again { margin-top: 20px; padding: 0; border: 0; background: none; color: var(--red-strong); font: 500 1rem "Fredoka", ui-rounded, system-ui, sans-serif; text-decoration: underline; text-underline-offset: 4px; cursor: pointer; }
+.home-contact-again:focus-visible { outline: 2px solid var(--primary); outline-offset: 4px; border-radius: 4px; }
+
+@keyframes home-line-in { from { opacity: 0; transform: translateY(12px) scale(.9); } to { opacity: 1; transform: none; } }
+@keyframes home-dot { 0%, 60%, 100% { opacity: .3; transform: translateY(0); } 30% { opacity: .9; transform: translateY(-3px); } }
+@keyframes home-cue { 0%, 100% { transform: translateY(0); opacity: .5; } 50% { transform: translateY(6px); opacity: 1; } }
+
+@media (max-width: 759px) {
+  .home-contributors ul { grid-template-columns: minmax(0, 1fr); gap: 48px; }
+  .contributor-art { width: 140px; }
+  .home-contact { grid-template-columns: minmax(0, 1fr); }
+  .home-page { --nav-height: 56px; --nav-top: 12px; }
+  .home-nav { padding: 0 8px 0 8px; border-radius: 16px; }
+  .home-nav-mark { width: 32px; height: 32px; }
+  .home-scene { grid-template-columns: minmax(0, 1fr); align-items: start; padding-bottom: 196px; }
+  .home-scene[data-side="right"] .home-chapter { grid-column: 1; }
+  .home-scene-hero { align-items: start; padding-bottom: min(300px, 46svh); }
+  .home-thread { width: 100%; }
+  .home-line { font-size: 0.9375rem; padding: 11px 15px; }
+  .home-scroll-cue { display: none; }
+  .home-chapter h2 { font-size: clamp(1.875rem, 8.4vw, 2.5rem); }
+  .home-chapter p { margin-top: 12px; font-size: 1rem; }
+  .diagram { margin-top: 20px; }
+  .levels-steps { height: 130px; }
+  .levels-label { font-size: 0.75rem; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .home-line, .home-typing i, .home-scroll-cue { animation: none !important; }
+  .levels-bar, .cast-member, .home-start, .home-start svg, .home-nav-mark, a.contributor-art, .home-classmate .bloub-glasses-art, .home-classmate .bloub-face-art { transition: none !important; }
+}
