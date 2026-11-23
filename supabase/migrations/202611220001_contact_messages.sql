@@ -13,5 +13,7 @@ create index contact_messages_created_at on public.contact_messages (created_at 
 
 alter table public.contact_messages enable row level security;
 revoke all on public.contact_messages from public, anon, authenticated;
+-- This project does not grant table access by default, so the backend's key needs it stated.
+grant select, insert, delete on public.contact_messages to service_role;
 
 commit;

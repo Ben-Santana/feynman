@@ -3,7 +3,7 @@ import type { Account } from '../accounts'
 import { accountSignal } from '../accounts'
 import { canTeachCourses } from '../coursePermissions'
 import { COMMUNITY_LIBRARY_ENABLED } from '../features'
-import { decideEnrollment, inviteCourseTeacher, removeCourseTeacher, deleteCourse, deleteModule, leaveCourse, loadCourse, loadCourses, setCoursePin, setCourseStar, startModule, needsPreTopic, moduleConcepts, courseSubjects, COURSE_SUBJECTS, type CourseCollection, type Course, type Enrollment, type CourseModule, type ModuleSession, type ModuleProgress, type StudentProgress, type CoursePerson } from '../courseStore'
+import { decideEnrollment, inviteCourseTeacher, removeCourseTeacher, deleteCourse, deleteModule, leaveCourse, loadCourse, loadCourses, setCoursePin, setCourseStar, startModule, tryModule, needsPreTopic, moduleConcepts, courseSubjects, COURSE_SUBJECTS, type CourseCollection, type Course, type Enrollment, type CourseModule, type ModuleSession, type ModuleProgress, type StudentProgress, type CoursePerson } from '../courseStore'
 import { createCourseStarUpdates } from '../courseStars'
 import { useConfirm } from './useConfirm'
 import { useToast } from './useToast'
@@ -141,7 +141,7 @@ export function CoursesPage({ account, courseId, collection = 'enrolled', sessio
       <span className="course-module-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5"><rect x="5" y="3" width="14" height="18" rx="2" /><path d="M9 8h6M9 12h6M9 16h4" /></svg></span>
       <span className="course-module-copy"><span className="course-row-title">{module.title || 'Untitled topic'}</span><span className="course-row-meta">{module.published_at ? ownCourse ? 'Published' : complete ? score === null ? 'Complete' : `Score: ${formatScore(score)}` : started ? 'In progress' : 'Not started' : 'Draft'}</span></span>
     </>
-    return <DeleteMenu key={module.id} label={module.title || 'Untitled topic'} action="Delete topic" disabled={busy} onDuplicate={ownCourse ? () => setDuplicating(module) : undefined} onDelete={ownCourse ? async () => {
+    return <DeleteMenu key={module.id} label={module.title || 'Untitled topic'} action="Delete topic" disabled={busy} onTry={ownCourse ? () => void act(async () => onOpenAssignment(await tryModule(courseId!, module.id))) : undefined} onDuplicate={ownCourse ? () => setDuplicating(module) : undefined} onDelete={ownCourse ? async () => {
       if (!await confirm({ title: `Delete “${module.title || 'Untitled topic'}”?`, description: 'This permanently deletes the topic and its student conversations and progress.', confirmLabel: 'Hold to delete' })) return
       void act(async () => {
         await deleteModule(module.id, module.revision)

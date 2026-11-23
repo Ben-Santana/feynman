@@ -3,7 +3,8 @@ import { accountSignal, requireAccount, supabase } from './accounts'
 import { canTeachCourses } from './coursePermissions'
 import { COMMUNITY_LIBRARY_ENABLED } from './features'
 import { decodeSession, encodeSession, flushSessionSaves, getSaveStatus, type CloudSession, type SavedSession } from './learningStore'
-import { sessionComplete, type Concept, type Level, type Session } from './learningFlow'
+import { sessionComplete, startConcepts, type Concept, type Level, type Session } from './learningFlow'
+import { canStart } from './rubricSetup'
 import type { DashboardModule } from './dashboardData'
 import { normalizeAppearance, type CharacterAppearance } from './characterAppearance'
 
@@ -173,11 +174,18 @@ export async function copyModule(courseId: string, id: string, newId: string): P
   const signal = accountSignal()
   const { data, error } = await supabase().from('course_modules').select('*').eq('course_id', courseId).eq('id', id).abortSignal(signal).single()
   signal.throwIfAborted()
-  if (error || !data) throw new Error('Could not load the topic to duplicate. Please retry.')
+  if (error || !data) throw new Error('Could not load the topic. Please retry.')
   const module = data as CourseModule
   const document = { ...module.document, session: { ...module.document.session, files: [] } }
   const record = await decodeSession<Concept, Session>({ owner_id: requireAccount().id, id: newId, title: module.title, document, revision: 0, updated_at: module.created_at })
   return { ...record, started: false, activeId: null }
+}
+/** A teacher's own practice run of a draft or published topic. It is an ordinary personal session: not an assignment, never in course progress or scores. */
+export async function tryModule(courseId: string, id: string): Promise<ModuleSession> {
+  const record = await copyModule(courseId, id, crypto.randomUUID())
+  if (!record.learningType || !canStart(record.concepts)) throw new Error('Finish this draft’s concepts and rubric before trying it.')
+  const concepts = startConcepts(record.concepts)
+  return { ...record, title: `${record.title || 'Untitled topic'} (trial)`.slice(0, 120), started: true, concepts, activeId: concepts[0].id, updatedAt: Date.now(), setupStep: 'rubric', files: [] }
 }
 export async function startModule(id: string, personal = false) {
   const signal = accountSignal()
