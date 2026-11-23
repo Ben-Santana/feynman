@@ -170,7 +170,7 @@ export function createApiServer({ query, hosted = false, env = process.env, prom
         if (url.pathname === '/api/admin/presets' && req.method === 'GET') return send(200, await accountService.listAccountPresets(account));
         if (url.pathname === '/api/admin/presets' && req.method === 'POST') {
           let body = '';
-          for await (const chunk of req) { body += chunk; if (Buffer.byteLength(body) > 1000) return send(413, { error: 'Request is too large.' }); }
+          for await (const chunk of req) { body += chunk; if (Buffer.byteLength(body) > 3000) return send(413, { error: 'Request is too large.' }); }
           let input;
           try { input = JSON.parse(body); } catch { return send(400, { error: 'Invalid JSON request.' }); }
           return send(200, await accountService.saveAccountPreset(account, input));

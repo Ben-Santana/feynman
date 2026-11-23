@@ -24,6 +24,7 @@ export function AdminPage({ targetId, onNavigate }: { targetId: string | null; o
   const [deleteTarget, setDeleteTarget] = useState<Account | null>(null)
   const [deleteError, setDeleteError] = useState('')
   const [deleting, setDeleting] = useState(false)
+  const [presetOpen, setPresetOpen] = useState(false)
   const toast = useToast()
   useEffect(() => {
     const controller = new AbortController()
@@ -82,7 +83,7 @@ export function AdminPage({ targetId, onNavigate }: { targetId: string | null; o
   }
   if (!result && !error) return <LoadingScreen label="Loading accounts" />
   return <section className="admin-page" aria-labelledby="accounts-title"><div className="admin-shell">
-    <h1 id="accounts-title">Manage accounts</h1>
+    <div className="admin-heading"><h1 id="accounts-title">Manage accounts</h1>{targetId === null && <button type="button" className="admin-setup-button" onClick={() => setPresetOpen(true)}><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" aria-hidden="true"><path d="M8 3v10M3 8h10" /></svg>Set up account</button>}</div>
     {targetId !== null ? <div className="admin-search">
       <button type="button" onClick={() => onNavigate('/inbox')}>Back to inbox</button>
     </div> : <form className="admin-search" onSubmit={event => { event.preventDefault(); if (busy) return; setPage(1); setQuery(search.trim()) }}>
@@ -91,6 +92,7 @@ export function AdminPage({ targetId, onNavigate }: { targetId: string | null; o
       </CollectionSearch>
     </form>}
     {error && <p className="account-error admin-error" role="alert">{error}</p>}
+    {targetId === null && <AccountPresets open={presetOpen} onClose={() => setPresetOpen(false)} />}
     {(result || !error) && <div className="admin-directory" aria-busy={!result}>
       <div className="admin-list-heading" aria-hidden="true"><span>Account</span><span>Access / Role</span></div>
       {result && <>
@@ -123,7 +125,6 @@ export function AdminPage({ targetId, onNavigate }: { targetId: string | null; o
         </div>}
       </>}
     </div>}
-    {targetId === null && <AccountPresets />}
     <span className="sr-only" role="status">{busy ? 'Saving account…' : ''}</span>
     {grantTarget && <ConfirmDialog title={`Give points to ${grantTarget.display_name || grantTarget.email}`} confirmLabel={granting ? 'Giving…' : 'Hold to give points'} busy={granting} error={grantError} onConfirm={() => void grantPoints(grantTarget)} onCancel={() => setGrantTarget(null)}>
       <label className="admin-grant-field">Points<input type="number" inputMode="numeric" min={1} max={1000000} step={1} value={grantAmount} disabled={granting} onChange={event => setGrantAmount(event.target.value)} /></label>

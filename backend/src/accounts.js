@@ -311,7 +311,9 @@ export function createAccountService(env = process.env, clientFactory = createCl
       if (account.role !== 'admin') throw new AccountError('Admin access required.', 403);
       const { data, error } = await adminClient().rpc('admin_list_account_presets', { actor_id: account.id });
       if (error) throw new AccountError(error.code === '42501' ? 'Admin access required.' : 'Could not load the accounts set up in advance.', error.code === '42501' ? 403 : 503);
-      return { presets: data || [] };
+      const options = await adminClient().rpc('admin_preset_course_options', { actor_id: account.id });
+      if (options.error) throw new AccountError('Could not load the courses.', 503);
+      return { presets: data || [], courses: options.data || [] };
     },
     async saveAccountPreset(account, input) {
       if (account.role !== 'admin') throw new AccountError('Admin access required.', 403);
@@ -321,10 +323,12 @@ export function createAccountService(env = process.env, clientFactory = createCl
       if (!roles.includes(input?.role)) throw new AccountError('Choose a role.', 400);
       if (name.length > 100) throw new AccountError('Enter a name of up to 100 characters.', 400);
       if (input.role === 'admin' && !email.endsWith('@wpi.edu')) throw new AccountError('An admin set up in advance needs a WPI email.', 400);
-      const { data, error } = await adminClient().rpc('admin_save_account_preset', { actor_id: account.id, preset_email: email, preset_role: input.role, preset_name: name });
+      const courses = input.courses === undefined ? [] : input.courses;
+      if (!Array.isArray(courses) || courses.length > 20 || courses.some(id => typeof id !== 'string' || !/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(id))) throw new AccountError('Choose up to 20 courses.', 400);
+      const { data, error } = await adminClient().rpc('admin_save_account_preset', { actor_id: account.id, preset_email: email, preset_role: input.role, preset_name: name, preset_courses: courses });
       if (error) {
-        const status = error.code === '23505' ? 409 : error.code === '23514' ? 400 : error.code === '42501' ? 403 : 503;
-        throw new AccountError(status === 409 ? 'That person already has an account. Change their role in the list above.' : status === 400 ? 'Enter a valid email, role, and name.' : status === 403 ? 'Admin access required.' : 'Could not set up the account.', status);
+        const status = error.code === '23505' ? 409 : ['23514', '23503'].includes(error.code) ? 400 : error.code === '42501' ? 403 : 503;
+        throw new AccountError(status === 409 ? 'That person already has an account. Change their role in the accounts list.' : error.code === '23503' ? 'A chosen course no longer exists. Reload and choose again.' : status === 400 ? 'Enter a valid email, role, and name.' : status === 403 ? 'Admin access required.' : 'Could not set up the account.', status);
       }
       return data;
     },

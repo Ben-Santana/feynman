@@ -62,25 +62,49 @@
 .admin-grant-field { display: grid; gap: 8px; font-size: 0.875rem; }
 .admin-grant-field input { width: 100%; box-sizing: border-box; min-height: 44px; padding: 8px 12px; border: 1px solid var(--border); border-radius: 12px; background: var(--background); color: var(--foreground); font: inherit; font-size: 1rem; }
 .admin-grant-field input:focus-visible { outline: 2px solid var(--primary); outline-offset: 2px; }
-.admin-presets { margin-top: 40px; }
-.admin-presets h2 { margin: 0; font-size: 1.125rem; font-weight: 600; }
-.admin-presets-help { margin: 6px 0 16px; color: var(--muted-foreground); font-size: 0.8125rem; }
-.admin-preset-form { display: grid; grid-template-columns: minmax(0, 1.4fr) minmax(0, 1fr) 150px auto; align-items: end; gap: 12px; }
-.admin-preset-form label { display: grid; gap: 6px; min-width: 0; color: var(--muted-foreground); font-size: 0.75rem; }
-.admin-preset-form :is(input, select) { width: 100%; min-height: 44px; padding: 9px 12px; border: 1px solid var(--border); border-radius: 8px; background: var(--background); color: var(--foreground); font: inherit; font-size: 0.875rem; }
-.admin-preset-form :is(input, select):focus-visible { outline: 2px solid var(--primary); outline-offset: 1px; }
-.admin-preset-form button { min-height: 44px; padding: 9px 16px; border-radius: 8px; background: var(--primary); color: var(--primary-foreground); font-weight: 600; white-space: nowrap; }
-.admin-preset-form button:hover:not(:disabled) { background: var(--primary-hover); }
-.admin-preset-form button:disabled { opacity: .6; }
-.admin-preset-list { margin: 16px 0 0; padding: 0; overflow: hidden; border: 1px solid var(--dashboard-line, var(--border)); border-radius: 14px; background: var(--background); list-style: none; }
-.admin-preset-list li { display: grid; grid-template-columns: minmax(0, 1fr) auto auto; align-items: center; gap: 16px; padding: 16px 24px; }
-.admin-preset-list li + li { border-top: 1px solid var(--dashboard-line, var(--border)); }
-.admin-preset-role { color: var(--muted-foreground); font-size: 0.8125rem; }
-.admin-preset-list button { min-height: 40px; padding: 8px 12px; border: 1px solid var(--border); border-radius: 8px; background: transparent; color: var(--foreground); font-size: 0.75rem; }
-.admin-preset-list button:hover:not(:disabled) { border-color: var(--neutral-400); }
+.admin-heading { display: flex; align-items: center; justify-content: space-between; gap: 16px; margin: 0 0 32px; }
+.admin-shell .admin-heading h1 { margin: 0; }
+.admin-setup-button { display: inline-flex; align-items: center; gap: 8px; flex: none; min-height: 44px; padding: 9px 16px; border-radius: 10px; background: var(--primary); color: var(--primary-foreground); font-size: 0.875rem; font-weight: 600; transition: background-color .15s; }
+.admin-setup-button:hover { background: var(--primary-hover); }
+.admin-setup-button:focus-visible { outline: 2px solid var(--primary); outline-offset: 3px; }
+.admin-setup-button svg { width: 16px; height: 16px; }
+.admin-presets { margin: 0 0 24px; overflow: hidden; border: 1px dashed var(--neutral-400); border-radius: 14px; background: var(--background); }
+.admin-presets h2 { display: flex; align-items: center; gap: 8px; margin: 0; padding: 13px 24px; border-bottom: 1px solid var(--dashboard-line, var(--border)); background: var(--muted); color: var(--muted-foreground); font-size: 0.6875rem; font-weight: 500; }
+.admin-presets h2 span { padding: 1px 7px; border-radius: 999px; background: var(--surface-hover); color: var(--foreground); font-variant-numeric: tabular-nums; }
+.admin-presets ul { margin: 0; padding: 0; list-style: none; }
+.admin-presets li { display: grid; grid-template-columns: minmax(0, 1fr) auto auto; align-items: center; gap: 16px; padding: 14px 24px; }
+.admin-presets li + li { border-top: 1px solid var(--dashboard-line, var(--border)); }
+.admin-preset-course-names { color: var(--muted-foreground); font-size: 0.75rem; overflow-wrap: anywhere; }
+.admin-preset-role { padding: 3px 10px; border-radius: 999px; background: var(--surface); color: var(--foreground); font-size: 0.75rem; }
+.admin-presets li button { min-height: 36px; padding: 6px 12px; border: 1px solid var(--border); border-radius: 8px; background: transparent; color: var(--foreground); font-size: 0.75rem; }
+.admin-presets li button:hover:not(:disabled) { border-color: var(--neutral-400); }
+.course-edit-dialog.admin-preset-dialog { width: min(520px, calc(100vw - 32px)); }
+.course-edit-dialog .admin-preset-note { margin: 0 0 12px; color: var(--muted-foreground); font-size: 0.75rem; }
+.admin-preset-dialog .course-edit-heading { margin-bottom: 6px; }
+.admin-preset-fields { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-top: 8px; }
+.admin-preset-dialog fieldset { min-width: 0; margin: 20px 0 0; padding: 0; border: 0; }
+.admin-preset-dialog legend { margin-bottom: 8px; padding: 0; font-size: 0.8125rem; }
+.admin-preset-dialog legend span { color: var(--muted-foreground); }
+.admin-preset-roles > div { display: grid; grid-template-columns: repeat(3, 1fr); gap: 4px; padding: 4px; border-radius: 10px; background: var(--surface); }
+.admin-preset-roles label { position: relative; display: grid; }
+.admin-preset-roles input { position: absolute; inset: 0; opacity: 0; cursor: pointer; }
+.admin-preset-roles label span { padding: 8px 10px; border-radius: 7px; color: var(--muted-foreground); font-size: 0.8125rem; text-align: center; transition: background-color .15s, color .15s; }
+.admin-preset-roles input:checked + span { background: var(--background); color: var(--foreground); font-weight: 500; box-shadow: 0 1px 3px #14141418; }
+.admin-preset-roles input:focus-visible + span { outline: 2px solid var(--primary); outline-offset: 1px; }
+.admin-preset-roles .admin-preset-note { margin: 8px 0 0; }
+.admin-preset-courses .admin-preset-note { margin-bottom: 8px; }
+.admin-preset-filter { width: 100%; box-sizing: border-box; min-height: 40px; margin-bottom: 8px; padding: 8px 12px; border: 1px solid var(--border); border-radius: 8px; background: var(--background); color: var(--foreground); font: inherit; }
+.admin-preset-filter:focus-visible { outline: 2px solid var(--primary); outline-offset: 2px; }
+.admin-preset-courses ul { max-height: 200px; margin: 0; padding: 4px; overflow-y: auto; border: 1px solid var(--border); border-radius: 10px; list-style: none; }
+.admin-preset-courses li label { display: flex; align-items: center; gap: 10px; padding: 8px 10px; border-radius: 7px; cursor: pointer; }
+.admin-preset-courses li label:hover { background: var(--surface); }
+.admin-preset-courses li input { width: 16px; height: 16px; flex: none; accent-color: var(--primary); }
+.admin-preset-courses li span { min-width: 0; overflow-wrap: anywhere; }
+.admin-preset-none { margin: 0; padding: 10px; color: var(--muted-foreground); font-size: 0.8125rem; }
 @media (max-width: 700px) {
-  .admin-preset-form { grid-template-columns: minmax(0, 1fr); }
-  .admin-preset-form :is(input, select) { font-size: 1rem; }
-  .admin-preset-list li { grid-template-columns: minmax(0, 1fr) auto; padding: 16px; }
-  .admin-preset-list .admin-user-identity { grid-column: 1 / -1; }
+  .admin-heading { margin-bottom: 24px; }
+  .admin-preset-fields { grid-template-columns: 1fr; }
+  .admin-presets li { grid-template-columns: minmax(0, 1fr) auto; padding: 14px 16px; }
+  .admin-presets li .admin-user-identity { grid-column: 1 / -1; }
 }
+@media (prefers-reduced-motion: reduce) { .admin-setup-button, .admin-preset-roles label span { transition: none; } }

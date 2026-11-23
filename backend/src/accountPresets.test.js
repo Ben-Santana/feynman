@@ -49,6 +49,24 @@ test('an admin can set up an account before its owner first signs in', async t =
   await signUp(ids[4], 'plain@wpi.edu', 'azure');
   assert.deepEqual(await account(ids[4]), { role: 'student', approved: true, display_name: 'From Provider', wpi_role_choice_pending: true });
 
+  // Courses chosen in advance: a student is enrolled, an instructor becomes a teacher, at first sign-in.
+  const owner = '22222222-2222-4222-8222-222222222222';
+  const courseIds = [];
+  for (const name of ['Algebra', 'Biology']) courseIds.push((await db.query(`insert into public.courses(name, instructor_id, code) values ($1,$2,$3) returning id`, [name, owner, name === 'Algebra' ? 'ALGEBR' : 'BYLGGY'])).rows[0].id);
+  const withCourses = (email, role, courses) => db.query('select public.admin_save_account_preset($1,$2,$3,$4,$5) as preset', [admin, email, role, '', courses]);
+  await assert.rejects(withCourses('ghost@wpi.edu', 'student', ['dddddddd-dddd-4ddd-8ddd-dddddddddddd']), error => error.code === '23503');
+  const saved = (await withCourses('pupil@wpi.edu', 'student', [courseIds[1], courseIds[0], courseIds[0]])).rows[0].preset;
+  assert.deepEqual(saved.courses.map(course => course.name), ['Algebra', 'Biology']);
+  assert.equal((await db.query('select count(*)::int as n from public.course_enrollments where course_id = any($1)', [courseIds])).rows[0].n, 0, 'nobody is in the course before signing in');
+  const pupil = 'a6666666-6666-4666-8666-666666666666', helper = 'a7777777-7777-4777-8777-777777777777';
+  await signUp(pupil, 'pupil@wpi.edu', 'azure');
+  assert.deepEqual((await db.query('select status from public.course_enrollments where student_id = $1', [pupil])).rows, [{ status: 'enrolled' }, { status: 'enrolled' }]);
+  await withCourses('helper@wpi.edu', 'instructor', [courseIds[0]]);
+  await signUp(helper, 'helper@wpi.edu', 'azure');
+  assert.deepEqual((await db.query('select course_id, status, invited_by from public.course_teachers where teacher_id = $1', [helper])).rows, [{ course_id: courseIds[0], status: 'active', invited_by: admin }]);
+  assert.equal((await db.query('select count(*)::int as n from public.course_enrollments where student_id = $1', [helper])).rows[0].n, 0);
+  assert.deepEqual((await db.query('select public.admin_preset_course_options($1) as list', [admin])).rows[0].list.map(course => course.name).filter(name => ['Algebra', 'Biology'].includes(name)), ['Algebra', 'Biology']);
+
   // The table is closed to signed-in users.
   await db.exec('set role authenticated');
   await assert.rejects(db.query('select * from public.account_presets'), error => error.code === '42501');
@@ -61,7 +79,7 @@ test('the preset API validates input and reports an existing account plainly', a
   const calls = [];
   let failure = null;
   const service = createAccountService({ SUPABASE_URL: 'https://example.supabase.co', SUPABASE_PUBLISHABLE_KEY: 'public', SUPABASE_SECRET_KEY: 'secret' }, () => ({
-    async rpc(name, args) { calls.push([name, args]); return failure ? { data: null, error: failure } : { data: name === 'admin_list_account_presets' ? [] : { email: args.preset_email, role: args.preset_role, display_name: args.preset_name }, error: null }; },
+    async rpc(name, args) { calls.push([name, args]); return failure ? { data: null, error: failure } : { data: ['admin_list_account_presets', 'admin_preset_course_options'].includes(name) ? [] : { email: args.preset_email, role: args.preset_role, display_name: args.preset_name }, error: null }; },
   }));
   const admin = { id: '99999999-9999-4999-8999-999999999999', role: 'admin' };
   await assert.rejects(service.saveAccountPreset({ ...admin, role: 'instructor' }, { email: 'a@wpi.edu', role: 'student' }), { status: 403 });
@@ -72,8 +90,13 @@ test('the preset API validates input and reports an existing account plainly', a
   await assert.rejects(service.saveAccountPreset(admin, { email: 'a@wpi.edu', role: 'student', name: 'x'.repeat(101) }), { status: 400 });
   assert.equal(calls.length, 0, 'invalid input never reaches the database');
   assert.deepEqual(await service.saveAccountPreset(admin, { email: ' Prof@WPI.edu ', role: 'instructor', name: ' Pat ' }), { email: 'prof@wpi.edu', role: 'instructor', display_name: 'Pat' });
-  assert.deepEqual(calls[0], ['admin_save_account_preset', { actor_id: admin.id, preset_email: 'prof@wpi.edu', preset_role: 'instructor', preset_name: 'Pat' }]);
-  assert.deepEqual(await service.listAccountPresets(admin), { presets: [] });
+  assert.deepEqual(calls[0], ['admin_save_account_preset', { actor_id: admin.id, preset_email: 'prof@wpi.edu', preset_role: 'instructor', preset_name: 'Pat', preset_courses: [] }]);
+  assert.deepEqual(await service.listAccountPresets(admin), { presets: [], courses: [] });
+  const course = 'cccccccc-cccc-4ccc-8ccc-cccccccccccc';
+  await service.saveAccountPreset(admin, { email: 's@wpi.edu', role: 'student', courses: [course] });
+  assert.deepEqual(calls.at(-1)[1].preset_courses, [course]);
+  await assert.rejects(service.saveAccountPreset(admin, { email: 's@wpi.edu', role: 'student', courses: ['not-a-course'] }), { status: 400 });
+  await assert.rejects(service.saveAccountPreset(admin, { email: 's@wpi.edu', role: 'student', courses: Array(21).fill(course) }), { status: 400 });
   assert.deepEqual(await service.deleteAccountPreset(admin, 'prof@wpi.edu'), { deleted: true });
   failure = { code: '23505' };
   await assert.rejects(service.saveAccountPreset(admin, { email: 'taken@wpi.edu', role: 'student' }), { status: 409, message: /already has an account/ });

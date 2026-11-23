@@ -223,4 +223,6 @@ approved admin role.
 
 In **Manage accounts**, an admin can enter an email, a role, and optionally a name before that person has an account. Migration `202611230001_account_presets.sql` stores this in `account_presets`. The first sign-in with that email creates the account as usual, then applies the role, marks it approved, skips the WPI role question, and removes the preset. A preset cannot be made for an email that already has an account; change that account's role in the list instead.
 
+A preset can also name up to 20 courses (migration `202611230002_account_preset_courses.sql`). At the first sign-in a student is enrolled in them, and an instructor or admin becomes one of their teachers. Until then the person has no account, so they do not appear in a course's People tab.
+
 Password sign-ups do not verify the email address, so a preset for the admin role needs a WPI email and is applied only to a WPI single sign-on. Student and instructor presets apply to either sign-in method.
