@@ -6,9 +6,9 @@ import { isLightOperation, modelFor } from '../modelTiers.js';
 // across a session, so caching them makes later turns read that prefix cheaply.
 const CACHED_OPERATIONS = new Set(['evaluate_refined', 'reply_to_teacher']);
 
-// Grading, replies, rubrics and puzzles run only on Opus; light tasks use modelTiers.js.
-export const DEFAULT_TOP_MODEL = 'claude-opus-5-5';
-export const isTopModel = model => /^claude-opus-[a-z0-9-]+$/.test(model || '');
+// Grading, replies, rubrics and puzzles run on Sonnet 5.5 unless an Opus model is chosen; light tasks use modelTiers.js.
+export const DEFAULT_TOP_MODEL = 'claude-sonnet-5-5';
+export const isTopModel = model => /^claude-(?:sonnet-5-5|opus-[a-z0-9-]+)$/.test(model || '');
 
 export function anthropicSystem(instructions, operation, suffix = '') {
   const [stable, ...rest] = instructions.split(PROMPT_CACHE_BOUNDARY);
@@ -55,7 +55,7 @@ export class AnthropicProvider extends LanguageModelProvider {
       if (!data.last_id || data.last_id === cursor) throw new AIError('Claude returned an invalid model list. Please retry.');
       cursor = data.last_id;
     } while (true);
-    if (!models.length) throw new AIError('No Claude Opus models are available for this API key. Check your workspace permissions.', 403);
+    if (!models.length) throw new AIError('No supported Claude models are available for this API key. Check your workspace permissions.', 403);
     return models;
   }
   async generateStructured({ instructions, messages, response: output, signal, onUsage }) {
@@ -64,7 +64,9 @@ export class AnthropicProvider extends LanguageModelProvider {
     // and keep validating the returned tool call below.
     const automaticTools = /^claude-(?:sonnet|opus)-5-5(?:-|$)/.test(model);
     // Light tasks are short and validated; low effort keeps thinking spend small.
-    const effort = isLightOperation(output.name) && /^claude-(?:haiku|sonnet|opus)-5-5(?:-|$)/.test(model) ? { output_config: { effort: 'low' } } : {};
+    // Sonnet 5.5 defaults to high effort; medium matches Opus 5.5's default and leaves room under max_tokens.
+    const effort = isLightOperation(output.name) && /^claude-(?:haiku|sonnet|opus)-5-5(?:-|$)/.test(model) ? { output_config: { effort: 'low' } }
+      : /^claude-sonnet-5-5(?:-|$)/.test(model) ? { output_config: { effort: 'medium' } } : {};
     const response = await this.fetcher('https://api.anthropic.com/v1/messages', {
       method: 'POST', signal,
       headers: { 'content-type': 'application/json', ...this.headers() },

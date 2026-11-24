@@ -16,7 +16,7 @@ Requires Node.js 22.9+ (tested with Node 24).
 
 The frontend reloads automatically during development. The backend restarts when its source or the shared learning types change, so prompt catalog changes take effect immediately. Saving prompts or sign-in credentials does not restart it. Restart `npm run dev` after environment changes.
 
-The key stays on the Node server. `ANTHROPIC_MODEL` defaults to `claude-sonnet-4-6`; use a model supporting forced tool calls. The backend binds to loopback. Backend requests require a Supabase login. Supabase data and storage policies restrict learning data to its owner. Configure the deployed origin and email delivery before launch; account setup is documented in the guide.
+The key stays on the Node server. `ANTHROPIC_MODEL` defaults to `claude-sonnet-5-5`; a Claude Opus model is also accepted. The backend binds to loopback. Backend requests require a Supabase login. Supabase data and storage policies restrict learning data to its owner. Configure the deployed origin and email delivery before launch; account setup is documented in the guide.
 
 ## Vercel services deployment
 

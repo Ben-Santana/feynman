@@ -50,7 +50,7 @@ export function AdminAIModelPage() {
   return <section className="admin-page admin-model-page" aria-labelledby="ai-model-title"><div className="admin-shell">
     <h1 id="ai-model-title">AI model</h1>
     {settings ? <form className="ai-connection admin-model-form" onSubmit={event => { event.preventDefault(); void save() }}>
-      <label className="ai-settings-field">Claude Opus model
+      <label className="ai-settings-field">Claude model
         <select value={model} disabled={saving} aria-describedby="ai-model-help" onChange={event => { setModel(event.target.value); setSaved(false) }}>
           <option value="">Deployment default</option>
           {settings.model && !settings.models.some(item => item.slug === settings.model) && <option value={settings.model} disabled>{settings.model} (unavailable)</option>}

@@ -74,8 +74,8 @@ test('only admins can save a Claude model and hosted requests ignore browser sel
   assert.equal((await invoke(student, '/api/ai/models')).status, 403);
   assert.equal((await save(student, 'claude-opus-available')).status, 403);
   assert.equal((await save(admin, 'claude-opus-unavailable')).status, 400);
-  for (const other of ['claude-sonnet-5-5', 'claude-fable-5-2']) assert.equal((await save(admin, other)).status, 400, 'Only Opus models can be chosen.');
-  assert.deepEqual((await invoke(admin, path)).data.models.map(item => item.slug), ['claude-opus-available']);
+  for (const other of ['claude-sonnet-4-6', 'claude-fable-5-2']) assert.equal((await save(admin, other)).status, 400, 'Only Sonnet 5.5 and Opus models can be chosen.');
+  assert.deepEqual((await invoke(admin, path)).data.models.map(item => item.slug), ['claude-opus-available', 'claude-sonnet-5-5']);
   assert.equal((await invoke(admin, path)).data.defaultModel, 'claude-opus-default');
   assert.equal((await save(admin, 'claude-opus-available')).status, 200);
   assert.equal((await invoke(admin, path)).data.model, 'claude-opus-available');

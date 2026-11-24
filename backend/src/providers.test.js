@@ -155,10 +155,11 @@ test('browser preferences preserve existing and third-party provider IDs and nev
 const callClaude = (...args) => createProviderQuery(new AnthropicProvider())(...args);
 
 test('new Claude models use automatic tool choice and still reject missing structured results', async () => {
-  for (const model of ['claude-opus-5-5', 'claude-opus-4-8']) {
-    const automatic = model === 'claude-opus-5-5';
+  for (const model of ['claude-sonnet-5-5', 'claude-opus-5-5', 'claude-opus-4-8']) {
+    const automatic = model !== 'claude-opus-4-8';
     const provider = new AnthropicProvider({ model, fetcher: async (_url, options) => {
       const body = JSON.parse(options.body);
+      assert.deepEqual(body.output_config, model === 'claude-sonnet-5-5' ? { effort: 'medium' } : undefined);
       assert.deepEqual(body.tool_choice, automatic ? { type: 'auto' } : { type: 'tool', name: 'test' });
       if (automatic) assert.match(body.system, /calling test exactly once/);
       return { ok: true, json: async () => ({ content: [{ type: 'tool_use', name: 'test', input: { message: 'Hi' } }] }) };
@@ -218,8 +219,8 @@ test('Claude discovers models across pages with workspace credentials and uses t
     assert.equal(options.headers['anthropic-workspace-id'], 'workspace');
     if (url.includes('/models')) {
       const second = new URL(url).searchParams.get('after_id') === 'claude-opus-one';
-      // Only Opus models are offered for the main model; others are filtered out.
-      return Response.json({ data: [{ id: second ? 'claude-opus-two' : 'claude-opus-one', display_name: second ? 'Claude Two' : 'Claude One' }, { id: second ? 'claude-fable-5-2' : 'claude-sonnet-5-5', display_name: 'Other' }], has_more: !second, last_id: second ? 'claude-fable-5-2' : 'claude-opus-one' });
+      // Only Sonnet 5.5 and Opus models are offered for the main model; others are filtered out.
+      return Response.json({ data: [{ id: second ? 'claude-opus-two' : 'claude-opus-one', display_name: second ? 'Claude Two' : 'Claude One' }, { id: second ? 'claude-fable-5-2' : 'claude-sonnet-4-6', display_name: 'Other' }], has_more: !second, last_id: second ? 'claude-fable-5-2' : 'claude-opus-one' });
     }
     assert.equal(JSON.parse(options.body).model, 'claude-opus-two');
     return Response.json({ stop_reason: 'tool_use', content: [{ type: 'tool_use', name: output.name, input: { message: 'Selected Claude' } }] });
@@ -227,7 +228,9 @@ test('Claude discovers models across pages with workspace credentials and uses t
   const registry = createProviderRegistry({ chatgpt, env, fetcher });
   assert.equal(registry.describe().find(item => item.id === 'anthropic').supportsModelSelection, true);
   assert.equal(registry.resolve('anthropic').getStatus().model, 'claude-opus-configured');
-  assert.equal(registry.resolve('anthropic', { model: 'claude-fable-5-2' }).getStatus().model, 'claude-opus-configured', 'A saved non-Opus model never runs the main tasks.');
+  assert.equal(registry.resolve('anthropic', { model: 'claude-fable-5-2' }).getStatus().model, 'claude-opus-configured', 'A saved unsupported model never runs the main tasks.');
+  assert.equal(new AnthropicProvider({ env: {} }).getStatus().model, 'claude-sonnet-5-5');
+  assert.equal(registry.resolve('anthropic', { model: 'claude-sonnet-5-5' }).getStatus().model, 'claude-sonnet-5-5');
   const provider = registry.resolve('anthropic', { model: 'claude-opus-two' });
   assert.deepEqual(await provider.listModels(), catalog);
   assert.deepEqual(await createProviderQuery(provider)('Instructions', messages, output), { message: 'Selected Claude' });
