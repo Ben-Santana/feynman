@@ -38,5 +38,6 @@ export function useLearningSurvey(account: Account, refreshKey: string) {
       return true
     } catch (reason) { setError((reason as Error).message); return false }
   }, [account.role, refresh])
-  return { status, ready, error, open, guard, refresh, show: () => setOpen(true), close: () => setOpen(false), submitted: () => { requestVersion.current++; setStatus(current => ({ sessionId: null, topicTitle: null, ...current, submittedAt: new Date().toISOString() })); setOpen(false) } }
+  const show = useCallback(() => setOpen(true), [])
+  return { status, ready, error, open, guard, refresh, show, close: () => setOpen(false), submitted: () => { requestVersion.current++; setStatus(current => ({ sessionId: null, topicTitle: null, ...current, submittedAt: new Date().toISOString() })); setOpen(false) } }
 }

@@ -204,6 +204,9 @@ export default function App({ account, onProfileUpdated, authMode }: { account: 
   useActivityTracking(account, page, sessionId)
   const survey = useLearningSurvey(account, `${page}:${saveStatus.state}:${savedSessions.filter(record => record.started && sessionComplete(record.concepts)).map(record => record.id).join(',')}`)
   const sessionsRef = useRef<SavedSession<Concept, Session>[]>([])
+  const skipSurveyInvite = useRef(false)
+  const lastPage = useRef(page)
+  const signInInviteChecked = useRef(false)
   const assignment = isModuleEditor ? undefined : savedSessions.find(record => record.id === sessionId)?.assignment
   const sessionBackPath = assignment ? `/courses/${assignment.courseId}` : '/sessions'
   const [concepts, setConcepts] = useState<Concept[]>([newConcept()])
@@ -518,10 +521,20 @@ export default function App({ account, onProfileUpdated, authMode }: { account: 
   }, [sessionId])
   function leaveTopic() {
     navigate(isModuleEditor ? `/courses/${moduleCourseId}` : sessionBackPath)
-    // Invite students to take the survey as they leave their first topic, once they have sent a message.
-    const firstTopic = !savedSessions.some(record => record.started && record.id !== sessionId)
-    if (account.role === 'student' && !isModuleEditor && survey.ready && !survey.status?.submittedAt && started && firstTopic && concepts.some(concept => concept.messages.some(message => message.role === 'user'))) survey.show()
   }
+  // Until the survey is submitted, invite students who have sent a message in any topic: once after sign-in, and whenever they leave the chat.
+  const sentMessage = (items: Concept[]) => items.some(concept => concept.messages.some(message => message.role === 'user'))
+  const surveyInvite = account.role === 'student' && survey.ready && !survey.status?.submittedAt && (sentMessage(concepts) || savedSessions.some(record => sentMessage(record.concepts)))
+  const showSurvey = survey.show
+  useEffect(() => {
+    const leftChat = lastPage.current === '/chat' && page !== '/chat'
+    lastPage.current = page
+    const signedIn = hydrated && survey.ready && !signInInviteChecked.current
+    if (signedIn) signInInviteChecked.current = true
+    const skip = skipSurveyInvite.current
+    skipSurveyInvite.current = false
+    if (surveyInvite && !skip && (leftChat || (signedIn && page !== '/chat'))) showSurvey()
+  }, [page, hydrated, survey.ready, surveyInvite, showSurvey])
   async function navigateFromSidebar(path: string) {
     if (isDeveloperPage && path !== '/developer' && developerDirty.current && !await confirm({ title: 'Leave developer tools?', description: 'Unsaved prompt edits will be discarded.', confirmLabel: 'Hold to leave' })) return
     navigate(path)
@@ -886,7 +899,7 @@ export default function App({ account, onProfileUpdated, authMode }: { account: 
     </ConfirmDialog>}
     {survey.error && !isChatPage && <p className="account-error" role="alert">{survey.error}</p>}
     {renderPage()}
-    {account.role === 'student' && survey.ready && !survey.status?.submittedAt && <LearningSurveyDialog open={survey.open} status={survey.status} onLater={() => { survey.close(); if (survey.status && isChatPage && !(started && sessionComplete(concepts))) navigate('/sessions') }} onSubmitted={survey.submitted} />}
+    {account.role === 'student' && survey.ready && !survey.status?.submittedAt && <LearningSurveyDialog open={survey.open} status={survey.status} onLater={() => { survey.close(); if (survey.status && isChatPage && !(started && sessionComplete(concepts))) { skipSurveyInvite.current = true; navigate('/sessions') } }} onSubmitted={survey.submitted} />}
   </>
   return isAnalyticsPage || isAdminAIModelPage || isAdminCoursesPage || isCourseCreatePage || isCoursesPage || isModuleEditor || (isChatPage && !started) || isSummaryPage || isDashboardPage || isSessionsPage || page === '/profile' || page === '/settings' || page === '/character' || page === '/admin' || page === '/inbox' || isDeveloperPage ? <DashboardShell key={account.id} account={account} appearance={appearance} activePage={isDashboardPage ? '/dashboard' : isChatPage && !started ? '/sessions' : isSummaryPage ? sessionBackPath : page} onNavigate={navigateFromSidebar} onCustomizeAvatar={() => navigateFromSidebar('/character')}>{content}</DashboardShell> : content
 }
