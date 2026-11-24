@@ -8,6 +8,9 @@ import { ConsentAgreement } from './ConsentAgreement'
 import { downloadSignedConsent } from '../accounts'
 
 let callback: { href: string; promise: Promise<void> } | undefined
+function hasSavedLogin() {
+  try { return Object.keys(localStorage).some(key => /^sb-.+-auth-token$/.test(key)) } catch { return false }
+}
 function AccountAvatar({ squint = false }: { squint?: boolean }) {
   return <div className="account-avatar" data-squint={squint} aria-hidden="true">
     <Bloub mode="studio" expression="attentive" showControls={false} followPointer={!squint} />
@@ -65,7 +68,12 @@ export function AccountGate({ children }: { children: (account: Account, onProfi
     return () => window.removeEventListener('popstate', onPopState)
   }, [])
   useEffect(() => {
-    if (loading || resettingPassword || page === '/' || page === '/account/callback') return
+    if (loading || resettingPassword || page === '/account/callback') return
+    if (page === '/') {
+      // Someone already logged in skips the landing page. Replace the entry so Back does not loop.
+      if (account?.approved) { window.history.replaceState(null, '', '/dashboard'); window.dispatchEvent(new PopStateEvent('popstate')) }
+      return
+    }
     if (account && !account.approved && page !== '/account/pending') navigateAccountPage('/account/pending')
     else if (account?.approved && (page === '/account/login' || page === '/account/pending')) navigateAccountPage('/dashboard')
     else if (!account && page !== '/account/login') navigateAccountPage('/account/login')
@@ -189,6 +197,8 @@ export function AccountGate({ children }: { children: (account: Account, onProfi
       {error && <p className="account-error" role="alert">{error}</p>}
     </div>
   </section></main>
+  // A saved login is being checked: wait instead of flashing the landing page before the dashboard.
+  if (page === '/' && loading && hasSavedLogin()) return <AccountLoading />
   if (page === '/') return <HomePage onStart={() => navigateAccountPage(account ? '/dashboard' : '/account/login')} />
   if (loading) return <AccountLoading />
   const emailEnabled = authMode === 'email' || authMode === 'both'
